@@ -509,6 +509,12 @@
   .form-status{font-size:0.9rem;font-weight:500;}
   .form-status.ok{color:var(--check);}
   .form-status.err{color:#B3432B;}
+  .contact-form .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:190px;
+  }
+  .contact-form .btn.is-success{background:var(--check);border-color:var(--check);color:var(--white);}
+  .contact-form .btn.is-success:hover{background:var(--check);border-color:var(--check);}
+  .contact-form .btn.is-error{background:#B3432B;border-color:#B3432B;color:var(--white);}
 
   /* ---------- Footer ---------- */
   body{background:var(--white);}
@@ -1456,7 +1462,7 @@ form.contact-form{
             </li>
             <li>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-              <a href="mailto:gahlicita@gmail.com">gahlicita@gmail.com</a>
+              <a href="mailto:contato@gahlicita.com.br">contato@gahlicita.com.br</a>
             </li>
             <li>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2.2Z"/></svg>
@@ -1529,30 +1535,42 @@ form.contact-form{
   form.addEventListener('submit', function(e){
     e.preventDefault();
     if (form._honey && form._honey.value) { return; }
+
     submitBtn.disabled = true;
+    submitBtn.classList.remove('is-success', 'is-error');
     submitBtn.textContent = 'Enviando...';
     status.textContent = '';
     status.className = 'form-status';
 
     var data = new FormData(form);
-    fetch('https://formsubmit.co/ajax/gahlicita@gmail.com', {
+    fetch('https://formsubmit.co/ajax/contato@gahlicita.com.br', {
       method: 'POST',
       headers: { 'Accept': 'application/json' },
       body: data
-    }).then(function(res){ return res.json(); })
-      .then(function(){
-        status.textContent = 'Mensagem enviada! Retornaremos em breve.';
-        status.className = 'form-status ok';
-        form.reset();
-      })
-      .catch(function(){
-        status.textContent = 'Não foi possível enviar agora. Tente novamente ou escreva para gahlicita@gmail.com.';
-        status.className = 'form-status err';
-      })
-      .finally(function(){
+    }).then(function(res){
+      if (!res.ok) { throw new Error('Falha no envio'); }
+      return res.json();
+    }).then(function(){
+      status.textContent = 'Mensagem enviada! Retornaremos em breve.';
+      status.className = 'form-status ok';
+      form.reset();
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('is-success');
+      submitBtn.innerHTML = '<span>Enviado!</span><span aria-hidden="true">✓</span>';
+
+      setTimeout(function(){
         submitBtn.disabled = false;
+        submitBtn.classList.remove('is-success');
         submitBtn.textContent = 'Enviar solicitação';
-      });
+      }, 5000);
+    }).catch(function(){
+      status.textContent = 'Não foi possível enviar agora. Tente novamente ou escreva para contato@gahlicita.com.br.';
+      status.className = 'form-status err';
+      submitBtn.disabled = false;
+      submitBtn.classList.add('is-error');
+      submitBtn.textContent = 'Tentar novamente';
+    });
   });
 </script>
 <script>
