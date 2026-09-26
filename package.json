@@ -1,0 +1,17 @@
+{
+  "name": "gah-licita-site",
+  "version": "1.0.0",
+  "description": "GAH Licita - Licenciamento de software para o setor público",
+  "private": true,
+  "scripts": {
+    "dev": "serve .",
+    "build": "echo 'Static site - no build required'",
+    "lint": "echo 'No linter configured'"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.1.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}
