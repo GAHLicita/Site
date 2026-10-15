@@ -67,8 +67,10 @@ link para criar uma senha nova.
 - **Financeiro**: valor total em contratos, recebido, a receber, a pagar das compras,
   impostos, lucro bruto e líquido, mapa dos estados atendidos, faturamento mês a mês
   (igual à aba "Faturamento" da planilha), previsão de caixa e vendas por fabricante.
-- **Clientes**: lista de órgãos e a ficha de cada um, com contatos (telefone e WhatsApp),
-  link da pasta no Drive, dados do órgão e todos os contratos com as parcelas.
+- **Clientes**: lista de órgãos e a ficha de cada um, com contatos (quantos precisar, com
+  telefone e WhatsApp), **faturamento** (e-mail para enviar a NF, responsável, telefone,
+  onde enviar e o que precisa constar na nota), link da pasta no Drive, CNPJ e endereço,
+  e todos os contratos com as parcelas. Tudo editável em "Editar dados".
 - **Contratos**: todos os contratos numa tabela, com filtros por situação, forma de
   recebimento e ano.
 - **Agenda**: calendário com disputas, reuniões e prazos. Vencimentos de parcelas, fins de

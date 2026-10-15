@@ -84,6 +84,22 @@
     );
   }
 
+  function painelFaturamento(c) {
+    const f = c.faturamento || {};
+    const temAlgo = f.email || f.responsavel || f.telefone || f.portal || f.instrucoes;
+    return '<section class="painel"><div class="painel-cab"><h2>Faturamento</h2><span class="sub">Para onde vai a nota fiscal</span></div><div class="painel-corpo">' +
+      (temAlgo
+        ? '<dl class="ficha">' +
+          (f.email ? '<dt>E-mail da NF</dt><dd>' + esc(f.email) + ' <button type="button" class="link-botao" data-copiar-email="' + esc(f.email) + '">copiar</button></dd>' : '') +
+          (f.responsavel ? '<dt>Responsável</dt><dd>' + esc(f.responsavel) + '</dd>' : '') +
+          (f.telefone ? '<dt>Telefone</dt><dd>' + esc(f.telefone) + (linkWhats(f.telefone) ? ' · <a href="' + esc(linkWhats(f.telefone)) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') + '</dd>' : '') +
+          (f.portal ? '<dt>Onde enviar</dt><dd>' + esc(f.portal) + '</dd>' : '') +
+          (f.instrucoes ? '<dt>Constar na NF</dt><dd>' + esc(f.instrucoes) + '</dd>' : '') +
+          '</dl>'
+        : '<p class="texto-suave" style="margin:0">Cadastre o e-mail para envio da NF e o responsável em "Editar dados".</p>') +
+      '</div></section>';
+  }
+
   function ficha(main, id) {
     const c = D.obter('clientes', id);
     if (!c) {
@@ -117,6 +133,7 @@
         ? '<a class="drive-botao" href="' + esc(drive) + '" target="_blank" rel="noopener">' + ICONE_DRIVE + '<div><strong>Abrir pasta no Google Drive</strong><span>Contratos, notas fiscais, empenhos e demais documentos</span></div></a>'
         : '<div class="drive-botao">' + ICONE_DRIVE + '<div><strong>Pasta do Drive não cadastrada</strong><span><button type="button" class="link-botao" id="cadastrar-drive">Cadastrar o link da pasta</button></span></div></div>') +
       '</div></section>' +
+      painelFaturamento(c) +
       '<section class="painel"><div class="painel-cab"><h2>Contatos no órgão</h2></div><div class="painel-corpo"><div class="contatos">' +
       (contatos.length
         ? contatos.map((ct) => {
@@ -139,6 +156,10 @@
       '</div></div>';
 
     main.querySelector('#editar-cliente').addEventListener('click', () => GAH.formCliente(c));
+    main.querySelectorAll('[data-copiar-email]').forEach((b) => b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copiarEmail); GAH.u.aviso('E-mail copiado'); }
+      catch (e) { GAH.u.aviso('Copie o e-mail: ' + b.dataset.copiarEmail); }
+    }));
     main.querySelector('#novo-contrato').addEventListener('click', () => GAH.formContrato(null, { clienteId: id }));
     const cad = main.querySelector('#cadastrar-drive');
     if (cad) cad.addEventListener('click', () => GAH.formCliente(c));

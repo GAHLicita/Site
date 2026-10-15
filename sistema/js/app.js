@@ -175,6 +175,14 @@
       '<div class="campo largo"><label for="cli-endereco">Endereço</label><input id="cli-endereco" name="endereco" value="' + esc(c.endereco) + '"></div>' +
       '<div class="campo largo"><label for="cli-drive">Link da pasta no Google Drive</label><input id="cli-drive" name="linkDrive" type="url" value="' + esc(c.linkDrive) + '" placeholder="https://drive.google.com/drive/folders/..."><span class="ajuda">No Drive, clique com o botão direito na pasta do órgão → Compartilhar → Copiar link.</span></div>' +
       '</div>' +
+      '<h3 style="margin-top:8px">Faturamento: para onde vai a nota fiscal</h3>' +
+      '<div class="form-grade">' +
+      '<div class="campo"><label for="cli-fat-email">E-mail para envio da NF</label><input id="cli-fat-email" name="fatEmail" type="email" value="' + esc((c.faturamento || {}).email) + '"></div>' +
+      '<div class="campo"><label for="cli-fat-resp">Responsável pelo faturamento / pagamento</label><input id="cli-fat-resp" name="fatResponsavel" value="' + esc((c.faturamento || {}).responsavel) + '"></div>' +
+      '<div class="campo"><label for="cli-fat-tel">Telefone do faturamento</label><input id="cli-fat-tel" name="fatTelefone" inputmode="tel" value="' + esc((c.faturamento || {}).telefone) + '"></div>' +
+      '<div class="campo"><label for="cli-fat-portal">Portal / sistema para enviar a NF</label><input id="cli-fat-portal" name="fatPortal" value="' + esc((c.faturamento || {}).portal) + '" placeholder="Ex.: e-mail, SEI, 1Doc, protocolo"></div>' +
+      '<div class="campo largo"><label for="cli-fat-inst">O que precisa constar na NF</label><textarea id="cli-fat-inst" name="fatInstrucoes" placeholder="Ex.: nº do contrato e da nota de empenho, dados bancários">' + esc((c.faturamento || {}).instrucoes) + '</textarea></div>' +
+      '</div>' +
       '<h3 style="margin-top:8px">Contatos no órgão</h3>' +
       '<div class="contatos" id="lista-contatos">' + (c.contatos && c.contatos.length ? c.contatos : [{}]).map(linhaContato).join('') + '</div>' +
       '<div><button type="button" class="botao secundario pequeno" id="add-contato">+ Adicionar contato</button></div>' +
@@ -207,6 +215,8 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const dados = lerForm(form);
+      dados.faturamento = { email: dados.fatEmail, responsavel: dados.fatResponsavel, telefone: dados.fatTelefone, portal: dados.fatPortal, instrucoes: dados.fatInstrucoes };
+      ['fatEmail', 'fatResponsavel', 'fatTelefone', 'fatPortal', 'fatInstrucoes'].forEach((k) => delete dados[k]);
       dados.contatos = [...lista.querySelectorAll('.contato-linha')]
         .map((l) => {
           const o = {};
@@ -469,7 +479,7 @@
             '<tr><td>' + (i + 1) + '</td><td>' + dataBR(p.vencimento) + (atrasada ? ' <span class="selo critico">atrasada</span>' : '') + '</td>' +
             (ehVenda ? '<td>' + esc(p.nf || '—') + '</td>' : '') +
             '<td class="valor">' + moeda(p.valor) + '</td>' +
-            '<td><label class="parcela-check"><input type="checkbox" data-parcela="' + esc(c.id) + '|' + lado + '|' + i + '"' + (p.pago ? ' checked' : '') + '> ' + (p.pago ? dataBR(p.dataPagamento) : 'em aberto') + '</label></td></tr>'
+            '<td><label class="parcela-check"><input type="checkbox" data-parcela="' + esc(c.id) + '|' + lado + '|' + i + '"' + (p.pago ? ' checked' : '') + '> ' + (p.pago ? (p.dataPagamento ? dataBR(p.dataPagamento).slice(0, 6) + p.dataPagamento.slice(2, 4) : 'sim') : 'aberta') + '</label></td></tr>'
           );
         })
         .join('') +
