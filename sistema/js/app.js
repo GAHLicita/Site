@@ -614,7 +614,7 @@
       '<div class="campo"><label for="login-senha">Senha</label><input id="login-senha" type="password" autocomplete="current-password" required></div>' +
       '<div class="erro" id="login-erro" role="alert"></div>' +
       '<button class="botao" type="submit" id="login-entrar">Entrar</button>' +
-      '<div class="rodape-login"><button type="button" class="link-botao" id="esqueci">Esqueci minha senha</button><span class="texto-suave">GAH Licita</span></div>' +
+      '<div class="rodape-login"><button type="button" class="link-botao" id="esqueci">Esqueci minha senha</button></div>' +
       '</form></div></div>';
     const erro = document.getElementById('login-erro');
     document.getElementById('form-login').addEventListener('submit', async (e) => {
