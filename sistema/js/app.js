@@ -607,8 +607,8 @@
     const app = document.getElementById('app');
     document.body.className = 'tela-login';
     app.innerHTML =
-      '<div class="login-centro"><div class="login-coluna"><img class="logo-login" src="img/logo-gah.png" width="900" height="829" alt="GAH Licita"><form class="cartao-login" id="form-login" novalidate>' +
-      '<h1>Área restrita</h1><p>Entre com seu e-mail e senha para acessar o controle de clientes, contratos e financeiro.</p>' +
+      '<div class="login-centro"><div class="login-coluna"><div class="logo-caixa"><img class="logo-login" src="img/logo-gah.png" width="900" height="829" alt="GAH Licita"></div><form class="cartao-login" id="form-login" novalidate>' +
+      '<h1>Sistema Empresarial</h1>' +
       (D.modoDemo() ? '<div class="nota-demo">Modo demonstração: os dados ficam só neste navegador. Digite qualquer e-mail e senha para entrar.</div>' : '') +
       '<div class="campo"><label for="login-email">E-mail</label><input id="login-email" type="email" autocomplete="username" required></div>' +
       '<div class="campo"><label for="login-senha">Senha</label><input id="login-senha" type="password" autocomplete="current-password" required></div>' +
