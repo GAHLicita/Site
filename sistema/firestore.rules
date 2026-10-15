@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Regras de segurança do banco de dados do Sistema GAH Licita.
+// Só os e-mails desta lista conseguem ler ou gravar dados, mesmo que alguém
+// crie uma conta no Firebase. Para dar acesso a outra pessoa:
+//   1. crie o usuário em Authentication > Users;
+//   2. inclua o e-mail dela na lista abaixo (em letras minúsculas);
+//   3. cole este arquivo em Firestore Database > Regras e clique em Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function autorizado() {
+      return request.auth != null
+        && request.auth.token.email.lower() in [
+          'contato@gahlicita.com.br',
+          'gahlicita@gmail.com'
+        ];
+    }
+
+    match /{colecao}/{documento} {
+      allow read, write: if autorizado()
+        && colecao in ['clientes', 'contratos', 'agenda', 'licitacoes', 'despesas', 'contabilidade', 'contas', 'config'];
+    }
+  }
+}
