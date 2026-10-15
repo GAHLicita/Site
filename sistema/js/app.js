@@ -710,6 +710,14 @@
       MARCA_DAGUA +
       '<main class="conteudo" id="conteudo"></main>';
     document.getElementById('sair').addEventListener('click', () => D.sair());
+    if (D.erroBanco) {
+      const faixa = document.createElement('div');
+      faixa.className = 'faixa-demo';
+      faixa.style.background = 'var(--critico-fundo)';
+      faixa.style.color = 'var(--critico)';
+      faixa.textContent = D.erroBanco;
+      app.querySelector('.topo').after(faixa);
+    }
     const menu = document.getElementById('menu');
     const abrir = document.getElementById('menu-abrir');
     abrir.addEventListener('click', () => {

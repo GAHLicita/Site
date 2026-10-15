@@ -53,7 +53,16 @@
   function assinarColecoes() {
     const { fs, db } = fb;
     let pendentes = COLECOES.length;
+    GAH.dados.erroBanco = '';
     return new Promise((resolve) => {
+      // se o banco não responder (ainda não criado no Firebase), segue em frente e avisa
+      setTimeout(() => {
+        if (pendentes > 0) {
+          pendentes = 0;
+          GAH.dados.erroBanco = GAH.dados.erroBanco || 'O banco de dados não respondeu. Confira se o Firestore Database foi criado no Firebase.';
+          resolve();
+        }
+      }, 10000);
       cancelamentos = COLECOES.map((nome) =>
         fs.onSnapshot(
           fs.collection(db, nome),
@@ -64,6 +73,9 @@
           },
           (erro) => {
             console.error('Erro ao ler ' + nome, erro);
+            GAH.dados.erroBanco = /permission/i.test(erro.code || erro.message)
+              ? 'Sem permissão para ler os dados: publique as regras do Firestore e confira se o seu e-mail está na lista.'
+              : 'Erro ao ler os dados: ' + (erro.message || erro.code);
             if (pendentes > 0 && --pendentes === 0) resolve();
           }
         )
