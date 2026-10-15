@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<script>
+  /* Sem a barra final (/sistema), o navegador procuraria css/ e js/ na raiz do site e a página ficaria em branco. */
+  if (/\/sistema$/.test(location.pathname)) location.replace(location.pathname + '/' + location.search + location.hash);
+</script>
 <title>Sistema GAH Licita</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiA0MiI+CjxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSI0MiIgcng9IjYiIGZpbGw9IiMxRDM0NEQiLz4KPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTEsMSkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZCRjdFRiIgc3Ryb2tlLXdpZHRoPSIyLjEiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CjxwYXRoIGQ9Ik04IDQgSDIyIEwyOCAxMCBWMzQgQTIgMiAwIDAgMSAyNiAzNiBIOCBBMiAyIDAgMCAxIDYgMzQgVjYgQTIgMiAwIDAgMSA4IDQgWiIvPgo8cGF0aCBkPSJNMjIgNCBWMTAgSDI4Ii8+CjxwYXRoIGQ9Ik0xMSAxNiBIMjMiLz4KPHBhdGggZD0iTTExIDIxIEgxOSIvPgo8cGF0aCBkPSJNMTAuNSAyNyBMMTUgMzEuNSBMMjMuNSAyMi41IiBzdHJva2U9IiMzRjdENjMiIHN0cm9rZS13aWR0aD0iMy4xIi8+CjwvZz4KPC9zdmc+">
 <link rel="preconnect" href="https://fonts.googleapis.com">
