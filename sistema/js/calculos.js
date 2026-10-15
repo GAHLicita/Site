@@ -241,6 +241,52 @@
     return lista;
   };
 
+  /* Custos fixos e mensalidade do contador viram lançamentos mês a mês, no mesmo formato das despesas
+     ({ data, valor, pago, categoria, descricao, origem }), até o mês 'ateMes' (AAAA-MM), inclusive.
+     - custos: serviços com valor padrão, periodicidade (mensal/anual), início, fim e pagamentos por mês;
+     - contabilidade: documentos por mês (id AAAA-MM) com a mensalidade { valor, pago, data }. */
+  C.custosNoPeriodo = function (custos, contabilidade, ateMes) {
+    const lista = [];
+    for (const m of contabilidade || []) {
+      if (!/^\d{4}-\d{2}$/.test(m.id) || m.id > ateMes || !m.mensalidade) continue;
+      const v = num(m.mensalidade.valor);
+      if (!v) continue;
+      lista.push({
+        // o custo fica no mês de competência, mesmo que o pagamento tenha sido feito no mês seguinte
+        data: m.mensalidade.data && m.mensalidade.data.startsWith(m.id) ? m.mensalidade.data : m.id + '-10',
+        dataPagamento: m.mensalidade.data || '',
+        valor: v,
+        pago: !!m.mensalidade.pago,
+        categoria: 'Contabilidade',
+        descricao: 'Mensalidade do contador',
+        origem: 'contabilidade',
+        mes: m.id
+      });
+    }
+    for (const c of custos || []) {
+      if (!c.inicio) continue;
+      const fim = c.fim && c.fim < ateMes ? c.fim : ateMes;
+      const passo = c.periodicidade === 'anual' ? 12 : 1;
+      for (let mes = c.inicio; mes <= fim; mes = C.mesDe(C.addMeses(mes + '-01', passo))) {
+        const p = (c.pagamentos && c.pagamentos[mes]) || {};
+        if (p.semCobranca) continue;
+        const ultimoDia = new Date(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0).getDate();
+        lista.push({
+          data: mes + '-' + pad(Math.min(num(c.diaVencimento) || 10, ultimoDia)),
+          dataPagamento: p.data || '',
+          valor: p.valor !== undefined && p.valor !== '' ? num(p.valor) : num(c.valor),
+          pago: !!p.pago,
+          categoria: c.categoria || 'Custos fixos',
+          descricao: c.nome,
+          origem: 'custos',
+          custoId: c.id,
+          mes
+        });
+      }
+    }
+    return lista;
+  };
+
   raiz.GAH = raiz.GAH || {};
   raiz.GAH.calc = C;
   if (typeof module !== 'undefined' && module.exports) module.exports = C;

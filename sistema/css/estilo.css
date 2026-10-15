@@ -285,7 +285,16 @@ main.conteudo {
 .painel-cab .sub { color: var(--tinta-2); font-size: 0.85rem; }
 .painel-corpo { padding: 16px 18px; }
 .painel-corpo.sem-padding { padding: 0; }
-.painel.mes-vazio .painel-cab { border-bottom: 0; }
+.faixa-mensalidade { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 18px; background: var(--superficie-2); border-bottom: 1px solid var(--linha); font-size: 0.9rem; }
+.faixa-mensalidade .botao { margin-left: auto; }
+.faixa-mensalidade:last-child { border-bottom: 0; border-radius: 0 0 var(--raio) var(--raio); }
+.grade-custos td.celula-mes { padding: 6px 4px; text-align: center; }
+.grade-custos .nome-servico { font-weight: 600; text-decoration: none; text-align: left; }
+.mes-btn { width: 100%; min-width: 62px; border: 1px solid var(--linha-forte); border-radius: 6px; background: var(--superficie); padding: 5px 4px; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 3px; font-variant-numeric: tabular-nums; color: var(--tinta); }
+.mes-btn:hover { border-color: var(--destaque); }
+.mes-btn.pago { background: var(--ok-fundo); color: var(--ok); border-color: transparent; font-weight: 600; }
+.mes-btn.vencido { background: var(--critico-fundo); color: var(--critico); border-color: transparent; font-weight: 600; }
+.mes-btn.sem { color: var(--tinta-3); border-style: dashed; }
 
 /* ---------- Indicadores ---------- */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr)); gap: 12px; }

@@ -24,7 +24,7 @@
     const cfg = D.configuracao();
     const emAviso = calc.addDias(hoje, cfg.diasAvisoVigencia);
     const contratos = D.lista('contratos');
-    const geral = calc.resumoGeral(contratos, D.lista('despesas'), D.lista('clientes'), hoje);
+    const geral = calc.resumoGeral(contratos, GAH.despesasCompletas(), D.lista('clientes'), hoje);
     const auto = GAH.eventosAutomaticos();
     const manuais = D.lista('agenda')
       .filter((a) => !a.concluido && a.data)
@@ -49,7 +49,7 @@
       '<div class="kpi destaque"><span class="kpi-rotulo">A receber (total)</span><span class="kpi-valor">' + moeda(geral.aReceber) + '</span><span class="kpi-nota">' + geral.contratosAtivos + ' contratos ativos</span></div>' +
       '<div class="kpi' + (geral.valorAtrasado ? ' alerta' : '') + '"><span class="kpi-rotulo">Recebimentos em atraso</span><span class="kpi-valor">' + moeda(geral.valorAtrasado) + '</span><span class="kpi-nota">' + geral.parcelasAtrasadas + ' parcela(s)</span></div>' +
       '<div class="kpi"><span class="kpi-rotulo">Entra nos próximos 7 dias</span><span class="kpi-valor">' + moeda(receberSemana) + '</span><span class="kpi-nota">até ' + dataBR(em7) + '</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">A pagar em 30 dias</span><span class="kpi-valor">' + moeda(pagarMes) + '</span><span class="kpi-nota">' + pagar30.length + ' pagamento(s) de compras</span></div>' +
+      '<div class="kpi"><span class="kpi-rotulo">A pagar em 30 dias</span><span class="kpi-valor">' + moeda(pagarMes) + '</span><span class="kpi-nota">' + pagar30.length + ' pagamento(s): compras e custos</span></div>' +
       '</div>' +
       '<div class="grade grade-2">' +
       '<section class="painel"><div class="painel-cab"><h2>Recebimentos em atraso</h2><span class="sub">Cobrar o órgão</span></div>' +
@@ -58,7 +58,7 @@
       lista(compromissos, 'Nenhum compromisso marcado', 'Cadastre disputas, reuniões e prazos na Agenda.', (e) => (e.tipo === 'disputa' || e.tipo === 'Disputa' ? '<span class="selo info">disputa</span>' : '')) + '</section>' +
       '<section class="painel"><div class="painel-cab"><h2>A receber nos próximos 30 dias</h2><span class="sub">' + moeda(receber30.reduce((s, e) => s + e.valor, 0)) + '</span></div>' +
       lista(receber30, 'Nenhum vencimento', 'Não há parcelas para receber nos próximos 30 dias.') + '</section>' +
-      '<section class="painel"><div class="painel-cab"><h2>Compras a pagar em 30 dias</h2><span class="sub">' + moeda(pagarMes) + '</span></div>' +
+      '<section class="painel"><div class="painel-cab"><h2>A pagar em 30 dias</h2><span class="sub">' + moeda(pagarMes) + '</span></div>' +
       lista(pagar30, 'Nada a pagar', 'Nenhuma parcela de compra vence nos próximos 30 dias.', (e) => (e.data < hoje ? '<span class="selo critico">vencida</span>' : '')) + '</section>' +
       '</div>' +
       '<section class="painel"><div class="painel-cab"><h2>Contratos que vencem em até ' + cfg.diasAvisoVigencia + ' dias</h2><span class="sub">Oportunidades de renovação</span></div>' +

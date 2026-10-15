@@ -66,3 +66,25 @@ test('previsaoCaixa joga atrasados no mês atual', () => {
   const p = calc.previsaoCaixa([c], [], '2026-10-15', 3);
   assert.deepStrictEqual(p.map((x) => [x.mes, x.entra, x.sai]), [['2026-10', 100, 30], ['2026-11', 50, 0], ['2026-12', 0, 0]]);
 });
+
+test('custosNoPeriodo gera um lançamento por mês, respeita anual, fim e meses sem cobrança', () => {
+  const custos = [
+    { id: 'h', nome: 'Hospedagem', valor: 50, periodicidade: 'mensal', inicio: '2026-08', diaVencimento: 31,
+      pagamentos: { '2026-08': { pago: true, valor: 55, data: '2026-09-02' }, '2026-10': { semCobranca: true } } },
+    { id: 'd', nome: 'Domínio', valor: 40, periodicidade: 'anual', inicio: '2025-11' },
+    { id: 'x', nome: 'Antigo', valor: 10, inicio: '2026-01', fim: '2026-02' }
+  ];
+  const contab = [{ id: '2026-09', mensalidade: { valor: 350, pago: true, data: '2026-10-05' } }, { id: 'escritorio' }];
+  const l = calc.custosNoPeriodo(custos, contab, '2026-11');
+  const h = l.filter((x) => x.custoId === 'h');
+  assert.deepStrictEqual(h.map((x) => [x.mes, x.valor, x.pago, x.data]), [
+    ['2026-08', 55, true, '2026-08-31'], ['2026-09', 50, false, '2026-09-30'], ['2026-11', 50, false, '2026-11-30']]);
+  assert.deepStrictEqual(l.filter((x) => x.custoId === 'd').map((x) => x.mes), ['2025-11', '2026-11']);
+  assert.deepStrictEqual(l.filter((x) => x.custoId === 'x').map((x) => x.mes), ['2026-01', '2026-02']);
+  const c = l.find((x) => x.origem === 'contabilidade');
+  assert.strictEqual(c.data, '2026-09-10');
+  assert.strictEqual(c.valor, 350);
+  const m = calc.faturamentoMensal([], l, 2026);
+  assert.strictEqual(m[8].despesas, 400); // setembro: hospedagem 50 + contador 350
+  assert.strictEqual(m[8].lucro, -400);
+});

@@ -78,7 +78,11 @@ link para criar uma senha nova.
 - **Licitações**: editais em análise, propostas, disputas, ganhas e perdidas. Uma licitação
   ganha vira contrato com um clique.
 - **Despesas**: contador, DAS e outros custos fixos, que entram no lucro líquido.
-- **Contabilidade**: dados do escritório contábil (contador, telefone, honorário, regime)
+- **Custos**: serviços que a empresa paga todo mês ou todo ano (hospedagem do site, plano de
+  e-mail, domínio, assinaturas…), com nome, fornecedor, valor, vencimento e uma grade mês a mês
+  para marcar o que já foi pago, mudar o valor de um mês ou indicar que não houve cobrança.
+- **Contabilidade**: mensalidade do contador em cada mês (valor pago, se já pagou e quando),
+  dados do escritório contábil (contador, telefone, honorário, regime)
   e uma pasta por mês com as guias (DAS, DARF, INSS…) e documentos enviados pelo contador,
   cada um com link para o arquivo no Drive, valor, vencimento e se já foi paga. Guias com
   valor podem entrar automaticamente nas Despesas.
@@ -92,7 +96,10 @@ link para criar uma senha nova.
 - **Imposto da NF** = valor de venda × % da NF.
 - **Imposto na compra** = valor de compra × % informado (IOF, câmbio etc.).
 - **Lucro do contrato** = venda − compra − imposto da NF − imposto da compra.
-- **Lucro líquido da empresa** = soma dos lucros dos contratos − despesas.
+- **Lucro líquido da empresa** = soma dos lucros dos contratos − despesas − custos fixos −
+  mensalidades do contador (até o mês atual).
+- Custos fixos e mensalidades entram no mês a que se referem, mesmo que tenham sido pagos depois,
+  e aparecem sozinhos na tela Despesas, na Agenda (vencimentos) e na previsão de caixa.
 - **Faturamento mensal**: a venda entra no mês da emissão da NF (ou do vencimento, se não
   houver emissão); a compra entra no mês do pagamento.
 - Contratos **cancelados** não entram em nenhum total.

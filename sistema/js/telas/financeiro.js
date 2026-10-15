@@ -70,7 +70,8 @@
   GAH.telas.financeiro = function (main) {
     const hoje = calc.hoje();
     const contratos = D.lista('contratos');
-    const despesas = D.lista('despesas');
+    const mesAtual = calc.mesDe(hoje);
+    const despesas = GAH.despesasCompletas(mesAtual);
     const clientes = D.lista('clientes');
     const g = calc.resumoGeral(contratos, despesas, clientes, hoje);
 
@@ -81,9 +82,9 @@
     })));
     const listaAnos = [...anos].sort();
     if (!anoEscolhido || !anos.has(anoEscolhido)) anoEscolhido = Number(hoje.slice(0, 4));
-    const meses = calc.faturamentoMensal(contratos, despesas, anoEscolhido);
+    const meses = calc.faturamentoMensal(contratos, GAH.despesasCompletas(anoEscolhido + '-12'), anoEscolhido);
     const tot = meses.reduce((t, m) => ({ venda: t.venda + m.venda, compra: t.compra + m.compra, impostos: t.impostos + m.impostos, despesas: t.despesas + m.despesas, lucro: t.lucro + m.lucro }), { venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0 });
-    const previsao = calc.previsaoCaixa(contratos, despesas, hoje, 6);
+    const previsao = calc.previsaoCaixa(contratos, GAH.despesasCompletas(calc.mesDe(calc.addMeses(mesAtual + '-01', 5))), hoje, 6);
 
     const porUF = {};
     const comContrato = new Set(contratos.filter((c) => c.status !== 'cancelado').map((c) => c.clienteId));
@@ -111,8 +112,8 @@
       kpi('A pagar (compras)', moeda(g.aPagar), 'de ' + moeda(g.totalCompras) + ' em compras') +
       kpi('Impostos', moeda(g.impostos), 'NF e compras') +
       kpi('Lucro bruto', moeda(g.lucroBruto), g.totalContratos ? pct(g.lucroBruto / g.totalContratos) + ' de margem' : '') +
-      kpi('Despesas da empresa', moeda(g.despesas), 'contador, DAS e outras') +
-      kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro bruto − despesas') +
+      kpi('Despesas e custos', moeda(g.despesas), 'contador, custos fixos e outras, até este mês') +
+      kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro bruto − despesas e custos') +
       '</div>' +
 
       '<section class="painel"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div>' +
@@ -124,11 +125,11 @@
       '<div class="mapa-numero"><b>' + g.estados.length + '</b><span>estados atendidos' + (g.estados.length ? ': ' + g.estados.join(', ') : '') + '</span></div>' +
       '</div></div></div></section>' +
 
-      '<section class="painel"><div class="painel-cab"><div><h2>Faturamento mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, compra pelo mês do pagamento</span></div>' +
+      '<section class="painel"><div class="painel-cab"><div><h2>Faturamento mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, compra pelo mês do pagamento; despesas, custos fixos e contador abatidos no mês</span></div>' +
       '<select class="filtro" id="fin-ano" aria-label="Ano">' + listaAnos.map((a) => '<option' + (a === anoEscolhido ? ' selected' : '') + '>' + a + '</option>').join('') + '</select></div>' +
       '<div class="painel-corpo"><div class="legenda"><span><i style="background:var(--serie-1)"></i>Preço de venda</span><span><i style="background:var(--serie-2)"></i>Lucro líquido</span></div>' +
       '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div>' +
-      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>' + anoEscolhido + '</th><th class="valor">Preço de venda</th><th class="valor">Preço de compra</th><th class="valor">Impostos</th><th class="valor">Despesas</th><th class="valor">Lucro líquido</th></tr></thead><tbody>' +
+      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>' + anoEscolhido + '</th><th class="valor">Preço de venda</th><th class="valor">Preço de compra</th><th class="valor">Impostos</th><th class="valor">Despesas e custos</th><th class="valor">Lucro líquido</th></tr></thead><tbody>' +
       meses.map((m, i) => '<tr><td>' + MESES[i].charAt(0).toUpperCase() + MESES[i].slice(1) + '</td><td class="valor">' + moeda(m.venda) + '</td><td class="valor">' + moeda(m.compra) + '</td><td class="valor">' + moeda(m.impostos) + '</td><td class="valor">' + moeda(m.despesas) + '</td><td class="valor ' + (m.lucro < 0 ? 'negativo' : '') + '">' + moeda(m.lucro) + '</td></tr>').join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="valor">' + moeda(tot.venda) + '</td><td class="valor">' + moeda(tot.compra) + '</td><td class="valor">' + moeda(tot.impostos) + '</td><td class="valor">' + moeda(tot.despesas) + '</td><td class="valor">' + moeda(tot.lucro) + '</td></tr></tfoot></table></div></section>' +
 
@@ -158,7 +159,7 @@
       const m = meses[Number(alvo.dataset.mes)];
       dica.innerHTML = '<b>' + esc(mesBR(m.mes)) + '</b>' +
         '<div><span>Venda</span><span>' + moeda(m.venda) + '</span></div><div><span>Compra</span><span>' + moeda(m.compra) + '</span></div>' +
-        '<div><span>Impostos</span><span>' + moeda(m.impostos) + '</span></div><div><span>Despesas</span><span>' + moeda(m.despesas) + '</span></div>' +
+        '<div><span>Impostos</span><span>' + moeda(m.impostos) + '</span></div><div><span>Despesas e custos</span><span>' + moeda(m.despesas) + '</span></div>' +
         '<div><span>Lucro</span><span>' + moeda(m.lucro) + '</span></div>';
       dica.hidden = false;
       const r = caixa.getBoundingClientRect();

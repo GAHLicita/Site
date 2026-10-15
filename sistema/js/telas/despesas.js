@@ -43,7 +43,9 @@
     const todas = D.lista('despesas');
     const anos = [...new Set(todas.map((d) => Number((d.data || '').slice(0, 4))).filter(Boolean).concat(Number(hoje.slice(0, 4))))].sort();
     if (!anoEscolhido || !anos.includes(anoEscolhido)) anoEscolhido = Number(hoje.slice(0, 4));
-    const doAno = todas.filter((d) => (d.data || '').startsWith(String(anoEscolhido))).sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+    const lancadas = todas.filter((d) => (d.data || '').startsWith(String(anoEscolhido)));
+    const automaticas = calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), anoEscolhido + '-12').filter((d) => d.data.startsWith(String(anoEscolhido)));
+    const doAno = lancadas.concat(automaticas).sort((a, b) => (a.data || '').localeCompare(b.data || ''));
     const total = doAno.reduce((s, d) => s + calc.num(d.valor), 0);
     const aPagar = doAno.filter((d) => !d.pago).reduce((s, d) => s + calc.num(d.valor), 0);
     const mesesComGasto = new Set(doAno.map((d) => d.data.slice(0, 7))).size;
@@ -51,7 +53,7 @@
     doAno.forEach((d) => (porCat[d.categoria || 'Outros'] = (porCat[d.categoria || 'Outros'] || 0) + calc.num(d.valor)));
 
     main.innerHTML =
-      '<div class="cabecalho-tela"><div><h1>Despesas</h1><p>Custos da empresa que não são compra de licença. Entram no lucro líquido do Financeiro.</p></div>' +
+      '<div class="cabecalho-tela"><div><h1>Despesas</h1><p>Tudo o que a empresa gasta além da compra de licenças. A mensalidade do contador e os custos fixos aparecem aqui sozinhos. Tudo é abatido do lucro líquido.</p></div>' +
       '<div class="acoes"><select class="filtro" id="dp-ano" aria-label="Ano">' + anos.map((a) => '<option' + (a === anoEscolhido ? ' selected' : '') + '>' + a + '</option>').join('') + '</select><button class="botao" id="nova-desp">+ Nova despesa</button></div></div>' +
       '<div class="kpis">' +
       '<div class="kpi destaque"><span class="kpi-rotulo">Total em ' + anoEscolhido + '</span><span class="kpi-valor">' + moeda(total) + '</span><span class="kpi-nota">' + doAno.length + ' lançamento(s)</span></div>' +
@@ -61,7 +63,10 @@
       '<div class="grade grade-lateral"><section class="painel"><div class="painel-cab"><h2>Lançamentos de ' + anoEscolhido + '</h2></div>' +
       (doAno.length
         ? '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="valor">Valor</th><th>Paga</th></tr></thead><tbody>' +
-          doAno.map((d) => '<tr class="clicavel" data-id="' + esc(d.id) + '"><td>' + dataBR(d.data) + '</td><td class="nome">' + esc(d.descricao) + '</td><td>' + esc(d.categoria || '') + '</td><td class="valor">' + moeda(d.valor) + '</td>' +
+          doAno.map((d) => d.origem === 'custos' || d.origem === 'contabilidade'
+            ? '<tr><td>' + dataBR(d.data) + '</td><td class="nome">' + esc(d.descricao) + '<span class="sub"><a href="#/' + d.origem + '">' + (d.origem === 'custos' ? 'Custos fixos' : 'Contabilidade') + '</a> · lançado automaticamente</span></td><td>' + esc(d.categoria || '') + '</td><td class="valor">' + moeda(d.valor) + '</td>' +
+              '<td>' + (d.pago ? 'sim' : (d.data < hoje ? '<span class="negativo">vencida</span>' : 'não')) + '</td></tr>'
+            : '<tr class="clicavel" data-id="' + esc(d.id) + '"><td>' + dataBR(d.data) + '</td><td class="nome">' + esc(d.descricao) + '</td><td>' + esc(d.categoria || '') + '</td><td class="valor">' + moeda(d.valor) + '</td>' +
             '<td><label class="parcela-check"><input type="checkbox" data-pagar="' + esc(d.id) + '"' + (d.pago ? ' checked' : '') + '> ' + (d.pago ? 'sim' : (d.data < hoje ? '<span class="negativo">vencida</span>' : 'não')) + '</label></td></tr>').join('') +
           '</tbody></table></div>'
         : '<div class="vazio"><strong>Nenhuma despesa em ' + anoEscolhido + '</strong>Lance o contador, o DAS e outros custos fixos para ver o lucro líquido real.</div>') +

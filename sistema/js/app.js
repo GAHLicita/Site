@@ -548,6 +548,11 @@
     });
   };
 
+  /* Despesas lançadas + custos fixos + mensalidades do contador, até o mês informado (AAAA-MM). */
+  GAH.despesasCompletas = function (ateMes) {
+    return D.lista('despesas').concat(calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateMes || calc.mesDe(calc.hoje())));
+  };
+
   /* ---------- eventos automáticos (vencimentos, renovações, disputas) ---------- */
   GAH.eventosAutomaticos = function () {
     const ev = [];
@@ -561,6 +566,10 @@
         if (!p.pago && p.vencimento) ev.push({ data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
       if (c.vigenciaFim && c.status !== 'encerrado') ev.push({ data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
+    }
+    const ateProximoMes = calc.mesDe(calc.addMeses(calc.mesDe(calc.hoje()) + '-01', 1));
+    for (const k of calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateProximoMes)) {
+      if (!k.pago) ev.push({ data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: k.categoria, link: k.origem === 'custos' ? '#/custos' : '#/contabilidade', valor: k.valor });
     }
     for (const l of D.lista('licitacoes')) {
       if (l.dataDisputa && ['analise', 'proposta', 'disputa'].includes(l.status)) ev.push({ data: l.dataDisputa, hora: l.horaDisputa, tipo: 'disputa', titulo: 'Disputa — ' + (l.orgao || 'licitação'), detalhe: [l.numeroEdital, l.portal].filter(Boolean).join(' · '), link: '#/licitacoes' });
@@ -577,6 +586,7 @@
     ['agenda', 'Agenda'],
     ['licitacoes', 'Licitações'],
     ['despesas', 'Despesas'],
+    ['custos', 'Custos'],
     ['contabilidade', 'Contabilidade'],
     ['bancos', 'Contas bancárias']
   ];

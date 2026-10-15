@@ -2,7 +2,7 @@
    - Firebase (Firestore + login), quando GAH.firebaseConfig.apiKey está preenchido;
    - localStorage do navegador, no modo demonstração. */
 (function () {
-  const COLECOES = ['clientes', 'contratos', 'agenda', 'licitacoes', 'despesas', 'contabilidade', 'contas', 'config'];
+  const COLECOES = ['clientes', 'contratos', 'agenda', 'licitacoes', 'despesas', 'contabilidade', 'contas', 'custos', 'config'];
   const VERSAO_FB = '10.12.2';
   const CHAVE_LOCAL = 'gah-sistema-v1';
 
@@ -184,6 +184,14 @@
           }
           feitos++;
           if (aoAvancar) aoAvancar(feitos, total);
+        }
+      }
+      // itens que um backup mais novo pede para apagar (ex.: lançamentos que mudaram de lugar)
+      for (const c of Object.keys(json.remover || {})) {
+        if (!COLECOES.includes(c)) continue;
+        for (const id of json.remover[c] || []) {
+          if (modoDemo()) cache[c] = cache[c].filter((x) => x.id !== id);
+          else if (cache[c].some((x) => x.id === id)) await fb.fs.deleteDoc(fb.fs.doc(fb.db, c, id));
         }
       }
       if (modoDemo()) gravarLocal();

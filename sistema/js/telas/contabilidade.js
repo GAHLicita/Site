@@ -48,6 +48,7 @@
       '<div class="campo"><label for="dc-venc">Vencimento</label><input id="dc-venc" name="vencimento" type="date" value="' + esc(d.vencimento) + '"></div>' +
       '<label class="parcela-check"><input type="checkbox" name="pago"' + (d.pago ? ' checked' : '') + '> Já foi paga</label>' +
       '<label class="parcela-check"><input type="checkbox" name="lancarDespesa"' + (d.lancarDespesa ? ' checked' : '') + '> Somar nas Despesas da empresa</label>' +
+      '<p class="texto-suave largo" style="margin:0;font-size:.84rem">Os honorários do contador entram pela "Mensalidade do contador" de cada mês, para não contar duas vezes.</p>' +
       '</form>';
     const rodape = (d.id ? '<button type="button" class="botao perigo" id="excluir-doc">Excluir</button>' : '') +
       '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-doc" class="botao">Salvar</button></div>';
@@ -71,7 +72,7 @@
       const lista = doMes(comp).documentos.filter((x) => x.id !== novo.id).concat(novo);
       await gravar(lista);
       const idDesp = 'guia-' + novo.id;
-      if (novo.lancarDespesa && calc.num(novo.valor) > 0) {
+      if (novo.lancarDespesa && calc.num(novo.valor) > 0 && !/honor/i.test(novo.tipo)) {
         await D.salvar('despesas', Object.assign({}, D.obter('despesas', idDesp) || {}, {
           id: idDesp,
           descricao: novo.tipo + (novo.descricao ? ' — ' + novo.descricao : '') + ' (' + mesBR(comp) + ')',
@@ -89,6 +90,58 @@
     });
   }
 
+  /* Mensalidade do contador em um mês: valor pago, se já pagou e quando. Entra no lucro líquido. */
+  function formMensalidade(comp) {
+    const m = doMes(comp);
+    const e = escritorio();
+    const atual = m.mensalidade || {};
+    const valor = atual.valor !== undefined && atual.valor !== '' ? atual.valor : e.honorario || '';
+    const vence = e.diaVencimento ? comp + '-' + String(Math.min(Number(e.diaVencimento), 28)).padStart(2, '0') : '';
+    const corpo =
+      '<form id="form-mensal" class="form-grade">' +
+      '<div class="campo"><label for="ms-valor">Valor da mensalidade</label><input id="ms-valor" name="valor" type="number" step="0.01" min="0" value="' + esc(valor) + '">' +
+      (e.honorario ? '<span class="ajuda">Honorário cadastrado: ' + moeda(e.honorario) + '</span>' : '<span class="ajuda">Cadastre o honorário em "Escritório contábil" para vir preenchido.</span>') + '</div>' +
+      '<div class="campo"><label for="ms-data">Data do pagamento</label><input id="ms-data" name="data" type="date" value="' + esc(atual.data) + '"></div>' +
+      '<label class="parcela-check largo"><input type="checkbox" name="pago" id="ms-pago"' + (atual.pago ? ' checked' : '') + '> Já paguei</label>' +
+      (vence ? '<p class="texto-suave largo" style="margin:0">Vencimento: ' + dataBR(vence) + '</p>' : '') +
+      '</form>';
+    const rodape = (atual.pago ? '' : '<button type="button" class="botao verde" id="ms-rapido">Paguei hoje</button>') +
+      '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-mensal" class="botao">Salvar</button></div>';
+    const j = janela({ titulo: 'Mensalidade do contador — ' + mesBR(comp), corpo, rodape, estreita: true });
+    const gravar = async (dados) => {
+      await D.salvar('contabilidade', Object.assign({}, doMes(comp), { mensalidade: dados }));
+      j.fechar();
+      aviso(dados.pago ? 'Mensalidade marcada como paga' : 'Mensalidade salva');
+    };
+    j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
+    j.el.querySelector('#ms-pago').addEventListener('change', (ev) => {
+      const d = j.el.querySelector('#ms-data');
+      if (ev.target.checked && !d.value) d.value = calc.hoje();
+    });
+    const rapido = j.el.querySelector('#ms-rapido');
+    if (rapido) rapido.addEventListener('click', () => {
+      const v = Number(j.el.querySelector('#ms-valor').value) || 0;
+      if (!v) { aviso('Informe o valor da mensalidade.', true); return; }
+      gravar({ valor: v, pago: true, data: calc.hoje() });
+    });
+    j.el.querySelector('#form-mensal').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const dados = lerForm(ev.target);
+      dados.valor = calc.num(dados.valor);
+      if (!dados.pago) dados.data = dados.data || '';
+      gravar(dados);
+    });
+  }
+
+  function seloMensalidade(comp, hoje) {
+    const ms = doMes(comp).mensalidade;
+    if (!ms || !calc.num(ms.valor)) return '<span class="selo">não lançada</span>';
+    if (ms.pago) return '<span class="selo ok">paga' + (ms.data ? ' ' + dataBR(ms.data).slice(0, 5) : '') + '</span>';
+    const e = escritorio();
+    const vence = comp + '-' + String(Math.min(Number(e.diaVencimento) || 10, 28)).padStart(2, '0');
+    return vence < hoje ? '<span class="selo critico">em atraso</span>' : '<span class="selo alerta">a pagar</span>';
+  }
+
   function formPasta(comp) {
     const m = doMes(comp);
     const corpo =
@@ -104,6 +157,23 @@
       j.fechar();
       aviso('Mês salvo');
     });
+  }
+
+  function painelMensalidades(hoje) {
+    const ultimo = anoEscolhido === Number(hoje.slice(0, 4)) ? Number(hoje.slice(5, 7)) : 12;
+    let pago = 0, aberto = 0, qtdPagas = 0;
+    const linhas = [];
+    for (let i = 1; i <= ultimo; i++) {
+      const comp = anoEscolhido + '-' + String(i).padStart(2, '0');
+      const ms = doMes(comp).mensalidade || {};
+      const v = calc.num(ms.valor);
+      if (ms.pago) { pago += v; qtdPagas++; } else aberto += v;
+      linhas.push('<tr><td>' + esc(GAH.u.MESES[i - 1].charAt(0).toUpperCase() + GAH.u.MESES[i - 1].slice(1)) + '</td><td class="valor">' + (v ? moeda(v) : '—') + '</td><td>' + seloMensalidade(comp, hoje) + '</td></tr>');
+    }
+    return '<section class="painel"><div class="painel-cab"><h2>Mensalidades de ' + anoEscolhido + '</h2><span class="sub">' + qtdPagas + ' de ' + ultimo + ' paga(s)</span></div>' +
+      '<div class="painel-corpo" style="padding-bottom:0"><div class="previa"><span>Pago: <b>' + moeda(pago) + '</b></span><span>Lançado e não pago: <b>' + moeda(aberto) + '</b></span></div></div>' +
+      '<div class="tabela-rolagem"><table class="tabela"><tbody>' + linhas.reverse().join('') + '</tbody></table></div>' +
+      '<p class="texto-suave" style="margin:0;padding:10px 18px 14px;font-size:.84rem">As mensalidades entram no Financeiro e são abatidas do lucro líquido.</p></section>';
   }
 
   GAH.telas.contabilidade = function (main) {
@@ -124,10 +194,12 @@
       const totalGuias = docs.reduce((s, d) => s + calc.num(d.valor), 0);
       const pasta = linkSeguro(m.linkPasta);
       cartoesMeses +=
-        '<section class="painel' + (docs.length || m.observacoes ? '' : ' mes-vazio') + '"><div class="painel-cab"><div><h3>' + esc(mesBR(comp).charAt(0).toUpperCase() + mesBR(comp).slice(1)) + '</h3><span class="sub">' + docs.length + ' documento(s)' + (totalGuias ? ' · ' + moeda(totalGuias) + ' em guias' : '') + '</span></div>' +
+        '<section class="painel"><div class="painel-cab"><div><h3>' + esc(mesBR(comp).charAt(0).toUpperCase() + mesBR(comp).slice(1)) + '</h3><span class="sub">' + docs.length + ' documento(s)' + (totalGuias ? ' · ' + moeda(totalGuias) + ' em guias' : '') + '</span></div>' +
         '<div class="acoes">' + (pasta ? '<a class="botao secundario pequeno" href="' + esc(pasta) + '" target="_blank" rel="noopener">Abrir pasta do mês</a>' : '') +
         '<button type="button" class="botao secundario pequeno" data-pasta="' + comp + '">' + (pasta ? 'Editar pasta' : 'Cadastrar pasta') + '</button>' +
         '<button type="button" class="botao pequeno" data-novo-doc="' + comp + '">+ Documento</button></div></div>' +
+        '<div class="faixa-mensalidade"><span>Mensalidade do contador: <b>' + (m.mensalidade && calc.num(m.mensalidade.valor) ? moeda(m.mensalidade.valor) : '—') + '</b></span>' + seloMensalidade(comp, hoje) +
+        '<button type="button" class="botao secundario pequeno" data-mensal="' + comp + '">' + (m.mensalidade && m.mensalidade.pago ? 'Editar' : 'Lançar pagamento') + '</button></div>' +
         (docs.length
           ? '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Documento</th><th>Vencimento</th><th class="valor">Valor</th><th>Situação</th><th>Arquivo</th></tr></thead><tbody>' +
             docs.map((d) => {
@@ -146,7 +218,7 @@
       '<div class="grade grade-lateral"><div class="grade" style="align-content:start">' + cartoesMeses + '</div>' +
       '<div class="grade" style="align-content:start">' +
       '<section class="painel"><div class="painel-cab"><h2>Escritório contábil</h2><button type="button" class="botao secundario pequeno" id="editar-esc">Editar</button></div><div class="painel-corpo grade" style="gap:12px">' +
-      (e.nome || e.contador
+      (e.nome || e.contador || e.honorario || e.cnpjEmpresa
         ? '<dl class="ficha">' +
           (e.nome ? '<dt>Escritório</dt><dd>' + esc(e.nome) + '</dd>' : '') +
           (e.contador ? '<dt>Contador(a)</dt><dd>' + esc(e.contador) + (e.crc ? ' · CRC ' + esc(e.crc) : '') + '</dd>' : '') +
@@ -158,9 +230,11 @@
           (e.observacoes ? '<dt>Obs.</dt><dd>' + esc(e.observacoes) + '</dd>' : '') +
           '</dl>'
         : '<p class="texto-suave" style="margin:0">Cadastre o escritório, o contador e o honorário mensal.</p>') +
+      (!e.nome && !e.contador ? '<p class="texto-suave" style="margin:0">Falta o nome do escritório e do contador: clique em Editar.</p>' : '') +
       (linkSeguro(e.linkDrive) ? '<a class="drive-botao" href="' + esc(linkSeguro(e.linkDrive)) + '" target="_blank" rel="noopener">' + ICONE_DRIVE + '<div><strong>Pasta da contabilidade</strong><span>Todos os documentos no Drive</span></div></a>' : '') +
       (linkSeguro(e.linkPortal) ? '<a class="botao secundario" href="' + esc(linkSeguro(e.linkPortal)) + '" target="_blank" rel="noopener">Abrir portal do contador</a>' : '') +
       '</div></section>' +
+      painelMensalidades(hoje) +
       '<section class="painel"><div class="painel-cab"><h2>Guias a pagar</h2><span class="sub">' + moeda(pendentes.reduce((s, d) => s + calc.num(d.valor), 0)) + '</span></div>' +
       (pendentes.length
         ? '<ul class="avisos">' + pendentes.map((d) => '<li><div class="data-bloco"><b>' + (d.vencimento ? d.vencimento.slice(8, 10) : '—') + '</b><span>' + (d.vencimento ? GAH.u.MESES_CURTOS[Number(d.vencimento.slice(5, 7)) - 1] : '') + '</span></div><div class="titulo">' + esc(d.tipo) + ' — ' + moeda(d.valor) + '<span class="detalhe">competência ' + esc(mesBR(d.comp)) + '</span></div>' + (d.vencimento && d.vencimento < hoje ? '<span class="selo critico">vencida</span>' : '') + '</li>').join('') + '</ul>'
@@ -171,6 +245,7 @@
     main.querySelector('#cb-ano').addEventListener('change', (ev) => { anoEscolhido = Number(ev.target.value); GAH.telas.contabilidade(main); });
     main.querySelectorAll('[data-novo-doc]').forEach((b) => b.addEventListener('click', () => formDocumento(b.dataset.novoDoc)));
     main.querySelectorAll('[data-pasta]').forEach((b) => b.addEventListener('click', () => formPasta(b.dataset.pasta)));
+    main.querySelectorAll('[data-mensal]').forEach((b) => b.addEventListener('click', () => formMensalidade(b.dataset.mensal)));
     main.querySelectorAll('[data-doc]').forEach((tr) => tr.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-sem-linha]')) return;
       const [comp, id] = tr.dataset.doc.split('|');
