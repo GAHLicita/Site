@@ -110,9 +110,9 @@
       (op.cabecalho || '') +
       '<div class="kpis kpis-4">' +
       kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque') +
-      kpi('Total recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
+      kpi('Recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
       kpi('A receber', moeda(g.aReceber), g.valorAtrasado ? '<span class="negativo">' + moeda(g.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
-      kpi('A pagar (compras)', moeda(g.aPagar), 'de ' + moeda(g.totalCompras) + ' em compras') +
+      kpi('A pagar (compras parceladas)', moeda(g.aPagar), 'de ' + moeda(g.totalCompras) + ' em compras') +
       kpi('Impostos', moeda(g.impostos), 'NF e compras') +
       kpi('Lucro bruto', moeda(g.lucroBruto), g.totalContratos ? pct(g.lucroBruto / g.totalContratos) + ' de margem' : '') +
       kpi('Despesas e custos', moeda(g.despesas), 'contador, custos fixos e outras, até este mês') +

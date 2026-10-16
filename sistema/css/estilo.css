@@ -1,5 +1,5 @@
 /* Layout: faixa azul fixa no topo (como o site), conteúdo em coluna de até 1200px
-   sobre fundo creme claro, marca d'água da GAH centralizada atrás de tudo. */
+   sobre fundo creme claro. */
 :root {
   --navy: #1D344D;
   --navy-escuro: #142433;
@@ -17,9 +17,6 @@
   --linha: rgba(29, 52, 77, 0.14);
   --linha-forte: rgba(29, 52, 77, 0.28);
   --destaque: var(--navy);
-  --marca-dagua: #1D344D;
-  --marca-opacidade: 0.07;
-  --marca-mistura: multiply;
 
   --ok: #2F7A57;
   --ok-fundo: #E2F1E9;
@@ -53,9 +50,6 @@
     --linha: rgba(220, 232, 245, 0.12);
     --linha-forte: rgba(220, 232, 245, 0.26);
     --destaque: #9CC3E8;
-    --marca-dagua: #DCE8F5;
-    --marca-opacidade: 0.05;
-    --marca-mistura: normal;
     --verde-claro: #183A2E;
     --ok: #6CCB9C;
     --ok-fundo: #173527;
@@ -82,9 +76,6 @@
   --linha: rgba(220, 232, 245, 0.12);
   --linha-forte: rgba(220, 232, 245, 0.26);
   --destaque: #9CC3E8;
-  --marca-dagua: #DCE8F5;
-  --marca-opacidade: 0.05;
-  --marca-mistura: normal;
   --verde-claro: #183A2E;
   --ok: #6CCB9C;
   --ok-fundo: #173527;
@@ -130,24 +121,6 @@ a { color: var(--destaque); }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--verde); outline-offset: 2px; }
 .num, td.valor, .kpi-valor { font-variant-numeric: tabular-nums; }
-
-/* ---------- Marca d'água fixa ---------- */
-.marca-dagua {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 0;
-}
-.marca-dagua img {
-  width: min(60vw, 520px);
-  height: auto;
-  opacity: var(--marca-opacidade);
-  mix-blend-mode: var(--marca-mistura);
-}
-.tela-login .marca-dagua { display: none; }
 
 /* ---------- Topo ---------- */
 .topo {
@@ -698,32 +671,6 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .negativo { color: var(--critico); }
 .so-tela-grande { }
 @media (max-width: 760px) { .so-tela-grande { display: none; } }
-
-/* ---------- Cotação do dólar (Início) ---------- */
-.cotacao {
-  /* quadro compacto, só do tamanho do conteúdo */
-  align-self: flex-start;
-  background: var(--navy);
-  color: #f6f2e9;
-  border-radius: var(--raio);
-  padding: 10px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  box-shadow: var(--sombra);
-  max-width: 100%;
-}
-.cotacao-rotulo { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: rgba(246, 242, 233, 0.75); display: flex; align-items: center; gap: 8px; }
-.cotacao-ao-vivo { display: inline-flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; font-weight: 600; color: #7ee0bb; }
-.cotacao-ao-vivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #7ee0bb; animation: pulso 1.8s ease-in-out infinite; }
-@keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-@media (prefers-reduced-motion: reduce) { .cotacao-ao-vivo::before { animation: none; } }
-.cotacao-linha { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.cotacao-valor { font-family: var(--fonte-titulo); font-size: 1.45rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.cotacao-variacao { font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-.cotacao-variacao.sobe { color: #ff9b8f; }
-.cotacao-variacao.desce { color: #7ee0bb; }
-.cotacao-info { font-size: 0.78rem; color: rgba(246, 242, 233, 0.75); font-variant-numeric: tabular-nums; }
 
 /* Telas baixas (notebooks pequenos, celulares menores): compacta o login para caber sem rolar */
 @media (max-height: 740px) {
