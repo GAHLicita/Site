@@ -71,8 +71,6 @@
     return '<div class="cotacao-rotulo">Dólar hoje <span class="cotacao-ao-vivo" title="Atualiza sozinho a cada minuto">ao vivo</span></div>' +
       '<div class="cotacao-linha"><div class="cotacao-valor">R$ ' + fmt(c.venda, 4) + '</div>' +
       (seta ? '<div class="cotacao-variacao ' + cls + '">' + seta + ' ' + fmt(Math.abs(v), 2) + '%</div>' : '') + '</div>' +
-      '<div class="cotacao-info">Compra R$ ' + fmt(c.compra, 4) + ' · Venda R$ ' + fmt(c.venda, 4) +
-      (c.maxima ? ' · Máx. R$ ' + fmt(c.maxima, 4) + ' · Mín. R$ ' + fmt(c.minima, 4) : '') + '</div>' +
       '<div class="cotacao-info">' + esc(c.fonte) + ' · atualizado às ' + hora(c.quando) + '</div>';
   }
 

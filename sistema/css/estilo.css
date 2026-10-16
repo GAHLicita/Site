@@ -701,26 +701,29 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* ---------- Cotação do dólar (Início) ---------- */
 .cotacao {
+  /* quadro compacto, só do tamanho do conteúdo */
+  align-self: flex-start;
   background: var(--navy);
   color: #f6f2e9;
   border-radius: var(--raio);
-  padding: 16px 20px;
+  padding: 10px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   box-shadow: var(--sombra);
+  max-width: 100%;
 }
-.cotacao-rotulo { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: rgba(246, 242, 233, 0.75); display: flex; align-items: center; gap: 8px; }
+.cotacao-rotulo { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: rgba(246, 242, 233, 0.75); display: flex; align-items: center; gap: 8px; }
 .cotacao-ao-vivo { display: inline-flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; font-weight: 600; color: #7ee0bb; }
 .cotacao-ao-vivo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #7ee0bb; animation: pulso 1.8s ease-in-out infinite; }
 @keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @media (prefers-reduced-motion: reduce) { .cotacao-ao-vivo::before { animation: none; } }
 .cotacao-linha { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.cotacao-valor { font-family: var(--fonte-titulo); font-size: clamp(1.9rem, 3vw, 2.5rem); font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.cotacao-variacao { font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.cotacao-valor { font-family: var(--fonte-titulo); font-size: 1.45rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.cotacao-variacao { font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .cotacao-variacao.sobe { color: #ff9b8f; }
 .cotacao-variacao.desce { color: #7ee0bb; }
-.cotacao-info { font-size: 0.86rem; color: rgba(246, 242, 233, 0.75); font-variant-numeric: tabular-nums; }
+.cotacao-info { font-size: 0.78rem; color: rgba(246, 242, 233, 0.75); font-variant-numeric: tabular-nums; }
 
 /* Telas baixas (notebooks pequenos, celulares menores): compacta o login para caber sem rolar */
 @media (max-height: 740px) {
