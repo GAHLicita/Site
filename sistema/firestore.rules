@@ -11,8 +11,7 @@ service cloud.firestore {
     function autorizado() {
       return request.auth != null
         && request.auth.token.email.lower() in [
-          'contato@gahlicita.com.br',
-          'gahlicita@gmail.com'
+          'contato@gahlicita.com.br'
         ];
     }
 
