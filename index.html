@@ -48,8 +48,9 @@
   main:focus{outline:none;}
 
   /* ---------- Full-screen section sizing (desktop) ---------- */
-  /* Sections fill the viewport height when clicked from the menu, but the
-     page scrolls freely with the mouse (no forced snapping between sections). */
+  /* Each section fills the viewport height. On computers the page moves one
+     whole section at a time (scroll-snap + the wheel script at the end), so
+     two sections never share the screen. Phones keep free scrolling. */
   @media (min-width:860px){
     .snap-section{
       min-height:calc(100vh - 76px);
@@ -64,6 +65,11 @@
     #contato.snap-section{
       min-height:calc(100vh - 76px - 64px);
     }
+  }
+  @media (min-width:860px) and (min-height:560px){
+    html{scroll-snap-type:y mandatory;}
+    .snap-section{scroll-snap-align:start;scroll-snap-stop:always;}
+    .site-footer{scroll-snap-align:end;}
   }
 
   /* ---------- Header ---------- */
@@ -1500,6 +1506,38 @@ form.contact-form{
       submitBtn.textContent = 'Tentar novamente';
     });
   });
+</script>
+<script>
+  // Computador: cada giro da roda do mouse leva à seção seguinte (ou anterior) inteira.
+  (function(){
+    var fimAnimacao = 0, ultimaRoda = 0;
+    var reduzir = window.matchMedia('(prefers-reduced-motion: reduce)');
+    window.addEventListener('wheel', function(e){
+      if (e.ctrlKey || !/mandatory/.test(getComputedStyle(document.documentElement).scrollSnapType)) return;
+      for (var el = e.target; el && el !== document.body; el = el.parentElement) {
+        if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY) &&
+          ((e.deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) || (e.deltaY < 0 && el.scrollTop > 0))) return;
+      }
+      e.preventDefault();
+      var agora = Date.now();
+      var continuacao = agora - ultimaRoda < 150; // touchpad manda vários eventos seguidos: conta como um só gesto
+      ultimaRoda = agora;
+      if (Math.abs(e.deltaY) < 2 || agora < fimAnimacao || continuacao) return;
+      var maximo = document.documentElement.scrollHeight - window.innerHeight;
+      var posicoes = [];
+      document.querySelectorAll('.snap-section').forEach(function(s){
+        var y = Math.min(maximo, Math.round(s.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(s).scrollMarginTop) || 0)));
+        if (!posicoes.length || y - posicoes[posicoes.length - 1] > 2) posicoes.push(y);
+      });
+      if (maximo - posicoes[posicoes.length - 1] > 2) posicoes.push(maximo);
+      var atual = 0;
+      posicoes.forEach(function(y, i){ if (Math.abs(y - window.scrollY) < Math.abs(posicoes[atual] - window.scrollY)) atual = i; });
+      var destino = Math.max(0, Math.min(posicoes.length - 1, atual + (e.deltaY > 0 ? 1 : -1)));
+      if (destino === atual) return;
+      fimAnimacao = agora + 700;
+      window.scrollTo({ top: posicoes[destino], behavior: reduzir.matches ? 'auto' : 'smooth' });
+    }, { passive: false });
+  })();
 </script>
 <script>
   // Entrada suave dos blocos conforme o usuário percorre a página.
