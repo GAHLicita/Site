@@ -47,7 +47,9 @@
       import(base + 'firebase-firestore.js')
     ]);
     const app = appMod.initializeApp(GAH.firebaseConfig);
-    fb = { auth: authMod.getAuth(app), db: fs.getFirestore(app), fs, authMod };
+    // Login guardado só nesta aba (sessionStorage): ao fechar a aba sai do sistema, e uma aba nova pede o login de novo.
+    const auth = authMod.initializeAuth(app, { persistence: authMod.browserSessionPersistence });
+    fb = { auth, db: fs.getFirestore(app), fs, authMod };
   }
 
   function assinarColecoes() {
