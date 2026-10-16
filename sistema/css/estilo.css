@@ -691,17 +691,66 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .evento.google { background: var(--superficie-2); color: var(--tinta); box-shadow: inset 3px 0 0 #4285F4; }
 .leg-google { background: var(--superficie-2) !important; border: 1px solid var(--linha-forte); box-shadow: inset 3px 0 0 #4285F4; }
 
-/* ---------- Início: 8 quadros + mapa cabem numa tela; gráfico e tabela, cada um numa tela ---------- */
+/* ---------- Início: seções do tamanho da tela ----------
+   Em telas pequenas as seções ficam uma embaixo da outra; em computadores e notebooks cada seção
+   ocupa a tela inteira e a rolagem pula de uma para a outra (scroll-snap). */
+.secao-inicio { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.kpis-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 480px) { .kpis-2 { grid-template-columns: minmax(0, 1fr); } }
 .kpis-compactos { gap: 10px; }
-.kpis-compactos .kpi { padding: 10px 14px; gap: 2px; }
+.kpis-compactos .kpi { padding: 10px 14px; gap: 2px; justify-content: center; }
 .kpis-compactos .kpi-rotulo { font-size: 0.7rem; }
-.kpis-compactos .kpi-valor { font-size: clamp(1.05rem, 0.85rem + 0.6vw, 1.3rem); }
+.kpis-compactos .kpi-valor { font-size: clamp(1.05rem, 0.85rem + 0.6vw, 1.35rem); }
 .kpis-compactos .kpi-nota { font-size: 0.76rem; }
 .painel-mapa .painel-corpo { padding-block: 10px; }
-.painel-mapa .mapa-area { display: flex; justify-content: center; align-items: center; gap: clamp(24px, 5vw, 64px); flex-wrap: wrap; }
-.painel-mapa .mapa-brasil { width: auto; max-width: 100%; height: clamp(220px, calc(100vh - 470px), 360px); }
+.painel-mapa .mapa-area { display: flex; justify-content: center; align-items: center; gap: clamp(20px, 3vw, 40px); flex-wrap: wrap; }
+.painel-mapa .mapa-brasil { width: auto; max-width: 100%; height: clamp(220px, 50vh, 360px); }
 .painel-mapa .legenda-mapa { margin-top: 2px; }
 .painel-mapa .credito { margin: 2px 0 0; text-align: center; }
-.painel-mapa .mapa-numeros { width: min(260px, 100%); }
+.painel-mapa .mapa-numeros { width: min(220px, 100%); }
 .painel-mapa .mapa-numero b { font-size: 1.8rem; }
 .tabela-compacta td, .tabela-compacta th { padding-block: 7px; }
+
+@media (min-width: 1000px) and (min-height: 600px) {
+  html.snap-inicio { scroll-snap-type: y mandatory; scroll-padding-top: var(--altura-topo); }
+  html.snap-inicio main.conteudo { padding-block: 0; gap: 0; }
+  .secao-inicio {
+    height: calc(100vh - var(--altura-topo));
+    height: calc(100dvh - var(--altura-topo));
+    padding-block: 18px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    justify-content: center;
+    overflow: hidden;
+  }
+  /* o que passar da altura rola dentro do próprio quadro */
+  .secao-inicio > .painel, .secao-inicio > .grade { max-height: 100%; min-height: 0; }
+  .secao-inicio > .painel { display: flex; flex-direction: column; }
+  .secao-inicio > .painel > .tabela-rolagem, .secao-inicio > .painel > .avisos { overflow: auto; min-height: 0; }
+  .secao-inicio > .grade { align-items: start; }
+  .secao-inicio > .grade > .painel { max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  .secao-inicio > .grade > .painel > .tabela-rolagem { overflow: auto; min-height: 0; }
+  .secao-inicio .painel-cab { flex: 0 0 auto; }
+
+  /* 1ª seção: 8 quadros (4 linhas de 2) à esquerda e o mapa à direita */
+  .secao-resumo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: stretch; }
+  .secao-resumo .kpis-2 { grid-template-rows: repeat(4, minmax(0, 1fr)); }
+  .secao-resumo .kpi-valor { font-size: clamp(1.2rem, 0.9rem + 0.8vw, 1.6rem); }
+  .secao-resumo .painel-mapa { display: flex; flex-direction: column; min-height: 0; }
+  .secao-resumo .painel-mapa .painel-corpo { flex: 1; min-height: 0; display: flex; }
+  .secao-resumo .mapa-area { flex: 1; min-height: 0; flex-wrap: nowrap; align-items: stretch; }
+  .secao-resumo .mapa-coluna { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  .secao-resumo .mapa-caixa { flex: 1; min-height: 0; position: relative; }
+  .secao-resumo .mapa-caixa .mapa-brasil { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
+  .secao-resumo .mapa-numeros { width: clamp(150px, 14vw, 200px); justify-content: center; }
+
+  /* 2ª seção: o gráfico ocupa a tela toda */
+  .secao-grafico > .painel { flex: 1; }
+  .secao-grafico .painel-corpo { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .secao-grafico .grafico { flex: 1; min-height: 0; }
+  .secao-grafico .grafico svg { width: 100%; height: 100%; }
+}
+@media (min-width: 1000px) and (min-height: 600px) and (max-height: 720px) {
+  .secao-inicio { padding-block: 12px; }
+  .secao-inicio .tabela-compacta td, .secao-inicio .tabela-compacta th { padding-block: 5px; }
+}

@@ -674,6 +674,8 @@
     const y = window.scrollY;
     const abertos = [...main.querySelectorAll('details[open][data-chave]')].map((d) => d.dataset.chave);
     document.querySelectorAll('[data-menu]').forEach((a) => a.classList.toggle('ativo', a.dataset.menu === tela));
+    // No Início a página anda de seção em seção (veja .secao-inicio no CSS)
+    document.documentElement.classList.toggle('snap-inicio', tela === 'inicio');
     main.innerHTML = '';
     main.onclick = null;
     try {
@@ -731,6 +733,33 @@
     desenhar(false);
     if (GAH.google) GAH.google.aoEntrar();
   }
+
+  /* Início: cada giro da roda do mouse leva à seção seguinte (ou anterior) inteira.
+     Dentro de um quadro com rolagem própria (tabela, lista de contratos), rola o quadro enquanto der. */
+  let fimAnimacao = 0;
+  let ultimaRoda = 0;
+  window.addEventListener('wheel', (e) => {
+    const raiz = document.documentElement;
+    if (!raiz.classList.contains('snap-inicio') || e.ctrlKey || !/mandatory/.test(getComputedStyle(raiz).scrollSnapType)) return;
+    for (let el = e.target; el && el !== document.body; el = el.parentElement) {
+      if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY) &&
+        ((e.deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) || (e.deltaY < 0 && el.scrollTop > 0))) return;
+    }
+    e.preventDefault();
+    const agora = Date.now();
+    const continuacao = agora - ultimaRoda < 150; // touchpad manda vários eventos seguidos: conta como um só gesto
+    ultimaRoda = agora;
+    if (Math.abs(e.deltaY) < 2 || agora < fimAnimacao || continuacao) return;
+    const alturaTopo = (document.querySelector('.topo') || {}).offsetHeight || 0;
+    const posicoes = [...document.querySelectorAll('.secao-inicio')].map((s) => Math.round(s.getBoundingClientRect().top + window.scrollY - alturaTopo));
+    if (!posicoes.length) return;
+    let atual = 0;
+    posicoes.forEach((y, i) => { if (Math.abs(y - window.scrollY) < Math.abs(posicoes[atual] - window.scrollY)) atual = i; });
+    const destino = Math.max(0, Math.min(posicoes.length - 1, atual + (e.deltaY > 0 ? 1 : -1)));
+    if (destino === atual) return;
+    fimAnimacao = agora + 700;
+    window.scrollTo({ top: posicoes[destino], behavior: 'smooth' });
+  }, { passive: false });
 
   window.addEventListener('hashchange', () => {
     if (usuarioAtual && location.hash !== telaAtual) desenhar(false);

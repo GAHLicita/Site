@@ -33,8 +33,10 @@
     return { ini, fim, ticks };
   }
 
-  function grafico(meses) {
-    const L = 1000, A = 290, esq = 64, dir = 12, topo = 12, base = 30;
+  function grafico(meses, L, A) {
+    L = L || 1000;
+    A = A || 290;
+    const esq = 64, dir = 12, topo = 12, base = 30;
     const maxV = Math.max(0, ...meses.map((m) => Math.max(m.venda, m.lucro)));
     const minV = Math.min(0, ...meses.map((m) => m.lucro));
     const e = escala(minV, maxV || 1000);
@@ -66,6 +68,22 @@
     });
     return svg + '</svg>';
   }
+
+  /* Com as seções do tamanho da tela, o gráfico é redesenhado com o tamanho exato do espaço que sobrou. */
+  let graficoAtual = null;
+  function ajustarGrafico() {
+    if (!graficoAtual || !graficoAtual.caixa.isConnected) return;
+    const { caixa, meses } = graficoAtual;
+    const svg = caixa.querySelector('svg');
+    if (!document.documentElement.classList.contains('snap-inicio') || getComputedStyle(caixa).flexGrow === '0') {
+      if (svg.getAttribute('viewBox') !== '0 0 1000 290') svg.outerHTML = grafico(meses);
+      return;
+    }
+    const l = Math.round(caixa.clientWidth), a = Math.round(caixa.clientHeight);
+    if (l > 300 && a > 150) svg.outerHTML = grafico(meses, l, a);
+  }
+  let esperaRedimensionar = null;
+  window.addEventListener('resize', () => { clearTimeout(esperaRedimensionar); esperaRedimensionar = setTimeout(ajustarGrafico, 150); });
 
   /* Painel financeiro. É a tela Início: op.cabecalho troca o título, op.rodape entra no fim
      e op.redesenhar é chamado quando o ano do gráfico muda. */
@@ -106,9 +124,11 @@
 
     const kpi = (rotulo, valor, nota, cls) => '<div class="kpi ' + (cls || '') + '"><span class="kpi-rotulo">' + rotulo + '</span><span class="kpi-valor">' + valor + '</span>' + (nota ? '<span class="kpi-nota">' + nota + '</span>' : '') + '</div>';
 
+    // Cada parte é uma seção do tamanho da tela; ao rolar, a página pula de uma seção para a outra.
     main.innerHTML =
       (op.cabecalho || '') +
-      '<div class="kpis kpis-4 kpis-compactos">' +
+      '<section class="secao-inicio secao-resumo">' +
+      '<div class="kpis kpis-2 kpis-compactos">' +
       kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque') +
       kpi('Recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
       kpi('A receber', moeda(g.aReceber), g.valorAtrasado ? '<span class="negativo">' + moeda(g.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
@@ -119,25 +139,26 @@
       kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro bruto − despesas e custos') +
       '</div>' +
 
-      '<section class="painel painel-mapa"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div>' +
-      mapa(g.estados, porUF) +
+      '<section class="painel painel-mapa"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div class="mapa-coluna">' +
+      '<div class="mapa-caixa">' + mapa(g.estados, porUF) + '</div>' +
       '<div class="legenda-mapa"><i></i> Estados com contrato</div><p class="credito">Mapa: <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> (CC BY 4.0)</p></div>' +
       '<div class="mapa-numeros">' +
       '<div class="mapa-numero"><b>' + g.orgaosAtendidos + '</b><span>órgãos públicos atendidos</span></div>' +
       '<div class="mapa-numero"><b>' + g.estados.length + '</b><span>estados atendidos</span></div>' +
       '</div></div></div></section>' +
+      '</section>' +
 
-      '<section class="painel"><div class="painel-cab"><div><h2>Faturamento mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, compra pelo mês do pagamento; despesas, custos fixos e contador abatidos no mês</span></div>' +
+      '<section class="secao-inicio secao-grafico"><section class="painel"><div class="painel-cab"><div><h2>Faturamento mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, compra pelo mês do pagamento; despesas, custos fixos e contador abatidos no mês</span></div>' +
       '<select class="filtro" id="fin-ano" aria-label="Ano">' + listaAnos.map((a) => '<option' + (a === anoEscolhido ? ' selected' : '') + '>' + a + '</option>').join('') + '</select></div>' +
       '<div class="painel-corpo"><div class="legenda"><span><i style="background:var(--serie-1)"></i>Preço de venda</span><span><i style="background:var(--serie-2)"></i>Lucro líquido</span></div>' +
-      '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div></section>' +
+      '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div></section></section>' +
 
-      '<section class="painel"><div class="painel-cab"><h2>Valores mês a mês · ' + anoEscolhido + '</h2><span class="sub">Mesmos números do gráfico</span></div>' +
+      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><h2>Valores mês a mês · ' + anoEscolhido + '</h2><span class="sub">Mesmos números do gráfico</span></div>' +
       '<div class="tabela-rolagem"><table class="tabela tabela-compacta"><thead><tr><th>' + anoEscolhido + '</th><th class="valor">Preço de venda</th><th class="valor">Preço de compra</th><th class="valor">Impostos</th><th class="valor">Despesas e custos</th><th class="valor">Lucro líquido</th></tr></thead><tbody>' +
       meses.map((m, i) => '<tr><td>' + MESES[i].charAt(0).toUpperCase() + MESES[i].slice(1) + '</td><td class="valor">' + moeda(m.venda) + '</td><td class="valor">' + moeda(m.compra) + '</td><td class="valor">' + moeda(m.impostos) + '</td><td class="valor">' + moeda(m.despesas) + '</td><td class="valor ' + (m.lucro < 0 ? 'negativo' : '') + '">' + moeda(m.lucro) + '</td></tr>').join('') +
-      '</tbody><tfoot><tr><td>Total</td><td class="valor">' + moeda(tot.venda) + '</td><td class="valor">' + moeda(tot.compra) + '</td><td class="valor">' + moeda(tot.impostos) + '</td><td class="valor">' + moeda(tot.despesas) + '</td><td class="valor">' + moeda(tot.lucro) + '</td></tr></tfoot></table></div></section>' +
+      '</tbody><tfoot><tr><td>Total</td><td class="valor">' + moeda(tot.venda) + '</td><td class="valor">' + moeda(tot.compra) + '</td><td class="valor">' + moeda(tot.impostos) + '</td><td class="valor">' + moeda(tot.despesas) + '</td><td class="valor">' + moeda(tot.lucro) + '</td></tr></tfoot></table></div></section></section>' +
 
-      '<div class="grade grade-2">' +
+      '<section class="secao-inicio"><div class="grade grade-2">' +
       '<section class="painel"><div class="painel-cab"><h2>Previsão de caixa</h2><span class="sub">Parcelas em aberto nos próximos 6 meses (atrasadas contam no mês atual)</span></div>' +
       '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Mês</th><th class="valor">Entra</th><th class="valor">Sai</th><th class="valor">Saldo</th></tr></thead><tbody>' +
       previsao.map((p) => '<tr><td>' + esc(mesBR(p.mes)) + '</td><td class="valor">' + moeda(p.entra) + '</td><td class="valor">' + moeda(p.sai) + '</td><td class="valor ' + (p.saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(p.saldo) + '</td></tr>').join('') +
@@ -148,8 +169,8 @@
           fabricantes.map(([f, v]) => '<tr><td class="nome">' + esc(f) + '</td><td class="valor">' + v.n + '</td><td class="valor">' + moeda(v.venda) + '</td><td class="valor">' + moeda(v.lucro) + '</td></tr>').join('') +
           '</tbody></table></div>'
         : '<div class="vazio"><strong>Sem contratos ainda</strong>Cadastre um contrato para ver as vendas por fabricante.</div>') +
-      '</section></div>' +
-      (op.rodape || '');
+      '</section></div></section>' +
+      (op.rodape ? '<section class="secao-inicio">' + op.rodape + '</section>' : '');
 
     main.querySelector('#fin-ano').addEventListener('change', (e) => {
       anoEscolhido = Number(e.target.value);
@@ -158,6 +179,8 @@
 
     const caixa = main.querySelector('#fin-grafico');
     const dica = main.querySelector('#fin-dica');
+    graficoAtual = { caixa, meses };
+    ajustarGrafico();
     caixa.addEventListener('mousemove', (e) => {
       const alvo = e.target.closest('[data-mes]');
       if (!alvo) { dica.hidden = true; return; }
