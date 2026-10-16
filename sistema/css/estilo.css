@@ -176,7 +176,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .menu a:hover::after, .menu a.ativo::after { transform: scaleX(1); }
 @media (prefers-reduced-motion: reduce) { .menu a, .menu a::after { transition: none; } }
 .topo-usuario { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; color: rgba(251, 247, 239, 0.75); font-size: 0.85rem; }
-.topo-usuario .email { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .botao-topo {
   background: transparent;
   border: 1px solid rgba(251, 247, 239, 0.35);
@@ -193,7 +192,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .menu-abrir span { display: block; width: 24px; height: 2px; background: var(--creme); margin: 5px 0; }
 
 @media (max-width: 1500px) {
-  .topo-usuario .email { display: none; }
 }
 @media (max-width: 1280px) {
   .menu-abrir { display: block; }
@@ -213,7 +211,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .menu.aberto { display: flex; }
   .menu a { padding: 14px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0; }
   .menu a::after { left: 6px; right: 6px; }
-  .topo-usuario .email { display: none; }
 }
 
 .faixa-demo {

@@ -594,7 +594,7 @@
       '<header class="topo"><div class="topo-interno">' +
       '<a class="marca" href="#/inicio" aria-label="GAH Licita, ir para o início">' + LOGO + '</a>' +
       '<nav class="menu" id="menu">' + MENU.map(([id, nome]) => '<a href="#/' + id + '" data-menu="' + id + '">' + nome + '</a>').join('') + '</nav>' +
-      '<div class="topo-usuario"><span class="email">' + esc(usuarioAtual.email) + '</span><a class="botao-topo" href="#/ajustes" data-menu="ajustes">Ajustes</a><button type="button" class="botao-topo" id="sair">Sair</button></div>' +
+      '<div class="topo-usuario"><a class="botao-topo" href="#/ajustes" data-menu="ajustes">Ajustes</a><button type="button" class="botao-topo" id="sair">Sair</button></div>' +
       '<button type="button" class="menu-abrir" id="menu-abrir" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu"><span></span><span></span><span></span></button>' +
       '</div></header>'
     );
