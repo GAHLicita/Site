@@ -34,7 +34,7 @@
   }
 
   function grafico(meses) {
-    const L = 760, A = 280, esq = 64, dir = 12, topo = 12, base = 30;
+    const L = 1000, A = 290, esq = 64, dir = 12, topo = 12, base = 30;
     const maxV = Math.max(0, ...meses.map((m) => Math.max(m.venda, m.lucro)));
     const minV = Math.min(0, ...meses.map((m) => m.lucro));
     const e = escala(minV, maxV || 1000);
@@ -108,7 +108,7 @@
 
     main.innerHTML =
       (op.cabecalho || '') +
-      '<div class="kpis kpis-4">' +
+      '<div class="kpis kpis-4 kpis-compactos">' +
       kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque') +
       kpi('Recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
       kpi('A receber', moeda(g.aReceber), g.valorAtrasado ? '<span class="negativo">' + moeda(g.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
@@ -119,20 +119,21 @@
       kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro bruto − despesas e custos') +
       '</div>' +
 
-      '<section class="painel"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div>' +
+      '<section class="painel painel-mapa"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div>' +
       mapa(g.estados, porUF) +
       '<div class="legenda-mapa"><i></i> Estados com contrato</div><p class="credito">Mapa: <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> (CC BY 4.0)</p></div>' +
       '<div class="mapa-numeros">' +
-      '<div class="mapa-numero"><b>' + moedaCurta(g.totalContratos) + '</b><span>em contratos de licenciamento</span></div>' +
       '<div class="mapa-numero"><b>' + g.orgaosAtendidos + '</b><span>órgãos públicos atendidos</span></div>' +
-      '<div class="mapa-numero"><b>' + g.estados.length + '</b><span>estados atendidos' + (g.estados.length ? ': ' + g.estados.join(', ') : '') + '</span></div>' +
+      '<div class="mapa-numero"><b>' + g.estados.length + '</b><span>estados atendidos</span></div>' +
       '</div></div></div></section>' +
 
       '<section class="painel"><div class="painel-cab"><div><h2>Faturamento mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, compra pelo mês do pagamento; despesas, custos fixos e contador abatidos no mês</span></div>' +
       '<select class="filtro" id="fin-ano" aria-label="Ano">' + listaAnos.map((a) => '<option' + (a === anoEscolhido ? ' selected' : '') + '>' + a + '</option>').join('') + '</select></div>' +
       '<div class="painel-corpo"><div class="legenda"><span><i style="background:var(--serie-1)"></i>Preço de venda</span><span><i style="background:var(--serie-2)"></i>Lucro líquido</span></div>' +
-      '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div>' +
-      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>' + anoEscolhido + '</th><th class="valor">Preço de venda</th><th class="valor">Preço de compra</th><th class="valor">Impostos</th><th class="valor">Despesas e custos</th><th class="valor">Lucro líquido</th></tr></thead><tbody>' +
+      '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div></section>' +
+
+      '<section class="painel"><div class="painel-cab"><h2>Valores mês a mês · ' + anoEscolhido + '</h2><span class="sub">Mesmos números do gráfico</span></div>' +
+      '<div class="tabela-rolagem"><table class="tabela tabela-compacta"><thead><tr><th>' + anoEscolhido + '</th><th class="valor">Preço de venda</th><th class="valor">Preço de compra</th><th class="valor">Impostos</th><th class="valor">Despesas e custos</th><th class="valor">Lucro líquido</th></tr></thead><tbody>' +
       meses.map((m, i) => '<tr><td>' + MESES[i].charAt(0).toUpperCase() + MESES[i].slice(1) + '</td><td class="valor">' + moeda(m.venda) + '</td><td class="valor">' + moeda(m.compra) + '</td><td class="valor">' + moeda(m.impostos) + '</td><td class="valor">' + moeda(m.despesas) + '</td><td class="valor ' + (m.lucro < 0 ? 'negativo' : '') + '">' + moeda(m.lucro) + '</td></tr>').join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="valor">' + moeda(tot.venda) + '</td><td class="valor">' + moeda(tot.compra) + '</td><td class="valor">' + moeda(tot.impostos) + '</td><td class="valor">' + moeda(tot.despesas) + '</td><td class="valor">' + moeda(tot.lucro) + '</td></tr></tfoot></table></div></section>' +
 

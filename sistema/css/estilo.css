@@ -690,3 +690,18 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .g-logo { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #FFFFFF; background: #4285F4; flex: 0 0 auto; }
 .evento.google { background: var(--superficie-2); color: var(--tinta); box-shadow: inset 3px 0 0 #4285F4; }
 .leg-google { background: var(--superficie-2) !important; border: 1px solid var(--linha-forte); box-shadow: inset 3px 0 0 #4285F4; }
+
+/* ---------- Início: 8 quadros + mapa cabem numa tela; gráfico e tabela, cada um numa tela ---------- */
+.kpis-compactos { gap: 10px; }
+.kpis-compactos .kpi { padding: 10px 14px; gap: 2px; }
+.kpis-compactos .kpi-rotulo { font-size: 0.7rem; }
+.kpis-compactos .kpi-valor { font-size: clamp(1.05rem, 0.85rem + 0.6vw, 1.3rem); }
+.kpis-compactos .kpi-nota { font-size: 0.76rem; }
+.painel-mapa .painel-corpo { padding-block: 10px; }
+.painel-mapa .mapa-area { display: flex; justify-content: center; align-items: center; gap: clamp(24px, 5vw, 64px); flex-wrap: wrap; }
+.painel-mapa .mapa-brasil { width: auto; max-width: 100%; height: clamp(220px, calc(100vh - 470px), 360px); }
+.painel-mapa .legenda-mapa { margin-top: 2px; }
+.painel-mapa .credito { margin: 2px 0 0; text-align: center; }
+.painel-mapa .mapa-numeros { width: min(260px, 100%); }
+.painel-mapa .mapa-numero b { font-size: 1.8rem; }
+.tabela-compacta td, .tabela-compacta th { padding-block: 7px; }
