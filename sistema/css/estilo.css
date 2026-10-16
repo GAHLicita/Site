@@ -596,6 +596,8 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* ---------- Login ---------- */
 .tela-login { background: #1D344D; min-height: 100vh; display: flex; flex-direction: column; }
+/* #app ocupa a altura toda, para a logo e o login ficarem no meio da tela */
+.tela-login #app { flex: 1; display: flex; flex-direction: column; }
 .login-fundo {
   position: absolute;
   inset: 0;
