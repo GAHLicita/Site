@@ -109,3 +109,29 @@ link para criar uma senha nova.
 ```
 node --test sistema/testes/calculos.test.js
 ```
+
+## Google Agenda (sincronização nos dois sentidos)
+
+O que o sistema faz depois de ligado:
+- Compromissos da Agenda e datas de disputa das Licitações vão para o Google Agenda da conta
+  contato@gahlicita.com.br (disputas em azul). Alterar ou excluir no sistema altera ou exclui no Google.
+- Os eventos do Google Agenda aparecem no calendário do sistema (com uma faixa azul do Google).
+  Clicar neles abre o evento no Google.
+- Se um compromisso criado pelo sistema for remarcado ou apagado no Google, o sistema acompanha.
+- O que for salvo sem conexão fica "pendente" e vai para o Google quando você conectar.
+
+Para ligar (uma vez só, no https://console.cloud.google.com com a conta contato@gahlicita.com.br):
+1. No topo, selecione o projeto **gah-sistema** (o mesmo do Firebase).
+2. Menu → **APIs e serviços → Biblioteca** → procure **Google Calendar API** → **Ativar**.
+3. Menu → **APIs e serviços → Tela de consentimento OAuth** (ou **Google Auth Platform**) →
+   **Começar**. Nome do app: `Sistema GAH Licita`; e-mail de suporte: contato@gahlicita.com.br;
+   Público: **Interno** (só contas @gahlicita.com.br); contato: contato@gahlicita.com.br → Criar.
+4. Menu → **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**.
+   Tipo: **Aplicativo da Web**; nome: `Sistema GAH Licita`.
+   Em **Origens JavaScript autorizadas**, adicione `https://www.gahlicita.com.br` e
+   `https://gahlicita.com.br`. Deixe "URIs de redirecionamento" vazio → **Criar**.
+5. Copie o **ID do cliente** (termina em `.apps.googleusercontent.com`) e cole em `clientId` no
+   arquivo `js/config.js` (ou mande para o Claude fazer isso).
+
+No dia a dia: abra a Agenda e clique em **Conectar Google Agenda**. A conexão dura enquanto o
+sistema estiver aberto e se renova sozinha; ao abrir o sistema de novo, clique em **Reconectar**.

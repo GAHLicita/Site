@@ -4,7 +4,7 @@
   const calc = GAH.calc;
   const D = GAH.dados;
   const TIPOS = ['Disputa', 'Reunião', 'Prazo de entrega', 'Envio de proposta', 'Assinatura de contrato', 'Cobrança', 'Outro'];
-  const estado = { mes: '', automaticos: true };
+  const estado = { mes: '', automaticos: true, google: { chave: '', em: 0, lista: [], erro: '', buscando: false } };
 
   GAH.formCompromisso = function (item, dataPadrao) {
     const a = item || { data: dataPadrao || calc.hoje(), tipo: 'Disputa' };
@@ -25,15 +25,17 @@
     const j = janela({ titulo: a.id ? 'Editar compromisso' : 'Novo compromisso', corpo, rodape, estreita: true });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
     botaoExcluir(j.el, '#excluir-ag', 'Excluir este compromisso?', async () => {
+      if (GAH.google) GAH.google.aoExcluir(a);
       await D.excluir('agenda', a.id);
       j.fechar();
       aviso('Compromisso excluído');
     });
     j.el.querySelector('#form-agenda').addEventListener('submit', async (e) => {
       e.preventDefault();
-      await D.salvar('agenda', Object.assign({}, a, lerForm(e.target)));
+      const salvo = await D.salvar('agenda', Object.assign({}, a, lerForm(e.target)));
       j.fechar();
       aviso('Compromisso salvo');
+      if (GAH.google) GAH.google.aoSalvar('agenda', salvo);
     });
   };
 
@@ -43,7 +45,25 @@
       detalhe: [a.tipo, a.local, a.clienteId ? GAH.u.nomeCliente(a.clienteId) : ''].filter(Boolean).join(' · ')
     }));
     const auto = estado.automaticos ? GAH.eventosAutomaticos().filter((e) => e.data >= ini && e.data <= fim) : [];
-    return manuais.concat(auto).sort((a, b) => (a.data + (a.hora || '99')).localeCompare(b.data + (b.hora || '99')));
+    const google = estado.google.lista.filter((e) => e.data >= ini && e.data <= fim);
+    return manuais.concat(auto, google).sort((a, b) => (a.data + (a.hora || '99')).localeCompare(b.data + (b.hora || '99')));
+  }
+
+  function faixaGoogle() {
+    const G = GAH.google;
+    if (!G) return '';
+    if (!G.configurado()) {
+      return '<div class="faixa-google"><span class="g-logo" aria-hidden="true">G</span><span>Google Agenda ainda não ligado. Falta cadastrar a credencial do Google (veja o LEIAME).</span></div>';
+    }
+    if (!G.conectado()) {
+      return '<div class="faixa-google"><span class="g-logo" aria-hidden="true">G</span><span>' + (G.lembrado() ? 'Clique para reconectar o Google Agenda (contato@gahlicita.com.br).' : 'Conecte o Google Agenda para sincronizar os compromissos nos dois sentidos.') + '</span>' +
+        '<button type="button" class="botao pequeno" id="g-conectar">' + (G.lembrado() ? 'Reconectar' : 'Conectar Google Agenda') + '</button></div>';
+    }
+    const pend = D.lista('agenda').concat(D.lista('licitacoes')).filter((x) => x.googlePendente).length;
+    return '<div class="faixa-google conectado"><span class="g-logo" aria-hidden="true">G</span><span><b>Google Agenda sincronizado.</b> ' +
+      (estado.google.erro ? '<span class="negativo">' + esc(estado.google.erro) + '</span>' : 'Os compromissos e as disputas vão para o Google, e os eventos do Google aparecem aqui.') +
+      (pend ? ' ' + pend + ' pendente(s).' : '') + '</span>' +
+      '<button type="button" class="botao secundario pequeno" id="g-sincronizar">Sincronizar agora</button><button type="button" class="link-botao" id="g-desconectar">Desconectar</button></div>';
   }
 
   GAH.telas.agenda = function (main) {
@@ -56,6 +76,19 @@
     const ultimoDia = new Date(ano, mes, 0).getDate();
     const semanas = Math.ceil((diaSemana + ultimoDia) / 7);
     const fimGrade = calc.addDias(inicioGrade, semanas * 7 - 1);
+    const gIni = inicioGrade < hoje ? inicioGrade : hoje;
+    const fim30 = calc.addDias(hoje, 30);
+    const gFim = fimGrade > fim30 ? fimGrade : fim30;
+    const gChave = gIni + '|' + gFim;
+    const G = GAH.google;
+    if (G && G.conectado() && !estado.google.buscando && (estado.google.chave !== gChave || Date.now() - estado.google.em > 60000)) {
+      estado.google.buscando = true;
+      G.eventos(gIni, gFim)
+        .then((lista) => { estado.google = { chave: gChave, em: Date.now(), lista, erro: '', buscando: false }; })
+        .catch((e) => { estado.google = { chave: gChave, em: Date.now(), lista: [], erro: e.message, buscando: false }; })
+        .then(() => { if (location.hash.startsWith('#/agenda')) GAH.telas.agenda(main); });
+    }
+    if (G && !G.conectado()) estado.google.lista = [];
     const eventos = eventosDoPeriodo(inicioGrade, fimGrade);
     const porDia = {};
     eventos.forEach((e) => (porDia[e.data] = porDia[e.data] || []).push(e));
@@ -73,20 +106,21 @@
     main.innerHTML =
       '<div class="cabecalho-tela"><div><h1>Agenda</h1><p>Disputas, reuniões e prazos. Vencimentos de parcelas e fins de vigência entram sozinhos.</p></div>' +
       '<div class="acoes"><button class="botao" id="novo-ag">+ Novo compromisso</button></div></div>' +
+      faixaGoogle() +
       '<div class="grade grade-lateral">' +
       '<section class="painel"><div class="painel-cab"><div class="acoes"><button class="botao secundario pequeno" id="mes-ant" aria-label="Mês anterior">‹</button>' +
       '<h2 style="min-width:170px;text-align:center">' + MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1) + ' ' + ano + '</h2>' +
       '<button class="botao secundario pequeno" id="mes-prox" aria-label="Próximo mês">›</button><button class="botao secundario pequeno" id="mes-hoje">Hoje</button></div>' +
       '<label class="parcela-check"><input type="checkbox" id="ag-auto"' + (estado.automaticos ? ' checked' : '') + '> Mostrar vencimentos automáticos</label></div>' +
       '<div class="tabela-rolagem"><div class="calendario">' + grade + '</div></div>' +
-      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--ok-fundo);border:1px solid var(--ok)"></i>A receber</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span></div>' +
+      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--ok-fundo);border:1px solid var(--ok)"></i>A receber</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
       '</section>' +
       '<section class="painel"><div class="painel-cab"><h2>Próximos 30 dias</h2></div>' +
       (proximos.length
         ? '<ul class="avisos">' + proximos.map((e) =>
             '<li><div class="data-bloco"><b>' + e.data.slice(8, 10) + '</b><span>' + MESES_CURTOS[Number(e.data.slice(5, 7)) - 1] + '</span></div><div class="titulo">' +
-            (e.id ? '<button type="button" class="link-botao" style="text-decoration:none;color:var(--tinta);font-weight:600;text-align:left" data-ag="' + esc(e.id) + '">' + esc(e.titulo) + '</button>' : '<a href="' + esc(e.link || '#/agenda') + '">' + esc(e.titulo) + '</a>') +
-            '<span class="detalhe">' + esc((e.hora ? e.hora + ' · ' : '') + (e.detalhe || '')) + '</span></div><span class="evento ' + e.tipo + '" style="width:auto">' + ({ disputa: 'disputa', receber: 'receber', pagar: 'pagar', renovacao: 'vigência', manual: 'agenda' }[e.tipo] || '') + '</span></li>'
+            (e.id ? '<button type="button" class="link-botao" style="text-decoration:none;color:var(--tinta);font-weight:600;text-align:left" data-ag="' + esc(e.id) + '">' + esc(e.titulo) + '</button>' : '<a href="' + esc(e.link || '#/agenda') + '"' + (/^https?:/.test(e.link || '') ? ' target="_blank" rel="noopener"' : '') + '>' + esc(e.titulo) + '</a>') +
+            '<span class="detalhe">' + esc((e.hora ? e.hora + ' · ' : '') + (e.detalhe || '')) + '</span></div><span class="evento ' + e.tipo + '" style="width:auto">' + ({ disputa: 'disputa', receber: 'receber', pagar: 'pagar', renovacao: 'vigência', manual: 'agenda', google: 'Google' }[e.tipo] || '') + '</span></li>'
           ).join('') + '</ul>'
         : '<div class="vazio"><strong>Nada nos próximos 30 dias</strong>Clique em um dia do calendário para marcar um compromisso.</div>') +
       '</section></div>';
@@ -97,11 +131,26 @@
     main.querySelector('#mes-hoje').addEventListener('click', () => { estado.mes = hoje.slice(0, 7); GAH.telas.agenda(main); });
     main.querySelector('#ag-auto').addEventListener('change', (e) => { estado.automaticos = e.target.checked; GAH.telas.agenda(main); });
     main.querySelector('#novo-ag').addEventListener('click', () => GAH.formCompromisso(null, hoje));
+    const gBtn = (id, f) => { const b = main.querySelector(id); if (b) b.addEventListener('click', f); };
+    gBtn('#g-conectar', async () => {
+      try { await GAH.google.conectar(false); estado.google.chave = ''; aviso('Google Agenda conectado'); GAH.telas.agenda(main); }
+      catch (e) { aviso('Não foi possível conectar: ' + e.message, true); }
+    });
+    gBtn('#g-sincronizar', async () => {
+      try { const n = await GAH.google.sincronizarPendentes(); estado.google.chave = ''; aviso(n ? n + ' item(ns) enviados ao Google' : 'Tudo sincronizado'); GAH.telas.agenda(main); }
+      catch (e) { aviso(e.message, true); }
+    });
+    gBtn('#g-desconectar', () => { GAH.google.desconectar(); estado.google.lista = []; GAH.telas.agenda(main); });
     main.onclick = (e) => {
       const ag = e.target.closest('[data-ag]');
       if (ag) { GAH.formCompromisso(D.obter('agenda', ag.dataset.ag)); return; }
       const lk = e.target.closest('[data-link]');
-      if (lk) { if (lk.dataset.link) location.hash = lk.dataset.link; return; }
+      if (lk) {
+        const destino = lk.dataset.link;
+        if (/^https?:/.test(destino)) window.open(destino, '_blank', 'noopener');
+        else if (destino) location.hash = destino;
+        return;
+      }
       const dia = e.target.closest('[data-dia]');
       if (dia) GAH.formCompromisso(null, dia.dataset.dia);
     };

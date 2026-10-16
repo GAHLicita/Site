@@ -32,6 +32,7 @@
     const j = janela({ titulo: l.id ? 'Editar licitação' : 'Nova licitação', corpo, rodape });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
     botaoExcluir(j.el, '#excluir-lic', 'Excluir esta licitação?', async () => {
+      if (GAH.google) GAH.google.aoExcluir(l);
       await D.excluir('licitacoes', l.id);
       j.fechar();
       aviso('Licitação excluída');
@@ -45,7 +46,8 @@
     });
     j.el.querySelector('#form-lic').addEventListener('submit', async (e) => {
       e.preventDefault();
-      await D.salvar('licitacoes', Object.assign({}, l, lerForm(e.target)));
+      const salva = await D.salvar('licitacoes', Object.assign({}, l, lerForm(e.target)));
+      if (GAH.google) GAH.google.aoSalvar('licitacoes', salva);
       j.fechar();
       aviso('Licitação salva');
     });

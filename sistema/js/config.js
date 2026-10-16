@@ -11,3 +11,11 @@ GAH.firebaseConfig = {
   messagingSenderId: '419342726673',
   appId: '1:419342726673:web:d8459ff63ccc35916c23b0'
 };
+
+/* Google Agenda (sincronização nos dois sentidos). Cole aqui o "ID do cliente" OAuth criado no
+   Google Cloud (projeto gah-sistema). Vazio = sincronização desligada. */
+GAH.googleConfig = {
+  clientId: '',
+  conta: 'contato@gahlicita.com.br',
+  calendarId: 'primary'
+};

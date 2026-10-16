@@ -732,3 +732,11 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .cartao-login h1 { font-size: 1.35rem; }
   .cartao-login .erro { min-height: 0; }
 }
+
+/* ---------- Google Agenda ---------- */
+.faixa-google { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--superficie); border: 1px solid var(--linha); border-left: 4px solid #4285F4; border-radius: var(--raio); padding: 10px 14px; font-size: 0.9rem; }
+.faixa-google > span:nth-child(2) { flex: 1 1 260px; min-width: 0; }
+.faixa-google.conectado { border-left-color: var(--ok); }
+.g-logo { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #FFFFFF; background: #4285F4; flex: 0 0 auto; }
+.evento.google { background: var(--superficie-2); color: var(--tinta); box-shadow: inset 3px 0 0 #4285F4; }
+.leg-google { background: var(--superficie-2) !important; border: 1px solid var(--linha-forte); box-shadow: inset 3px 0 0 #4285F4; }
