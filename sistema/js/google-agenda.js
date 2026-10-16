@@ -18,6 +18,7 @@
   let tokenExpira = 0;
   let clienteToken = null;
   let carregandoGis = null;
+  let conexaoDoLogin = null;
   const cache = {}; // eventos do Google por intervalo 'ini|fim'
   const ouvintes = new Set();
   const avisar = () => ouvintes.forEach((f) => f());
@@ -174,6 +175,8 @@
       GAH.eventosAutomaticos().forEach((e) => {
         if (e.chave && COR_AUTO[e.tipo] && e.data >= hoje) desejados.set(idAuto(e.chave), eventoAuto(e));
       });
+      // sem os dados carregados (banco fora do ar), não mexe no Google para não apagar nada por engano
+      if (D.erroBanco || !D.lista('contratos').length) return { enviados: 0, removidos: 0, erros: [] };
       const existentes = new Map((await listarAutomaticos(hoje)).map((ev) => [ev.id, ev]));
       const r = { enviados: 0, removidos: 0, erros: [] };
       for (const [id, ev] of desejados) {
@@ -217,6 +220,30 @@
         else if (r.enviados) GAH.u.aviso(r.enviados + ' item(ns) enviados ao Google Agenda');
         avisar();
       }).catch((e) => GAH.u.aviso('Google Agenda: ' + e.message, true));
+    },
+
+    /* Conexão automática no login: se este navegador já conectou o Google antes, o clique em "Entrar"
+       também pede a permissão ao Google (sem perguntar de novo). Os navegadores só deixam abrir a
+       janelinha do Google a partir de um clique, por isso o pedido sai junto com o login. */
+    preparar() {
+      if (GAH.google.configurado() && lembrado()) carregarGis().catch(() => {});
+    },
+    conectarNoLogin() {
+      if (!GAH.google.configurado() || !lembrado() || !(window.google && google.accounts && google.accounts.oauth2)) return;
+      conexaoDoLogin = pedirToken(true).then(() => { Object.keys(cache).forEach((k) => delete cache[k]); avisar(); }).catch((e) => { console.warn('Google Agenda não conectou no login', e); });
+    },
+    /* Chamado quando o sistema abre (dados já carregados): termina a conexão do login e sincroniza. */
+    async aoEntrar() {
+      if (!conexaoDoLogin) return;
+      const espera = conexaoDoLogin;
+      conexaoDoLogin = null;
+      await espera;
+      if (!GAH.google.conectado()) return;
+      try {
+        const r = await GAH.google.sincronizarPendentes();
+        if (r.erros.length) GAH.u.aviso('Alguns itens não foram para o Google Agenda: ' + r.erros[0], true);
+        avisar();
+      } catch (e) { console.warn(e); }
     },
 
     desconectar() {

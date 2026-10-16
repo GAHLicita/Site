@@ -605,6 +605,7 @@
     // Tira a última tela do endereço: depois do login o sistema sempre abre no Início.
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
     telaAtual = '';
+    if (GAH.google) GAH.google.preparar();
     document.body.className = 'tela-login';
     app.innerHTML =
       '<div class="login-centro"><div class="login-coluna"><div class="logo-caixa"><img class="logo-login" src="img/logo-gah.png" width="900" height="829" alt="GAH Licita"></div><form class="cartao-login" id="form-login" aria-label="Entrar no sistema" novalidate>' +
@@ -629,6 +630,7 @@
       btn.textContent = 'Entrando…';
       erro.textContent = '';
       if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+      if (GAH.google) GAH.google.conectarNoLogin();
       try {
         const u = await D.entrar(email, senha);
         if (D.modoDemo()) iniciarSistema(u);
@@ -727,6 +729,7 @@
       abrir.setAttribute('aria-expanded', 'false');
     });
     desenhar(false);
+    if (GAH.google) GAH.google.aoEntrar();
   }
 
   window.addEventListener('hashchange', () => {

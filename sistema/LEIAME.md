@@ -137,5 +137,7 @@ Para ligar (uma vez só, no https://console.cloud.google.com com a conta contato
 5. Copie o **ID do cliente** (termina em `.apps.googleusercontent.com`) e cole em `clientId` no
    arquivo `js/config.js` (ou mande para o Claude fazer isso).
 
-No dia a dia: abra a Agenda e clique em **Conectar Google Agenda**. A conexão dura enquanto o
-sistema estiver aberto e se renova sozinha; ao abrir o sistema de novo, clique em **Reconectar**.
+No dia a dia: na primeira vez em cada computador, abra a Agenda e clique em **Conectar Google Agenda**.
+Depois disso, a cada login o sistema conecta e sincroniza o Google sozinho (uma janelinha do Google pode
+abrir e fechar rapidamente). Se o navegador bloquear essa janelinha, permita pop-ups para
+www.gahlicita.com.br ou clique em **Reconectar** na Agenda.
