@@ -66,7 +66,9 @@
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
+/* Tela de login: sempre na versão escura, seja qual for o tema escolhido em Ajustes */
+:root[data-theme="dark"],
+body.tela-login {
   --fundo: #0F1A26;
   --superficie: #16243A;
   --superficie-2: #1A2B43;
