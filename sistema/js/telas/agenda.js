@@ -61,7 +61,7 @@
     }
     const pend = D.lista('agenda').concat(D.lista('licitacoes')).filter((x) => x.googlePendente).length;
     return '<div class="faixa-google conectado"><span class="g-logo" aria-hidden="true">G</span><span><b>Google Agenda sincronizado.</b> ' +
-      (estado.google.erro ? '<span class="negativo">' + esc(estado.google.erro) + '</span>' : 'Os compromissos e as disputas vão para o Google, e os eventos do Google aparecem aqui.') +
+      (estado.google.erro ? '<span class="negativo">' + esc(estado.google.erro) + '</span>' : 'Compromissos, disputas, vencimentos, fins de vigência e custos vão para o Google, e os eventos do Google aparecem aqui.') +
       (pend ? ' ' + pend + ' pendente(s).' : '') + '</span>' +
       '<button type="button" class="botao secundario pequeno" id="g-sincronizar">Sincronizar agora</button><button type="button" class="link-botao" id="g-desconectar">Desconectar</button></div>';
   }
@@ -136,9 +136,17 @@
       try { await GAH.google.conectar(false); estado.google.chave = ''; aviso('Google Agenda conectado'); GAH.telas.agenda(main); }
       catch (e) { aviso('Não foi possível conectar: ' + e.message, true); }
     });
-    gBtn('#g-sincronizar', async () => {
-      try { const n = await GAH.google.sincronizarPendentes(); estado.google.chave = ''; aviso(n ? n + ' item(ns) enviados ao Google' : 'Tudo sincronizado'); GAH.telas.agenda(main); }
-      catch (e) { aviso(e.message, true); }
+    gBtn('#g-sincronizar', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Sincronizando…';
+      try {
+        const r = await GAH.google.sincronizarPendentes();
+        estado.google.chave = '';
+        if (r.erros.length) aviso('Não foram para o Google ' + r.erros.length + ' item(ns): ' + r.erros[0], true);
+        else aviso(r.enviados || r.removidos ? [r.enviados ? r.enviados + ' item(ns) enviados ao Google' : '', r.removidos ? r.removidos + ' removido(s) do Google' : ''].filter(Boolean).join(', ') : 'Tudo sincronizado');
+      } catch (err) { aviso(err.message, true); }
+      GAH.telas.agenda(main);
     });
     gBtn('#g-desconectar', () => { GAH.google.desconectar(); estado.google.lista = []; GAH.telas.agenda(main); });
     main.onclick = (e) => {

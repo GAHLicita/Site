@@ -1,5 +1,7 @@
 /* Sincronização com o Google Agenda (conta contato@gahlicita.com.br), nos dois sentidos.
    - Sistema → Google: compromissos da Agenda e datas de disputa das Licitações viram eventos no Google.
+     Os lançamentos automáticos (parcelas a receber e a pagar, fins de vigência, custos e mensalidade do
+     contador) também vão, do dia de hoje em diante, e somem do Google quando forem pagos ou mudarem.
    - Google → Sistema: os eventos do Google aparecem no calendário do sistema; se um evento criado pelo
      sistema for alterado ou apagado no Google, o compromisso do sistema acompanha.
    Usa o login do Google no navegador (Google Identity Services) e a Google Calendar API.
@@ -129,6 +131,76 @@
     if (doc.googleEventId) await api('/events/' + encodeURIComponent(doc.googleEventId), { method: 'DELETE' }).catch((e) => { if (!/404|410/.test(e.message)) throw e; });
   }
 
+  /* ---------- lançamentos automáticos: vencimentos, fins de vigência e custos ---------- */
+  const COR_AUTO = { receber: '10', pagar: '6', renovacao: '11' };
+  const ROTULO_AUTO = { receber: 'A receber', pagar: 'A pagar', renovacao: 'Fim de vigência' };
+  // Id fixo por lançamento (o Google aceita letras de a a v e números): o mesmo vencimento nunca vira dois eventos.
+  function idAuto(chave) {
+    return 'gah' + Array.from(new TextEncoder().encode(chave), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  function eventoAuto(e) {
+    return {
+      id: idAuto(e.chave),
+      summary: e.titulo,
+      description: [ROTULO_AUTO[e.tipo], e.detalhe, 'Lançado automaticamente pelo Sistema GAH Licita. Para mudar, altere no sistema.'].filter(Boolean).join('\n\n'),
+      start: { date: e.data },
+      end: { date: calc.addDias(e.data, 1) },
+      colorId: COR_AUTO[e.tipo],
+      transparency: 'transparent',
+      extendedProperties: { private: { gahAuto: '1', gahChave: e.chave } }
+    };
+  }
+  const assinatura = (ev) => [ev.summary, ev.description, ev.start && ev.start.date, ev.colorId].join('|');
+
+  async function listarAutomaticos(desde) {
+    const itens = [];
+    let pagina = '';
+    do {
+      const q = new URLSearchParams({ privateExtendedProperty: 'gahAuto=1', timeMin: desde + 'T00:00:00-03:00', singleEvents: 'true', maxResults: '2500' });
+      if (pagina) q.set('pageToken', pagina);
+      const r = await api('/events?' + q.toString());
+      itens.push(...((r && r.items) || []));
+      pagina = r && r.nextPageToken;
+    } while (pagina);
+    return itens;
+  }
+
+  let sincronizandoAuto = null;
+  function sincronizarAutomaticos() {
+    if (sincronizandoAuto) return sincronizandoAuto;
+    sincronizandoAuto = (async () => {
+      const hoje = calc.hoje();
+      const desejados = new Map();
+      GAH.eventosAutomaticos().forEach((e) => {
+        if (e.chave && COR_AUTO[e.tipo] && e.data >= hoje) desejados.set(idAuto(e.chave), eventoAuto(e));
+      });
+      const existentes = new Map((await listarAutomaticos(hoje)).map((ev) => [ev.id, ev]));
+      const r = { enviados: 0, removidos: 0, erros: [] };
+      for (const [id, ev] of desejados) {
+        const atual = existentes.get(id);
+        if (atual && assinatura(atual) === assinatura(ev)) continue;
+        try {
+          if (atual) await api('/events/' + id, { method: 'PUT', body: JSON.stringify(ev) });
+          else {
+            try { await api('/events', { method: 'POST', body: JSON.stringify(ev) }); } catch (e) {
+              // 409: o evento já existiu e foi apagado; reaproveita o mesmo id
+              if (!/ 409 /.test(e.message)) throw e;
+              await api('/events/' + id, { method: 'PUT', body: JSON.stringify(Object.assign({ status: 'confirmed' }, ev)) });
+            }
+          }
+          r.enviados++;
+        } catch (e) { if (e.semToken) throw e; r.erros.push(e.message); }
+      }
+      // pago, cancelado ou com outra data: sai do Google (o que já passou fica como histórico)
+      for (const [id, ev] of existentes) {
+        if (desejados.has(id) || ev.status === 'cancelled' || (ev.start && ev.start.date < hoje)) continue;
+        try { await api('/events/' + id, { method: 'DELETE' }); r.removidos++; } catch (e) { if (e.semToken) throw e; r.erros.push(e.message); }
+      }
+      return r;
+    })().finally(() => { sincronizandoAuto = null; });
+    return sincronizandoAuto;
+  }
+
   GAH.google = {
     configurado: () => !!cfg().clientId,
     conectado: () => !!token && Date.now() < tokenExpira,
@@ -138,8 +210,13 @@
     async conectar(silencioso) {
       await pedirToken(silencioso);
       Object.keys(cache).forEach((k) => delete cache[k]);
-      await GAH.google.sincronizarPendentes().catch((e) => console.warn(e));
       avisar();
+      // envia em segundo plano: na primeira vez podem ser dezenas de vencimentos
+      GAH.google.sincronizarPendentes().then((r) => {
+        if (r.erros.length) GAH.u.aviso('Alguns itens não foram para o Google Agenda: ' + r.erros[0], true);
+        else if (r.enviados) GAH.u.aviso(r.enviados + ' item(ns) enviados ao Google Agenda');
+        avisar();
+      }).catch((e) => GAH.u.aviso('Google Agenda: ' + e.message, true));
     },
 
     desconectar() {
@@ -169,9 +246,10 @@
       try { await apagar(doc); avisar(); } catch (e) { GAH.u.aviso('Não foi possível apagar no Google Agenda: ' + e.message, true); }
     },
 
-    /* Envia o que ficou pendente e os compromissos/disputas futuros que ainda não estão no Google. */
+    /* Envia o que ficou pendente, os compromissos/disputas futuros que ainda não estão no Google e os
+       lançamentos automáticos. Devolve { enviados, removidos, erros }. */
     async sincronizarPendentes() {
-      if (!GAH.google.conectado()) return 0;
+      if (!GAH.google.conectado()) throw new Error('Conecte o Google Agenda.');
       const hoje = calc.hoje();
       const fila = [];
       D.lista('agenda').forEach((x) => {
@@ -180,11 +258,20 @@
       D.lista('licitacoes').forEach((x) => {
         if (x.googlePendente || (!x.googleEventId && paraSincronizar('licitacoes', x) && x.dataDisputa >= hoje)) fila.push(['licitacoes', x]);
       });
-      let n = 0;
+      const r = { enviados: 0, removidos: 0, erros: [] };
       for (const [c, doc] of fila) {
-        try { await enviar(c, doc); n++; } catch (e) { console.warn('Falha ao enviar ' + c + ' ' + doc.id, e); }
+        try { await enviar(c, doc); r.enviados++; } catch (e) {
+          if (e.semToken) throw e;
+          console.warn('Falha ao enviar ' + c + ' ' + doc.id, e);
+          r.erros.push((doc.titulo || doc.orgao || '') + ': ' + e.message);
+        }
       }
-      return n;
+      const a = await sincronizarAutomaticos();
+      r.enviados += a.enviados;
+      r.removidos = a.removidos;
+      r.erros.push(...a.erros);
+      Object.keys(cache).forEach((k) => delete cache[k]);
+      return r;
     },
 
     /* Google → Sistema: eventos do intervalo para mostrar no calendário, e atualização dos
@@ -198,6 +285,7 @@
       const lista = [];
       for (const ev of (r && r.items) || []) {
         const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
+        if (priv.gahAuto) continue; // vencimentos e custos já aparecem pelo próprio sistema
         if (priv.gahId) {
           const doc = D.obter(priv.gahColecao, priv.gahId);
           if (!doc) continue;
@@ -223,6 +311,17 @@
       return lista;
     }
   };
+
+  // Pagou uma parcela, mudou um vencimento ou criou um custo: atualiza o Google alguns segundos depois.
+  let esperaAuto = null;
+  D.aoMudar(() => {
+    if (!GAH.google.conectado()) return;
+    clearTimeout(esperaAuto);
+    esperaAuto = setTimeout(() => {
+      if (!GAH.google.conectado()) return;
+      sincronizarAutomaticos().then((r) => { if (r.enviados || r.removidos) avisar(); }).catch((e) => console.warn(e));
+    }, 5000);
+  });
 
   // Mantém a conexão viva: se já autorizou antes, renova sozinho perto de expirar (sem abrir janela).
   setInterval(() => {

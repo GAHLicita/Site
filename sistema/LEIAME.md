@@ -115,6 +115,10 @@ node --test sistema/testes/calculos.test.js
 O que o sistema faz depois de ligado:
 - Compromissos da Agenda e datas de disputa das Licitações vão para o Google Agenda da conta
   contato@gahlicita.com.br (disputas em azul). Alterar ou excluir no sistema altera ou exclui no Google.
+- Os lançamentos automáticos também vão, do dia de hoje em diante: parcelas a receber (verde), parcelas
+  e custos a pagar, mensalidade do contador (laranja) e fins de vigência (vermelho). Quando uma parcela é
+  paga ou uma data muda no sistema, o Google é atualizado sozinho em alguns segundos. Esses eventos
+  devem ser alterados no sistema, não no Google.
 - Os eventos do Google Agenda aparecem no calendário do sistema (com uma faixa azul do Google).
   Clicar neles abre o evento no Google.
 - Se um compromisso criado pelo sistema for remarcado ou apagado no Google, o sistema acompanha.

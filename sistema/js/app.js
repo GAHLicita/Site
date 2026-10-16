@@ -558,19 +558,19 @@
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
       ((c.venda && c.venda.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ data: p.vencimento, tipo: 'receber', titulo: 'Receber ' + moeda(p.valor) + ' — ' + orgao, detalhe: c.produto + ' · parcela ' + (i + 1) + '/' + c.venda.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
+        if (!p.pago && p.vencimento) ev.push({ chave: 'receber:' + c.id + ':' + i, data: p.vencimento, tipo: 'receber', titulo: 'Receber ' + moeda(p.valor) + ' — ' + orgao, detalhe: c.produto + ' · parcela ' + (i + 1) + '/' + c.venda.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
       ((c.compra && c.compra.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
+        if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
-      if (c.vigenciaFim && c.status !== 'encerrado') ev.push({ data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
+      if (c.vigenciaFim && c.status !== 'encerrado') ev.push({ chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
     }
     const ateProximoMes = calc.mesDe(calc.addMeses(calc.mesDe(calc.hoje()) + '-01', 1));
     for (const k of calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateProximoMes)) {
-      if (!k.pago) ev.push({ data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: k.categoria, link: k.origem === 'custos' ? '#/custos' : '#/contabilidade', valor: k.valor });
+      if (!k.pago) ev.push({ chave: k.origem === 'custos' ? 'custo:' + k.custoId + ':' + k.mes : 'contador:' + k.mes, data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: k.categoria, link: k.origem === 'custos' ? '#/custos' : '#/contabilidade', valor: k.valor });
     }
     for (const l of D.lista('licitacoes')) {
-      if (l.dataDisputa && ['analise', 'proposta', 'disputa'].includes(l.status)) ev.push({ data: l.dataDisputa, hora: l.horaDisputa, tipo: 'disputa', titulo: 'Disputa — ' + (l.orgao || 'licitação'), detalhe: [l.numeroEdital, l.portal].filter(Boolean).join(' · '), link: '#/licitacoes' });
+      if (l.dataDisputa && ['analise', 'proposta', 'disputa'].includes(l.status)) ev.push({ chave: 'disputa:' + l.id, data: l.dataDisputa, hora: l.horaDisputa, tipo: 'disputa', titulo: 'Disputa — ' + (l.orgao || 'licitação'), detalhe: [l.numeroEdital, l.portal].filter(Boolean).join(' · '), link: '#/licitacoes' });
     }
     return ev;
   };
