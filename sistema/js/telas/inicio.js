@@ -1,71 +1,117 @@
-/* Tela Início: o que precisa de atenção hoje. */
+/* Tela Início: cotação do dólar em tempo real, painel financeiro da empresa
+   e contratos perto do fim da vigência. */
 (function () {
-  const { esc, moeda, dataBR, MESES_CURTOS } = GAH.u;
+  const { esc, MESES_CURTOS } = GAH.u;
   const calc = GAH.calc;
   const D = GAH.dados;
 
-  function itemAviso(ev, selo) {
-    return (
-      '<li><div class="data-bloco"><b>' + ev.data.slice(8, 10) + '</b><span>' + MESES_CURTOS[Number(ev.data.slice(5, 7)) - 1] + (ev.data.slice(0, 4) !== calc.hoje().slice(0, 4) ? ' ' + ev.data.slice(2, 4) : '') + '</span></div>' +
-      '<div class="titulo"><a href="' + esc(ev.link || '#/agenda') + '">' + esc(ev.titulo) + '</a><span class="detalhe">' + esc(ev.detalhe || '') + (ev.hora ? ' · ' + esc(ev.hora) : '') + '</span></div>' +
-      (selo || '') + '</li>'
-    );
+  /* ---------- cotação do dólar ---------- */
+  // 1º AwesomeAPI (dólar comercial, atualiza a cada minuto); se falhar, PTAX do Banco Central.
+  const cotacao = { dados: null, buscadaEm: 0, buscando: null };
+  const ATUALIZAR_A_CADA = 60 * 1000;
+  const fmt = (v, casas) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+  const hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  async function daAwesome() {
+    const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL', { cache: 'no-store' });
+    if (!r.ok) throw new Error('AwesomeAPI ' + r.status);
+    const j = (await r.json()).USDBRL;
+    return {
+      compra: Number(j.bid), venda: Number(j.ask), variacao: Number(j.pctChange),
+      maxima: Number(j.high), minima: Number(j.low),
+      quando: new Date(Number(j.timestamp) * 1000), fonte: 'Dólar comercial'
+    };
   }
 
-  function lista(eventos, vazioTitulo, vazioTexto, seloFn) {
-    if (!eventos.length) return '<div class="vazio"><strong>' + esc(vazioTitulo) + '</strong>' + esc(vazioTexto) + '</div>';
-    return '<ul class="avisos">' + eventos.map((e) => itemAviso(e, seloFn ? seloFn(e) : '')).join('') + '</ul>';
+  async function doBancoCentral() {
+    const p = (d) => String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '-' + d.getFullYear();
+    const hoje = new Date();
+    const inicio = new Date(hoje.getTime() - 10 * 86400000);
+    const url = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)" +
+      "?@moeda='USD'&@dataInicial='" + p(inicio) + "'&@dataFinalCotacao='" + p(hoje) + "'&$top=20&$orderby=dataHoraCotacao%20desc&$format=json";
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('Banco Central ' + r.status);
+    const lista = (await r.json()).value || [];
+    if (!lista.length) throw new Error('Banco Central sem cotação');
+    const atual = lista[0];
+    // variação em relação ao último fechamento de um dia anterior
+    const diaAtual = atual.dataHoraCotacao.slice(0, 10);
+    const anterior = lista.find((x) => x.dataHoraCotacao.slice(0, 10) < diaAtual && x.tipoBoletim === 'Fechamento') || lista.find((x) => x.dataHoraCotacao.slice(0, 10) < diaAtual);
+    return {
+      compra: atual.cotacaoCompra, venda: atual.cotacaoVenda,
+      variacao: anterior ? ((atual.cotacaoVenda - anterior.cotacaoVenda) / anterior.cotacaoVenda) * 100 : null,
+      quando: new Date(atual.dataHoraCotacao.replace(' ', 'T').slice(0, 19)), fonte: 'PTAX Banco Central (' + atual.tipoBoletim.toLowerCase() + ')'
+    };
+  }
+
+  async function buscarCotacao() {
+    if (cotacao.buscando) return cotacao.buscando;
+    cotacao.buscando = (async () => {
+      try {
+        cotacao.dados = await daAwesome();
+      } catch (e1) {
+        try { cotacao.dados = await doBancoCentral(); } catch (e2) { console.warn('Cotação indisponível', e1, e2); }
+      }
+      cotacao.buscadaEm = Date.now();
+      cotacao.buscando = null;
+      desenharCotacao();
+    })();
+    return cotacao.buscando;
+  }
+
+  function htmlCotacao() {
+    const c = cotacao.dados;
+    if (!c) {
+      return '<div class="cotacao-rotulo">Dólar hoje</div><div class="cotacao-valor">' + (cotacao.buscadaEm ? 'indisponível' : 'carregando…') + '</div>' +
+        (cotacao.buscadaEm ? '<div class="cotacao-info">Não foi possível buscar a cotação agora. Tentando de novo em 1 minuto.</div>' : '');
+    }
+    const v = c.variacao;
+    const seta = v === null || isNaN(v) ? '' : v > 0 ? '▲' : v < 0 ? '▼' : '■';
+    const cls = v > 0 ? 'sobe' : v < 0 ? 'desce' : '';
+    return '<div class="cotacao-rotulo">Dólar hoje <span class="cotacao-ao-vivo" title="Atualiza sozinho a cada minuto">ao vivo</span></div>' +
+      '<div class="cotacao-linha"><div class="cotacao-valor">R$ ' + fmt(c.venda, 4) + '</div>' +
+      (seta ? '<div class="cotacao-variacao ' + cls + '">' + seta + ' ' + fmt(Math.abs(v), 2) + '%</div>' : '') + '</div>' +
+      '<div class="cotacao-info">Compra R$ ' + fmt(c.compra, 4) + ' · Venda R$ ' + fmt(c.venda, 4) +
+      (c.maxima ? ' · Máx. R$ ' + fmt(c.maxima, 4) + ' · Mín. R$ ' + fmt(c.minima, 4) : '') + '</div>' +
+      '<div class="cotacao-info">' + esc(c.fonte) + ' · atualizado às ' + hora(c.quando) + '</div>';
+  }
+
+  function desenharCotacao() {
+    const el = document.getElementById('cotacao-dolar');
+    if (el) el.innerHTML = htmlCotacao();
+  }
+
+  // Atualiza sozinho enquanto a tela Início estiver aberta.
+  setInterval(() => {
+    if (document.getElementById('cotacao-dolar') && !document.hidden) buscarCotacao();
+  }, ATUALIZAR_A_CADA);
+
+  /* ---------- contratos perto do fim da vigência ---------- */
+  function painelRenovacoes() {
+    const hoje = calc.hoje();
+    const cfg = D.configuracao();
+    const limite = calc.addDias(hoje, cfg.diasAvisoVigencia);
+    const lista = GAH.eventosAutomaticos()
+      .filter((e) => e.tipo === 'renovacao' && e.data >= hoje && e.data <= limite)
+      .sort((a, b) => a.data.localeCompare(b.data));
+    return '<section class="painel"><div class="painel-cab"><h2>Contratos que vencem em até ' + cfg.diasAvisoVigencia + ' dias</h2><span class="sub">Oportunidades de renovação</span></div>' +
+      (lista.length
+        ? '<ul class="avisos">' + lista.map((e) => {
+            const n = calc.diasEntre(hoje, e.data);
+            return '<li><div class="data-bloco"><b>' + e.data.slice(8, 10) + '</b><span>' + MESES_CURTOS[Number(e.data.slice(5, 7)) - 1] + '</span></div>' +
+              '<div class="titulo"><a href="' + esc(e.link) + '">' + esc(e.titulo) + '</a><span class="detalhe">' + esc(e.detalhe || '') + '</span></div>' +
+              '<span class="selo alerta">' + (n === 0 ? 'hoje' : n === 1 ? 'amanhã' : n + ' dias') + '</span></li>';
+          }).join('') + '</ul>'
+        : '<div class="vazio"><strong>Nenhum contrato vencendo</strong>Nenhuma vigência termina nos próximos ' + cfg.diasAvisoVigencia + ' dias.</div>') +
+      '</section>';
   }
 
   GAH.telas.inicio = function (main) {
-    const hoje = calc.hoje();
-    const em7 = calc.addDias(hoje, 7);
-    const em30 = calc.addDias(hoje, 30);
-    const cfg = D.configuracao();
-    const emAviso = calc.addDias(hoje, cfg.diasAvisoVigencia);
-    const contratos = D.lista('contratos');
-    const geral = calc.resumoGeral(contratos, GAH.despesasCompletas(), D.lista('clientes'), hoje);
-    const auto = GAH.eventosAutomaticos();
-    const manuais = D.lista('agenda')
-      .filter((a) => !a.concluido && a.data)
-      .map((a) => ({ data: a.data, hora: a.hora, tipo: a.tipo, titulo: a.titulo, detalhe: [a.tipo, a.local].filter(Boolean).join(' · '), link: '#/agenda' }));
-
-    const atrasados = auto.filter((e) => e.tipo === 'receber' && e.data < hoje).sort((a, b) => a.data.localeCompare(b.data));
-    const receber30 = auto.filter((e) => e.tipo === 'receber' && e.data >= hoje && e.data <= em30).sort((a, b) => a.data.localeCompare(b.data));
-    const pagar30 = auto.filter((e) => e.tipo === 'pagar' && e.data <= em30).sort((a, b) => a.data.localeCompare(b.data));
-    const renovacoes = auto.filter((e) => e.tipo === 'renovacao' && e.data >= hoje && e.data <= emAviso).sort((a, b) => a.data.localeCompare(b.data));
-    const compromissos = manuais.concat(auto.filter((e) => e.tipo === 'disputa')).filter((e) => e.data >= hoje && e.data <= calc.addDias(hoje, 14)).sort((a, b) => (a.data + (a.hora || '')).localeCompare(b.data + (b.hora || '')));
-    const receberSemana = auto.filter((e) => e.tipo === 'receber' && e.data >= hoje && e.data <= em7).reduce((s, e) => s + e.valor, 0);
-    const pagarMes = pagar30.reduce((s, e) => s + e.valor, 0);
-
-    const h = new Date().getHours();
-    const saudacao = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-    const dataExtenso = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-
-    main.innerHTML =
-      '<div class="cabecalho-tela"><div><h1>' + saudacao + '!</h1><p>' + esc(dataExtenso.charAt(0).toUpperCase() + dataExtenso.slice(1)) + '. Veja o que precisa de atenção.</p></div>' +
-      '<div class="acoes"><button class="botao secundario" id="ini-orgao">+ Órgão</button><button class="botao secundario" id="ini-compromisso">+ Compromisso</button><button class="botao" id="ini-contrato">+ Contrato</button></div></div>' +
-      '<div class="kpis">' +
-      '<div class="kpi destaque"><span class="kpi-rotulo">A receber (total)</span><span class="kpi-valor">' + moeda(geral.aReceber) + '</span><span class="kpi-nota">' + geral.contratosAtivos + ' contratos ativos</span></div>' +
-      '<div class="kpi' + (geral.valorAtrasado ? ' alerta' : '') + '"><span class="kpi-rotulo">Recebimentos em atraso</span><span class="kpi-valor">' + moeda(geral.valorAtrasado) + '</span><span class="kpi-nota">' + geral.parcelasAtrasadas + ' parcela(s)</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">Entra nos próximos 7 dias</span><span class="kpi-valor">' + moeda(receberSemana) + '</span><span class="kpi-nota">até ' + dataBR(em7) + '</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">A pagar em 30 dias</span><span class="kpi-valor">' + moeda(pagarMes) + '</span><span class="kpi-nota">' + pagar30.length + ' pagamento(s): compras e custos</span></div>' +
-      '</div>' +
-      '<div class="grade grade-2">' +
-      '<section class="painel"><div class="painel-cab"><h2>Recebimentos em atraso</h2><span class="sub">Cobrar o órgão</span></div>' +
-      lista(atrasados, 'Nada em atraso', 'Todos os órgãos estão em dia.', () => '<span class="selo critico">atrasado</span>') + '</section>' +
-      '<section class="painel"><div class="painel-cab"><h2>Agenda dos próximos 14 dias</h2><a href="#/agenda" class="sub">Abrir agenda</a></div>' +
-      lista(compromissos, 'Nenhum compromisso marcado', 'Cadastre disputas, reuniões e prazos na Agenda.', (e) => (e.tipo === 'disputa' || e.tipo === 'Disputa' ? '<span class="selo info">disputa</span>' : '')) + '</section>' +
-      '<section class="painel"><div class="painel-cab"><h2>A receber nos próximos 30 dias</h2><span class="sub">' + moeda(receber30.reduce((s, e) => s + e.valor, 0)) + '</span></div>' +
-      lista(receber30, 'Nenhum vencimento', 'Não há parcelas para receber nos próximos 30 dias.') + '</section>' +
-      '<section class="painel"><div class="painel-cab"><h2>A pagar em 30 dias</h2><span class="sub">' + moeda(pagarMes) + '</span></div>' +
-      lista(pagar30, 'Nada a pagar', 'Nenhuma parcela de compra vence nos próximos 30 dias.', (e) => (e.data < hoje ? '<span class="selo critico">vencida</span>' : '')) + '</section>' +
-      '</div>' +
-      '<section class="painel"><div class="painel-cab"><h2>Contratos que vencem em até ' + cfg.diasAvisoVigencia + ' dias</h2><span class="sub">Oportunidades de renovação</span></div>' +
-      lista(renovacoes, 'Nenhum contrato vencendo', 'Nenhuma vigência termina nos próximos ' + cfg.diasAvisoVigencia + ' dias.', (e) => { const n = calc.diasEntre(hoje, e.data); return '<span class="selo alerta">' + (n === 0 ? 'hoje' : n === 1 ? 'amanhã' : n + ' dias') + '</span>'; }) + '</section>';
-
-    main.querySelector('#ini-orgao').addEventListener('click', () => GAH.formCliente(null, (c) => (location.hash = '#/clientes/' + c.id)));
-    main.querySelector('#ini-contrato').addEventListener('click', () => GAH.formContrato(null));
-    main.querySelector('#ini-compromisso').addEventListener('click', () => GAH.formCompromisso(null, hoje));
+    GAH.renderFinanceiro(main, {
+      cabecalho: '<div class="cotacao" id="cotacao-dolar" aria-live="polite">' + htmlCotacao() + '</div>',
+      rodape: painelRenovacoes(),
+      redesenhar: () => GAH.telas.inicio(main)
+    });
+    if (Date.now() - cotacao.buscadaEm > ATUALIZAR_A_CADA) buscarCotacao();
   };
 })();

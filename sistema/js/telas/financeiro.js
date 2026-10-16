@@ -67,7 +67,10 @@
     return svg + '</svg>';
   }
 
-  GAH.telas.financeiro = function (main) {
+  /* Painel financeiro. É a tela Início: op.cabecalho troca o título, op.rodape entra no fim
+     e op.redesenhar é chamado quando o ano do gráfico muda. */
+  GAH.renderFinanceiro = function (main, op) {
+    op = op || {};
     const hoje = calc.hoje();
     const contratos = D.lista('contratos');
     const mesAtual = calc.mesDe(hoje);
@@ -104,8 +107,8 @@
     const kpi = (rotulo, valor, nota, cls) => '<div class="kpi ' + (cls || '') + '"><span class="kpi-rotulo">' + rotulo + '</span><span class="kpi-valor">' + valor + '</span>' + (nota ? '<span class="kpi-nota">' + nota + '</span>' : '') + '</div>';
 
     main.innerHTML =
-      '<div class="cabecalho-tela"><div><h1>Financeiro</h1><p>Visão geral da GAH Licita desde o início, com todos os contratos não cancelados.</p></div></div>' +
-      '<div class="kpis">' +
+      (op.cabecalho || '') +
+      '<div class="kpis kpis-4">' +
       kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque') +
       kpi('Total recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
       kpi('A receber', moeda(g.aReceber), g.valorAtrasado ? '<span class="negativo">' + moeda(g.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
@@ -144,11 +147,12 @@
           fabricantes.map(([f, v]) => '<tr><td class="nome">' + esc(f) + '</td><td class="valor">' + v.n + '</td><td class="valor">' + moeda(v.venda) + '</td><td class="valor">' + moeda(v.lucro) + '</td></tr>').join('') +
           '</tbody></table></div>'
         : '<div class="vazio"><strong>Sem contratos ainda</strong>Cadastre um contrato para ver as vendas por fabricante.</div>') +
-      '</section></div>';
+      '</section></div>' +
+      (op.rodape || '');
 
     main.querySelector('#fin-ano').addEventListener('change', (e) => {
       anoEscolhido = Number(e.target.value);
-      GAH.telas.financeiro(main);
+      (op.redesenhar || (() => GAH.telas.inicio(main)))();
     });
 
     const caixa = main.querySelector('#fin-grafico');
@@ -171,3 +175,6 @@
     caixa.addEventListener('mouseleave', () => (dica.hidden = true));
   };
 })();
+
+/* O endereço antigo #/financeiro continua funcionando: abre o Início. */
+GAH.telas.financeiro = function (main) { GAH.telas.inicio(main); };

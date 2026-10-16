@@ -44,10 +44,9 @@
       })
       .join('');
 
-  const LOGO =
-    '<svg class="logo" viewBox="0 0 150 40" role="img" aria-label="GAH Licita"><path d="M8 4 H22 L28 10 V34 A2 2 0 0 1 26 36 H8 A2 2 0 0 1 6 34 V6 A2 2 0 0 1 8 4 Z"/><path d="M22 4 V10 H28"/><path d="M11 16 H23"/><path d="M11 21 H19"/><path class="check" d="M10.5 27 L15 31.5 L23.5 22.5"/><text x="38" y="20" font-size="15" font-weight="700">GAH</text><text x="38" y="34" font-size="13">Licita</text></svg>';
-  const MARCA_DAGUA =
-    '<div class="marca-dagua" aria-hidden="true"><svg viewBox="0 0 150 40"><path d="M8 4 H22 L28 10 V34 A2 2 0 0 1 26 36 H8 A2 2 0 0 1 6 34 V6 A2 2 0 0 1 8 4 Z"/><path d="M22 4 V10 H28"/><path d="M11 16 H23"/><path d="M11 21 H19"/><path class="check" d="M10.5 27 L15 31.5 L23.5 22.5"/><text x="38" y="20" font-size="15" font-weight="700">GAH</text><text x="38" y="34" font-size="13">Licita</text></svg></div>';
+  // Mesma logo do cabeçalho do site (arquivo logo-gah.png na raiz do site)
+  const LOGO = '<img class="logo-marca" src="../logo-gah.png" alt="GAH Licita" width="44" height="64">';
+  const MARCA_DAGUA = '<div class="marca-dagua" aria-hidden="true"><img src="img/logo-gah.png" alt=""></div>';
   const ICONE_DRIVE =
     '<svg width="28" height="25" viewBox="0 0 87 78" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>';
 
@@ -580,7 +579,6 @@
   /* ---------- telas e navegação ---------- */
   const MENU = [
     ['inicio', 'Início'],
-    ['financeiro', 'Financeiro'],
     ['clientes', 'Clientes'],
     ['contratos', 'Contratos'],
     ['agenda', 'Agenda'],
