@@ -849,6 +849,15 @@
       app.innerHTML = '<div class="carregando">Não foi possível conectar ao Firebase. Confira o arquivo js/config.js.<br><small>' + esc(erro.message) + '</small></div>';
       return;
     }
+    // Saiu para outro site nesta aba e voltou (ou abriu o endereço de novo): pede o login outra vez.
+    // Só atualizar a página (F5) mantém o login.
+    let saiu = false;
+    try {
+      const nav = performance.getEntriesByType('navigation')[0];
+      saiu = sessionStorage.getItem('gah-sair') === '1' || !nav || nav.type !== 'reload';
+      sessionStorage.removeItem('gah-sair');
+    } catch (e) { saiu = true; }
+    if (saiu) await D.encerrarSessao().catch(() => {});
     D.observarLogin((u) => {
       if (u) {
         if (!usuarioAtual) iniciarSistema(u);
@@ -860,4 +869,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', iniciar);
+  // Voltou com o botão "voltar" e o navegador restaurou a página da memória: também pede o login.
+  window.addEventListener('pageshow', (e) => {
+    if (!e.persisted) return;
+    try { sessionStorage.setItem('gah-sair', '1'); } catch (err) { /* ignora */ }
+    location.reload();
+  });
 })();

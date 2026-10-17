@@ -135,6 +135,16 @@
       await fb.authMod.signOut(fb.auth);
     },
 
+    /* Sai sem recarregar a página (usado ao voltar de outro site na mesma aba). */
+    async encerrarSessao() {
+      if (modoDemo()) {
+        try { sessionStorage.removeItem('gah-demo-usuario'); } catch (e) { /* ignora */ }
+        return;
+      }
+      if (fb.auth.authStateReady) await fb.auth.authStateReady();
+      if (fb.auth.currentUser) await fb.authMod.signOut(fb.auth);
+    },
+
     async recuperarSenha(email) {
       if (modoDemo()) throw new Error('No modo demonstração não há envio de e-mail.');
       await fb.authMod.sendPasswordResetEmail(fb.auth, email);
