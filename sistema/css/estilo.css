@@ -196,21 +196,28 @@ button, input, select, textarea { font: inherit; color: inherit; }
 @media (max-width: 1280px) {
   .menu-abrir { display: block; }
   .topo-usuario { margin-left: auto; }
+  /* menu compacto (igual ao do site no celular): abre abaixo do botão ☰, com a
+     largura do item mais longo, e cada item vira um botão */
   .menu {
     display: none;
     position: absolute;
-    top: var(--altura-topo);
-    left: 0;
-    right: 0;
+    top: calc(var(--altura-topo) - 4px);
+    left: auto;
+    right: max(12px, env(safe-area-inset-right, 0px));
+    width: max-content;
     flex-direction: column;
     align-items: stretch;
+    gap: 6px;
     background: var(--navy);
-    padding: 8px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
   }
   .menu.aberto { display: flex; }
-  .menu a { padding: 14px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0; }
-  .menu a::after { left: 6px; right: 6px; }
+  .menu a { padding: 12px 18px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
+  .menu a:hover, .menu a.ativo { background: rgba(255, 255, 255, 0.12); }
+  .menu a::after { left: 18px; right: 18px; bottom: 6px; }
 }
 
 .faixa-demo {
