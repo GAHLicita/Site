@@ -52,7 +52,7 @@
     const selo = (x) => {
       if (!x.anterior) return seloVigencia(x.s);
       const n = calc.diasEntre(hoje, x.vigFim);
-      return '<span class="selo ' + (n < 0 ? 'critico' : 'alerta') + '">' + (n < 0 ? 'Licenças atrasadas' : n === 0 ? 'Entregar hoje' : 'Entregar em ' + n + ' dias') + '</span>';
+      return '<span class="selo ' + (n < 0 ? 'critico' : 'alerta') + '">' + (n < 0 ? 'Entrega atrasada' : n === 0 ? 'Entregar hoje' : 'Entregar em ' + n + ' dias') + '</span>';
     };
     const soma = linhas.reduce((t, { s }) => ({ venda: t.venda + s.venda, recebido: t.recebido + s.recebido, aReceber: t.aReceber + s.aReceber, aPagar: t.aPagar + s.aPagar, lucro: t.lucro + s.lucro }), { venda: 0, recebido: 0, aReceber: 0, aPagar: 0, lucro: 0 });
 
@@ -66,13 +66,13 @@
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
       '</div></div>' +
       (linhas.length
-        ? '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
+        ? '<div class="tabela-rolagem"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
           linhas.map((x, i) => {
             const { c, s, orgao } = x;
             const titulo = x.grupo && (i === 0 || linhas[i - 1].grupo !== x.grupo) ? '<tr class="linha-grupo"><td colspan="9">' + TITULO_GRUPO[x.grupo] + '</td></tr>' : '';
             const vig = x.anterior
-              ? dataBR(x.vigIni) + '<span class="sub">até <b>' + dataBR(x.vigFim) + '</b> (contrato atual)</span><span class="sub renovacao-info">Renovado: ' + dataBR(c.vigenciaInicio) + ' a ' + dataBR(c.vigenciaFim) + '</span>' +
-                '<button type="button" class="botao pequeno verde" data-entregue="' + esc(c.id) + '">Licenças entregues</button>'
+              ? dataBR(x.vigIni) + '<span class="sub">até <b>' + dataBR(x.vigFim) + '</b> (atual)</span><span class="sub renovacao-info">Renovado: ' + dataBR(c.vigenciaInicio) + ' a ' + dataBR(c.vigenciaFim) + '</span>' +
+                '<button type="button" class="botao verde botao-entregue" data-entregue="' + esc(c.id) + '">Licenças entregues</button>'
               : dataBR(c.vigenciaInicio) + '<span class="sub">até ' + dataBR(c.vigenciaFim) + '</span>';
             return titulo + '<tr class="clicavel' + (x.grupo >= 3 ? ' linha-apagada' : '') + '" data-id="' + esc(c.id) + '"><td><span class="nome">' + esc(orgao) + (ufCliente(c.clienteId) ? ' <span class="texto-suave">· ' + esc(ufCliente(c.clienteId)) + '</span>' : '') + '</span><span class="sub">' + esc([c.produto, c.fornecedor].filter(Boolean).join(' · ')) + '</span></td>' +
             '<td>' + vig + '</td>' +
@@ -83,7 +83,7 @@
             '<td class="valor ' + (s.lucro < 0 ? 'negativo' : '') + '">' + moeda(s.lucro) + '</td>' +
             '<td>' + selo(x) + '</td></tr>';
           }).join('') +
-          '</tbody><tfoot><tr><td colspan="3">' + linhas.length + ' contrato(s)</td><td class="valor">' + moeda(soma.venda) + '</td><td class="valor">' + moeda(soma.recebido) + '</td><td class="valor">' + moeda(soma.aReceber) + '</td><td class="valor">' + moeda(soma.aPagar) + '</td><td class="valor">' + moeda(soma.lucro) + '</td><td></td></tr></tfoot></table></div>'
+          '</tbody><tfoot><tr><td colspan="2">' + linhas.length + ' contrato(s)</td><td></td><td class="valor">' + moeda(soma.venda) + '</td><td class="valor">' + moeda(soma.recebido) + '</td><td class="valor">' + moeda(soma.aReceber) + '</td><td class="valor">' + moeda(soma.aPagar) + '</td><td class="valor">' + moeda(soma.lucro) + '</td><td></td></tr></tfoot></table></div>'
         : '<div class="vazio"><strong>' + (todos.length ? 'Nenhum contrato com esses filtros' : 'Nenhum contrato cadastrado') + '</strong>' + (todos.length ? 'Mude a busca ou os filtros.' : 'Cadastre primeiro o órgão em Clientes e depois o contrato.') + '</div>') +
       '</section>';
 

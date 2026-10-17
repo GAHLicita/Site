@@ -767,4 +767,16 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .tabela .linha-grupo td { background: var(--superficie-2); color: var(--tinta-2); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding-block: 8px; }
 .tabela .linha-apagada td { opacity: 0.62; }
 .tabela .renovacao-info { color: var(--info); font-weight: 600; }
-.tabela [data-entregue] { margin-top: 6px; }
+.tabela .botao-entregue { margin-top: 4px; padding: 2px 8px; font-size: 0.72rem; border-radius: 6px; line-height: 1.4; }
+/* tabela de contratos mais justa, para caber na tela sem rolagem para o lado */
+.tabela-contratos { font-size: 0.84rem; }
+.tabela-contratos th, .tabela-contratos td { padding: 8px 7px; }
+.tabela-contratos th:first-child, .tabela-contratos td:first-child { padding-left: 14px; }
+.tabela-contratos th:last-child, .tabela-contratos td:last-child { padding-right: 14px; }
+.tabela-contratos .sub { font-size: 0.76rem; }
+.tabela-contratos .selo { font-size: 0.7rem; padding: 2px 8px; white-space: nowrap; }
+@media (max-width: 1150px) {
+  .tabela-contratos th:nth-child(3), .tabela-contratos tbody tr:not(.linha-grupo) td:nth-child(3), .tabela-contratos tfoot td:nth-child(3) { display: none; }
+  .tabela-contratos th, .tabela-contratos td { padding-inline: 5px; }
+  .tabela-contratos th { letter-spacing: 0.02em; }
+}
