@@ -550,6 +550,9 @@ nav.main-nav a::after{
   transition:transform .22s ease;
 }
 nav.main-nav a:hover::after{transform:scaleX(1);}
+/* Seção em que a pessoa está: mesmo destaque do hover, fixo. */
+nav.main-nav a.is-current{background:rgba(255,255,255,0.1);}
+nav.main-nav a.is-current::after{transform:scaleX(1);}
 
 /* ---------- Hero ---------- */
 .hero{
@@ -1560,5 +1563,33 @@ form.contact-form{
 </script>
 
 
+<script>
+  // Menu: destaca o link da seção que está na tela (ao clicar ou ao rolar).
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.main-nav a[href^="#"]'));
+    var itens = links.map(function(a){ return { link: a, secao: document.querySelector(a.getAttribute('href')) }; })
+                     .filter(function(i){ return i.secao; });
+    if (!itens.length) return;
+    var agendado = false;
+    function atualizar(){
+      agendado = false;
+      var topo = document.querySelector('.site-header');
+      var linha = (topo ? topo.offsetHeight : 0) + window.innerHeight * 0.35;
+      var atual = itens[0];
+      itens.forEach(function(i){ if (i.secao.getBoundingClientRect().top <= linha) atual = i; });
+      // No fim da página, a última seção é a atual.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) atual = itens[itens.length - 1];
+      itens.forEach(function(i){
+        var ativo = i === atual;
+        i.link.classList.toggle('is-current', ativo);
+        if (ativo) i.link.setAttribute('aria-current', 'true'); else i.link.removeAttribute('aria-current');
+      });
+    }
+    function agendar(){ if (!agendado){ agendado = true; requestAnimationFrame(atualizar); } }
+    window.addEventListener('scroll', agendar, { passive: true });
+    window.addEventListener('resize', agendar);
+    atualizar();
+  })();
+</script>
 </body>
 </html>
