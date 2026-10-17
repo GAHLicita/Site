@@ -72,7 +72,10 @@ link para criar uma senha nova.
   onde enviar e o que precisa constar na nota), link da pasta no Drive, CNPJ e endereço,
   e todos os contratos com as parcelas. Tudo editável em "Editar dados".
 - **Contratos**: todos os contratos numa tabela, com filtros por situação, forma de
-  recebimento e ano.
+  recebimento e ano. A lista começa pelos que terminam a vigência mais cedo; no fim ficam os
+  vencidos sem renovação, os contratos anteriores já renovados e os cancelados. Uma renovação
+  (contrato novo do mesmo órgão e fabricante, começando perto do fim do anterior) mostra a vigência
+  do contrato atual até você clicar em **Licenças entregues**; daí passa a mostrar a nova vigência.
 - **Agenda**: calendário com disputas, reuniões e prazos. Vencimentos de parcelas, fins de
   vigência e datas de disputa das licitações entram sozinhos.
 - **Licitações**: editais em análise, propostas, disputas, ganhas e perdidas. Uma licitação

@@ -202,6 +202,32 @@
   };
 
   /* Quanto entra e quanto sai nos próximos meses, pelas parcelas em aberto. */
+  /* Renovações. Um contrato é renovação de outro do mesmo órgão e do mesmo fabricante (ou licença) quando
+     começa perto do fim do anterior (até 60 dias antes ou depois). A renovação fica "pendente" até as licenças
+     serem entregues: enquanto isso, o que vale é a vigência do contrato anterior.
+     Entregue = marcado como entregue (licencasEntregues), ou com data de entrega já passada e vigência iniciada.
+     Devolve { [idRenovacao]: { anterior, pendente }, porAnterior: { [idAnterior]: idRenovacao } }. */
+  C.renovacoes = function (contratos, hoje) {
+    const lista = (contratos || []).filter((c) => c.status !== 'cancelado' && c.vigenciaInicio && c.vigenciaFim);
+    const chave = (c) => String(c.fornecedor || c.produto || '').trim().toLowerCase();
+    const r = { porAnterior: {} };
+    for (const c of lista) {
+      let melhor = null;
+      let menor = Infinity;
+      for (const o of lista) {
+        if (o.id === c.id || o.clienteId !== c.clienteId || chave(o) !== chave(c)) continue;
+        if (!(o.vigenciaInicio < c.vigenciaInicio && o.vigenciaFim < c.vigenciaFim)) continue;
+        const dif = Math.abs(C.diasEntre(o.vigenciaFim, c.vigenciaInicio));
+        if (dif <= 60 && dif < menor) { menor = dif; melhor = o; }
+      }
+      if (!melhor) continue;
+      const entregue = !!c.licencasEntregues || (!!c.dataEntrega && c.dataEntrega <= hoje && c.vigenciaInicio <= hoje);
+      r[c.id] = { anterior: melhor.id, pendente: !entregue };
+      r.porAnterior[melhor.id] = c.id;
+    }
+    return r;
+  };
+
   /* Vendas por fabricante. Um contrato com licenças de vários fabricantes (lista 'itens', cada uma com
      fornecedor e valor) é dividido entre eles na proporção do valor de cada licença; o contrato conta uma
      vez para cada fabricante que aparece nele. Sem 'itens', vale o campo fornecedor do contrato. */

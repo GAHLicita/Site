@@ -762,3 +762,9 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* Licenças do contrato (várias por contrato) */
 .item-linha { border: 1px solid var(--linha); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+
+/* Contratos: separadores de grupo e renovação aguardando entrega */
+.tabela .linha-grupo td { background: var(--superficie-2); color: var(--tinta-2); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding-block: 8px; }
+.tabela .linha-apagada td { opacity: 0.62; }
+.tabela .renovacao-info { color: var(--info); font-weight: 600; }
+.tabela [data-entregue] { margin-top: 6px; }

@@ -101,3 +101,20 @@ test('vendasPorFabricante divide contrato com licenças de vários fabricantes',
     ['OpenAI', 2, 1750, 700], ['Sem fabricante', 1, 1000, 400], ['Google', 1, 250, 100]
   ]);
 });
+
+test('renovacoes liga o contrato novo ao anterior e fica pendente até entregar', () => {
+  const c = (id, ini, fim, extra) => Object.assign({ id, clienteId: 'o1', fornecedor: 'OpenAI', vigenciaInicio: ini, vigenciaFim: fim }, extra);
+  const lista = [
+    c('a', '2025-12-02', '2026-12-01'),
+    c('b', '2026-12-02', '2027-12-01', { dataEntrega: '' }),
+    c('x', '2026-01-05', '2027-01-04'),
+    c('y', '2027-01-20', '2028-01-19', { licencasEntregues: true }),
+    c('z', '2025-01-01', '2025-12-31', { fornecedor: 'Zoom' })
+  ];
+  const r = calc.renovacoes(lista, '2026-10-17');
+  assert.deepStrictEqual(r.b, { anterior: 'a', pendente: true });
+  assert.deepStrictEqual(r.y, { anterior: 'x', pendente: false });
+  assert.strictEqual(r.a, undefined);
+  assert.strictEqual(r.porAnterior.a, 'b');
+  assert.strictEqual(r.z, undefined);
+});

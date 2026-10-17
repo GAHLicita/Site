@@ -579,6 +579,7 @@
   /* ---------- eventos automáticos (vencimentos, renovações, disputas) ---------- */
   GAH.eventosAutomaticos = function () {
     const ev = [];
+    const ren = calc.renovacoes(D.lista('contratos'), calc.hoje());
     for (const c of D.lista('contratos')) {
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
@@ -588,7 +589,13 @@
       ((c.compra && c.compra.parcelas) || []).forEach((p, i) => {
         if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
-      if (c.vigenciaFim && c.status !== 'encerrado') ev.push({ chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
+      // já renovado: com as licenças novas entregues não há o que fazer; sem entregar, o aviso vira "entregar licenças"
+      const renovacao = ren.porAnterior[c.id] && ren[ren.porAnterior[c.id]];
+      if (c.vigenciaFim && c.status !== 'encerrado' && !(renovacao && !renovacao.pendente)) {
+        ev.push(renovacao
+          ? { chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Entregar licenças da renovação — ' + orgao, detalhe: c.produto + ' · renovação já contratada, entregar até o fim da vigência atual', link: '#/contratos' }
+          : { chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
+      }
     }
     const ateProximoMes = calc.mesDe(calc.addMeses(calc.mesDe(calc.hoje()) + '-01', 1));
     for (const k of calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateProximoMes)) {
