@@ -612,6 +612,18 @@
     return D.lista('despesas').concat(calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateMes || calc.mesDe(calc.hoje())));
   };
 
+  /* Visão financeira escolhida pelo usuário: 'total' (todos os contratos, inclusive renovações ainda não
+     entregues) ou 'entregues' (só contratos com as licenças já entregues). Vale para o Início e Contratos. */
+  GAH.visaoFinanceira = function (nova) {
+    if (nova) { try { localStorage.setItem('gah-visao-financeira', nova); } catch (e) { /* ignora */ } return nova; }
+    try { return localStorage.getItem('gah-visao-financeira') === 'entregues' ? 'entregues' : 'total'; } catch (e) { return 'total'; }
+  };
+  GAH.contratosDaVisao = function (contratos, visao, hoje) {
+    if (visao !== 'entregues') return contratos;
+    const ren = calc.renovacoes(contratos, hoje);
+    return contratos.filter((c) => calc.licencasEntregues(c, hoje, ren));
+  };
+
   /* ---------- eventos automáticos (vencimentos, renovações, disputas) ---------- */
   GAH.eventosAutomaticos = function () {
     const ev = [];

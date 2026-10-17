@@ -38,8 +38,12 @@
       x.vigFim = x.anterior ? x.anterior.vigenciaFim : x.c.vigenciaFim;
       x.grupo = x.c.status === 'cancelado' ? 4 : ren.porAnterior[x.c.id] ? 3 : !x.vigFim ? 1 : x.vigFim < hoje || x.c.status === 'encerrado' ? 2 : 0;
     });
+    const visao = GAH.visaoFinanceira();
+    todos.forEach((x) => (x.entregue = calc.licencasEntregues(x.c, hoje, ren)));
+    const naoEntregues = todos.filter((x) => !x.entregue && x.c.status !== 'cancelado').length;
     const linhas = todos
-      .filter(({ c, s, orgao }) => {
+      .filter(({ c, s, orgao, entregue }) => {
+        if (visao === 'entregues' && !entregue) return false;
         const t = filtro.busca.toLowerCase();
         if (t && ![orgao, c.produto, c.fornecedor, c.numeroContrato, c.numeroEmpenho].join(' ').toLowerCase().includes(t)) return false;
         if (filtro.vigencia === 'receber' ? s.aReceber <= 0 : filtro.vigencia === 'pagar' ? s.aPagar <= 0 : filtro.vigencia === 'atraso' ? s.parcelasAtrasadas === 0 : filtro.vigencia && s.vigencia !== filtro.vigencia) return false;
@@ -65,6 +69,9 @@
       '<select class="filtro" id="ct-vig" aria-label="Situação">' + opcoes([['vigente', 'Vigentes'], ['vencendo', 'Vencendo em breve'], ['encerrada', 'Encerrados'], ['receber', 'Com valor a receber'], ['atraso', 'Com parcela atrasada'], ['pagar', 'Com compra a pagar'], ['cancelado', 'Cancelados']], filtro.vigencia, 'Todas as situações') + '</select>' +
       '<select class="filtro" id="ct-forma" aria-label="Forma de recebimento">' + opcoes([['integral', 'Integral'], ['mensal', 'Mensal'], ['parcelado', 'Parcelado']], filtro.forma, 'Toda forma de recebimento') + '</select>' +
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
+      '<div class="visao-financeira" role="group" aria-label="Quais contratos mostrar">' +
+      '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total</button>' +
+      '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues' + (naoEntregues ? ' (' + naoEntregues + ' fora)' : '') + '</button></div>' +
       '</div></div>' +
       (linhas.length
         ? '<div class="tabela-rolagem"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
@@ -106,6 +113,7 @@
       if (document.activeElement === document.body) { b.focus(); b.setSelectionRange(pos, pos); }
     };
     main.querySelector('#ct-busca').addEventListener('input', reler);
+    main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => { GAH.visaoFinanceira(bt.dataset.visao); GAH.telas.contratos(main); }));
     ['#ct-vig', '#ct-forma', '#ct-ano'].forEach((s) => main.querySelector(s).addEventListener('change', reler));
     main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', (e) => { if (!e.target.closest('[data-entregue]')) abrirContrato(tr.dataset.id); }));
     // Ok de entrega da renovação: a partir daí o contrato passa a mostrar a nova vigência.

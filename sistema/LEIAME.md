@@ -98,6 +98,11 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- **Total × Só licenças entregues** (Início e Contratos): "Total" conta todos os contratos, inclusive
+  renovações já fechadas mas com licenças ainda não entregues (situação futura). "Só licenças entregues"
+  conta apenas os contratos já entregues (situação atual), com as parcelas a receber e a pagar em aberto
+  deles. A escolha fica lembrada neste navegador e vale nas duas telas.
+
 - **Imposto da NF** = valor de venda × % da NF.
 - **Imposto na compra** = valor de compra × % informado (IOF, câmbio etc.).
 - **Lucro do contrato** = venda − compra − imposto da NF − imposto da compra.

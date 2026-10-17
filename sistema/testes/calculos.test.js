@@ -118,3 +118,14 @@ test('renovacoes liga o contrato novo ao anterior e fica pendente até entregar'
   assert.strictEqual(r.porAnterior.a, 'b');
   assert.strictEqual(r.z, undefined);
 });
+
+test('licencasEntregues: renovação pendente não conta; demais pela data de entrega', () => {
+  const hoje = '2026-10-17';
+  const ren = { b: { anterior: 'a', pendente: true }, c: { anterior: 'x', pendente: false } };
+  assert.strictEqual(calc.licencasEntregues({ id: 'b', dataEntrega: '2026-01-01' }, hoje, ren), false);
+  assert.strictEqual(calc.licencasEntregues({ id: 'c' }, hoje, ren), true);
+  assert.strictEqual(calc.licencasEntregues({ id: 'd', dataEntrega: '2026-11-01' }, hoje, ren), false);
+  assert.strictEqual(calc.licencasEntregues({ id: 'e', dataEntrega: '2026-10-17' }, hoje, ren), true);
+  assert.strictEqual(calc.licencasEntregues({ id: 'f', vigenciaInicio: '2027-01-01' }, hoje, ren), false);
+  assert.strictEqual(calc.licencasEntregues({ id: 'g', licencasEntregues: true, dataEntrega: '2027-01-01' }, hoje, ren), true);
+});

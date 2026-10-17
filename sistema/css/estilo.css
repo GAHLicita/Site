@@ -749,7 +749,8 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
   /* 1ª seção: 8 quadros (4 linhas de 2) à esquerda e o mapa à direita */
   .secao-resumo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: stretch; }
-  .secao-resumo .kpis-2 { grid-template-rows: repeat(4, minmax(0, 1fr)); }
+  .secao-resumo .coluna-kpis { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  .secao-resumo .kpis-2 { flex: 1; min-height: 0; grid-template-rows: repeat(4, minmax(0, 1fr)); }
   .secao-resumo .kpi-valor { font-size: clamp(1.2rem, 0.9rem + 0.8vw, 1.6rem); }
   .secao-resumo .painel-mapa { display: flex; flex-direction: column; min-height: 0; }
   .secao-resumo .painel-mapa .painel-corpo { flex: 1; min-height: 0; display: flex; }
@@ -805,3 +806,11 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .painel-proximos .avisos { flex: 1; min-height: 0; }
 }
 @media (max-width: 900px) { .painel-proximos .avisos { max-height: 70vh; } }
+
+/* Início e Contratos: escolha entre todos os contratos e só os já entregues */
+.coluna-kpis { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.visao-financeira { display: inline-flex; align-self: center; background: var(--superficie); border: 1px solid var(--linha-forte); border-radius: 999px; padding: 3px; gap: 2px; max-width: 100%; }
+.visao-financeira button { border: 0; background: transparent; border-radius: 999px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; color: var(--tinta-2); cursor: pointer; }
+.visao-financeira button[aria-pressed="true"] { background: var(--navy); color: var(--creme); }
+.visao-financeira button:hover:not([aria-pressed="true"]) { color: var(--tinta); }
+@media (max-width: 480px) { .visao-financeira { flex-direction: column; border-radius: 12px; } .visao-financeira button { border-radius: 9px; } }

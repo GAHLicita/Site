@@ -95,6 +95,11 @@
     const despesas = GAH.despesasCompletas(mesAtual);
     const clientes = D.lista('clientes');
     const g = calc.resumoGeral(contratos, despesas, clientes, hoje);
+    // quadros: todos os contratos ou só os que já tiveram as licenças entregues (situação atual)
+    const visao = GAH.visaoFinanceira();
+    const contratosVisao = GAH.contratosDaVisao(contratos, visao, hoje);
+    const v = visao === 'entregues' ? calc.resumoGeral(contratosVisao, despesas, clientes, hoje) : g;
+    const foraDaVisao = contratos.length - contratosVisao.length;
 
     const anos = new Set([Number(hoje.slice(0, 4))]);
     contratos.forEach((c) => ['venda', 'compra'].forEach((l) => ((c[l] && c[l].parcelas) || []).forEach((p) => {
@@ -119,15 +124,19 @@
     main.innerHTML =
       (op.cabecalho || '') +
       '<section class="secao-inicio secao-resumo">' +
+      '<div class="coluna-kpis">' +
+      '<div class="visao-financeira" role="group" aria-label="Quais contratos entram nos quadros">' +
+      '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total (inclui renovações não entregues)</button>' +
+      '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues</button></div>' +
       '<div class="kpis kpis-2 kpis-compactos">' +
-      kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque kpi-centro') +
-      kpi('Recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
-      kpi('A receber', moeda(g.aReceber), g.valorAtrasado ? '<span class="negativo">' + moeda(g.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
-      kpi('A pagar (compras parceladas)', moeda(g.aPagar), 'de ' + moeda(g.totalCompras) + ' em compras') +
-      kpi('Impostos', moeda(g.impostos), 'NF e compras') +
-      kpi('Despesas e custos', moeda(g.despesas), 'contador, custos fixos e outras, até este mês') +
-      kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro dos contratos − despesas e custos') +
-      '</div>' +
+      kpi('Valor total em contratos', moeda(v.totalContratos), contratosVisao.length + ' contratos' + (foraDaVisao ? ' · ' + foraDaVisao + ' fora (não entregues)' : ''), 'destaque kpi-centro') +
+      kpi('Recebido', moeda(v.recebido), v.totalContratos ? pct(v.recebido / v.totalContratos) + ' do total' : '') +
+      kpi('A receber', moeda(v.aReceber), v.valorAtrasado ? '<span class="negativo">' + moeda(v.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
+      kpi('A pagar (compras parceladas)', moeda(v.aPagar), 'de ' + moeda(v.totalCompras) + ' em compras') +
+      kpi('Impostos', moeda(v.impostos), 'NF e compras') +
+      kpi('Despesas e custos', moeda(v.despesas), 'contador, custos fixos e outras, até este mês') +
+      kpi('Lucro líquido', '<span class="' + (v.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(v.lucroLiquido) + '</span>', 'lucro dos contratos − despesas e custos') +
+      '</div></div>' +
 
       '<section class="painel painel-mapa"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div class="mapa-coluna">' +
       '<div class="mapa-caixa">' + mapa(g.estados, porUF) + '</div>' +
@@ -163,6 +172,10 @@
       '</section></div></section>' +
       (op.rodape ? '<section class="secao-inicio">' + op.rodape + '</section>' : '');
 
+    main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => {
+      GAH.visaoFinanceira(bt.dataset.visao);
+      (op.redesenhar || (() => GAH.telas.inicio(main)))();
+    }));
     main.querySelector('#fin-ano').addEventListener('change', (e) => {
       anoEscolhido = Number(e.target.value);
       (op.redesenhar || (() => GAH.telas.inicio(main)))();

@@ -228,6 +228,16 @@
     return r;
   };
 
+  /* Licenças já entregues? Renovação: só depois do ok de entrega (veja C.renovacoes). Demais contratos:
+     marcado como entregue, ou data de entrega já passada; sem data de entrega, vale o início da vigência. */
+  C.licencasEntregues = function (c, hoje, ren) {
+    const r = ren && ren[c.id];
+    if (r) return !r.pendente;
+    if (c.licencasEntregues) return true;
+    if (c.dataEntrega) return c.dataEntrega <= hoje;
+    return !c.vigenciaInicio || c.vigenciaInicio <= hoje;
+  };
+
   /* Vendas por fabricante. Um contrato com licenças de vários fabricantes (lista 'itens', cada uma com
      fornecedor e valor) é dividido entre eles na proporção do valor de cada licença; o contrato conta uma
      vez para cada fabricante que aparece nele. Sem 'itens', vale o campo fornecedor do contrato. */
