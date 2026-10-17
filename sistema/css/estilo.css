@@ -510,6 +510,9 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .resultado b.negativo { color: var(--critico); }
 .parcela-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
 .parcela-check input { width: 18px; height: 18px; accent-color: var(--verde); }
+/* nos formulários o texto do checkbox quebra linha em vez de passar da janela */
+.form-grade .parcela-check { white-space: normal; align-items: flex-start; }
+.form-grade .parcela-check input { flex: 0 0 auto; margin-top: 1px; }
 .lado .tabela th, .lado .tabela td { padding: 8px 6px; }
 .lado .tabela { font-size: 0.86rem; }
 .lado details summary { cursor: pointer; font-weight: 600; color: var(--destaque); font-size: 0.9rem; }

@@ -46,8 +46,8 @@
       '<div class="campo largo"><label for="dc-link">Link do arquivo no Drive</label><input id="dc-link" name="link" type="url" value="' + esc(d.link) + '" placeholder="https://drive.google.com/file/d/..."><span class="ajuda">No Drive, clique com o botão direito no PDF → Compartilhar → Copiar link.</span></div>' +
       '<div class="campo"><label for="dc-valor">Valor (se for guia)</label><input id="dc-valor" name="valor" type="number" step="0.01" min="0" value="' + esc(d.valor) + '"></div>' +
       '<div class="campo"><label for="dc-venc">Vencimento</label><input id="dc-venc" name="vencimento" type="date" value="' + esc(d.vencimento) + '"></div>' +
-      '<label class="parcela-check"><input type="checkbox" name="pago"' + (d.pago ? ' checked' : '') + '> Já foi paga</label>' +
-      '<label class="parcela-check"><input type="checkbox" name="lancarDespesa"' + (d.lancarDespesa ? ' checked' : '') + '> Somar nas Despesas da empresa</label>' +
+      '<label class="parcela-check largo"><input type="checkbox" name="pago"' + (d.pago ? ' checked' : '') + '> Já foi paga</label>' +
+      '<label class="parcela-check largo"><input type="checkbox" name="lancarDespesa"' + (d.lancarDespesa ? ' checked' : '') + '> Somar nas Despesas da empresa</label>' +
       '<p class="texto-suave largo" style="margin:0;font-size:.84rem">Os honorários do contador entram pela "Mensalidade do contador" de cada mês, para não contar duas vezes.</p>' +
       '</form>';
     const rodape = (d.id ? '<button type="button" class="botao perigo" id="excluir-doc">Excluir</button>' : '') +
