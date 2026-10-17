@@ -172,7 +172,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   transform-origin: center;
   transition: transform 0.22s ease;
 }
-.menu a:hover { background: rgba(255, 255, 255, 0.1); }
+.menu a:hover, .menu a.ativo { background: rgba(255, 255, 255, 0.1); }
 .menu a:hover::after, .menu a.ativo::after { transform: scaleX(1); }
 @media (prefers-reduced-motion: reduce) { .menu a, .menu a::after { transition: none; } }
 .topo-usuario { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; color: rgba(251, 247, 239, 0.75); font-size: 0.85rem; }
