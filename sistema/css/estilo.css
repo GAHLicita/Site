@@ -701,7 +701,7 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 @media (max-width: 480px) { .kpis-2 .kpi-centro { width: 100%; } }
 @media (max-width: 480px) { .kpis-2 { grid-template-columns: minmax(0, 1fr); } }
 .kpis-compactos { gap: 10px; }
-.kpis-compactos .kpi { padding: 10px 14px; gap: 2px; justify-content: center; }
+.kpis-compactos .kpi { padding: 10px 14px; gap: 2px; justify-content: center; align-items: center; text-align: center; }
 .kpis-compactos .kpi-rotulo { font-size: 0.7rem; }
 .kpis-compactos .kpi-valor { font-size: clamp(1.05rem, 0.85rem + 0.6vw, 1.35rem); }
 .kpis-compactos .kpi-nota { font-size: 0.76rem; }
@@ -730,9 +730,11 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .secao-inicio > .painel, .secao-inicio > .grade { max-height: 100%; min-height: 0; }
   .secao-inicio > .painel { display: flex; flex-direction: column; }
   .secao-inicio > .painel > .tabela-rolagem, .secao-inicio > .painel > .avisos { overflow: auto; min-height: 0; }
-  .secao-inicio > .grade { align-items: start; }
-  .secao-inicio > .grade > .painel { max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
-  .secao-inicio > .grade > .painel > .tabela-rolagem { overflow: auto; min-height: 0; }
+  /* Previsão de caixa e Vendas por fabricante: mesmo tamanho, cada um com a própria barra de rolagem */
+  .secao-inicio > .grade { height: 100%; align-items: stretch; }
+  .secao-inicio > .grade > .painel { display: flex; flex-direction: column; min-height: 0; }
+  .secao-inicio > .grade > .painel > .tabela-rolagem { flex: 1; overflow: auto; min-height: 0; }
+  .secao-inicio .tabela-rolagem thead th { position: sticky; top: 0; z-index: 1; }
   .secao-inicio .painel-cab { flex: 0 0 auto; }
 
   /* 1ª seção: 8 quadros (4 linhas de 2) à esquerda e o mapa à direita */
@@ -757,3 +759,6 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .secao-inicio { padding-block: 12px; }
   .secao-inicio .tabela-compacta td, .secao-inicio .tabela-compacta th { padding-block: 5px; }
 }
+
+/* Licenças do contrato (várias por contrato) */
+.item-linha { border: 1px solid var(--linha); border-radius: 8px; padding: 10px; margin-bottom: 8px; }

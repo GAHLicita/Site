@@ -200,6 +200,21 @@
           if (aoAvancar) aoAvancar(feitos, total);
         }
       }
+      // arquivo de ajuste: muda só os campos informados de itens que já existem (o resto fica como está)
+      for (const c of Object.keys(json.atualizar || {})) {
+        if (!COLECOES.includes(c)) continue;
+        for (const parcial of json.atualizar[c] || []) {
+          const atual = cache[c].find((x) => x.id === parcial.id);
+          if (!atual) continue;
+          const novo = Object.assign({}, atual, limpar(parcial));
+          if (modoDemo()) cache[c][cache[c].indexOf(atual)] = novo;
+          else {
+            const { id, ...resto } = novo;
+            await fb.fs.setDoc(fb.fs.doc(fb.db, c, id), resto);
+          }
+          feitos++;
+        }
+      }
       // itens que um backup mais novo pede para apagar (ex.: lançamentos que mudaram de lugar)
       for (const c of Object.keys(json.remover || {})) {
         if (!COLECOES.includes(c)) continue;
@@ -210,7 +225,7 @@
       }
       if (modoDemo()) gravarLocal();
       avisar();
-      return total;
+      return feitos;
     },
 
     aoMudar(f) {

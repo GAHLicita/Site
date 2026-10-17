@@ -202,6 +202,31 @@
   };
 
   /* Quanto entra e quanto sai nos próximos meses, pelas parcelas em aberto. */
+  /* Vendas por fabricante. Um contrato com licenças de vários fabricantes (lista 'itens', cada uma com
+     fornecedor e valor) é dividido entre eles na proporção do valor de cada licença; o contrato conta uma
+     vez para cada fabricante que aparece nele. Sem 'itens', vale o campo fornecedor do contrato. */
+  C.vendasPorFabricante = function (contratos, hoje) {
+    const mapa = {};
+    for (const c of contratos || []) {
+      if (c.status === 'cancelado') continue;
+      const s = C.resumoContrato(c, hoje);
+      const itens = (c.itens || []).filter((i) => String(i.fornecedor || '').trim() && num(i.valor) > 0);
+      const soma = itens.reduce((t, i) => t + num(i.valor), 0);
+      const partes = {};
+      if (itens.length && soma > 0) itens.forEach((i) => { const f = String(i.fornecedor).trim(); partes[f] = (partes[f] || 0) + num(i.valor) / soma; });
+      else partes[String(c.fornecedor || '').trim() || 'Sem fabricante'] = 1;
+      for (const f of Object.keys(partes)) {
+        const m = (mapa[f] = mapa[f] || { fabricante: f, n: 0, venda: 0, lucro: 0 });
+        m.n++;
+        m.venda += s.venda * partes[f];
+        m.lucro += s.lucro * partes[f];
+      }
+    }
+    return Object.values(mapa)
+      .map((m) => Object.assign(m, { venda: centavos(m.venda), lucro: centavos(m.lucro) }))
+      .sort((a, b) => b.venda - a.venda);
+  };
+
   C.previsaoCaixa = function (contratos, despesas, hoje, quantosMeses) {
     hoje = hoje || C.hoje();
     const inicio = C.mesDe(hoje);

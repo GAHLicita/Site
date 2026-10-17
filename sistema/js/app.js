@@ -248,6 +248,16 @@
     return novas;
   }
 
+  function linhaItem(it) {
+    return '<div class="form-grade item-linha">' +
+      '<div class="campo"><label>Licença</label><input data-it="produto" value="' + esc(it.produto) + '" placeholder="Ex.: ChatGPT Plus"></div>' +
+      '<div class="campo"><label>Fabricante</label><input data-it="fornecedor" list="lista-fornecedores" value="' + esc(it.fornecedor) + '" placeholder="Ex.: OpenAI"></div>' +
+      '<div class="campo"><label>Quantidade</label><input data-it="quantidade" type="number" min="0" value="' + esc(it.quantidade) + '"></div>' +
+      '<div class="campo"><label>Valor de venda</label><input data-it="valor" type="number" step="0.01" min="0" value="' + esc(it.valor) + '"></div>' +
+      '<div class="largo"><button type="button" class="link-botao" data-remover-item>Remover licença</button></div>' +
+      '</div>';
+  }
+
   GAH.formContrato = function (contrato, opcoesForm) {
     opcoesForm = opcoesForm || {};
     const cfg = D.configuracao();
@@ -287,6 +297,11 @@
       '<div class="campo"><label for="ct-status">Situação</label><select id="ct-status" name="status">' + opcoes([['ativo', 'Ativo'], ['encerrado', 'Encerrado'], ['cancelado', 'Cancelado']], c.status) + '</select></div>' +
       '<div class="campo largo"><label for="ct-drive">Link no Drive deste contrato (opcional)</label><input id="ct-drive" name="linkDrive" type="url" value="' + esc(c.linkDrive) + '" placeholder="Se vazio, usa a pasta do órgão"></div>' +
       '</div></div>' +
+
+      '<div class="form-secao"><h3>Licenças do contrato</h3>' +
+      '<p class="ajuda" style="margin:0 0 8px">Preencha quando o contrato tiver licenças de mais de um fabricante: cada uma entra separada em "Vendas por fabricante", na proporção do valor.</p>' +
+      '<div id="ct-itens" data-ignorar>' + (c.itens || []).map(linhaItem).join('') + '</div>' +
+      '<button type="button" class="botao secundario pequeno" id="ct-add-item">+ Adicionar licença</button></div>' +
 
       '<div class="form-secao"><h3>Venda ao órgão (recebimento)</h3><div class="form-grade" data-ignorar>' +
       '<div class="campo"><label for="v-forma">Forma de recebimento</label><select id="v-forma">' + opcoes(FORMAS_VENDA, v.forma) + '</select></div>' +
@@ -342,6 +357,11 @@
     }
     j.el.querySelector('form').addEventListener('input', atualizar);
     atualizar();
+    $('#ct-add-item').addEventListener('click', () => {
+      $('#ct-itens').insertAdjacentHTML('beforeend', linhaItem({}));
+      $('#ct-itens').lastElementChild.querySelector('input').focus();
+    });
+    $('#ct-itens').addEventListener('click', (e) => { if (e.target.closest('[data-remover-item]')) e.target.closest('.item-linha').remove(); });
 
     botaoExcluir(j.el, '#excluir-contrato', 'Excluir este contrato e todas as parcelas?', async () => {
       await D.excluir('contratos', c.id);
@@ -362,7 +382,12 @@
       if (mudouV) venda.parcelas = refazerParcelas(vAnt.parcelas, t.totalV, t.qV, t.vencV || dados.dataEntrega || hoje);
       if (mudouK) compra.parcelas = refazerParcelas(kAnt.parcelas, t.totalK, t.qK, t.vencK || dados.dataEntrega || hoje);
       try {
-        const salvo = await D.salvar('contratos', Object.assign({}, c, dados, { venda, compra }));
+        dados.itens = [...$('#ct-itens').querySelectorAll('.item-linha')].map((l) => {
+        const o = {};
+        l.querySelectorAll('[data-it]').forEach((i) => (o[i.dataset.it] = i.type === 'number' ? (i.value === '' ? '' : Number(i.value)) : i.value.trim()));
+        return o;
+      }).filter((o) => o.produto || o.fornecedor || o.valor);
+      const salvo = await D.salvar('contratos', Object.assign({}, c, dados, { venda, compra }));
         j.fechar();
         aviso('Contrato salvo');
         if (opcoesForm.aoSalvar) opcoesForm.aoSalvar(salvo);

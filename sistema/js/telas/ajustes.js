@@ -81,10 +81,10 @@
       const status = main.querySelector('#import-status');
       try {
         const json = JSON.parse(await arq.text());
-        if (!json.clientes && !json.contratos) throw new Error('o arquivo não parece um backup do sistema');
+        if (!json.clientes && !json.contratos && !json.atualizar && !json.remover) throw new Error('o arquivo não parece um backup do sistema');
         status.textContent = 'Importando…';
         const total = await D.importar(json, (f, t) => (status.textContent = 'Importando ' + f + ' de ' + t + '…'));
-        aviso(total + ' itens importados');
+        aviso(total + ' itens importados ou atualizados');
       } catch (err) {
         status.textContent = '';
         aviso('Não foi possível importar: ' + err.message, true);

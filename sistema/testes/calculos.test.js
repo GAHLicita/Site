@@ -88,3 +88,16 @@ test('custosNoPeriodo gera um lançamento por mês, respeita anual, fim e meses 
   assert.strictEqual(m[8].despesas, 400); // setembro: hospedagem 50 + contador 350
   assert.strictEqual(m[8].lucro, -400);
 });
+
+test('vendasPorFabricante divide contrato com licenças de vários fabricantes', () => {
+  const contrato = (fornecedor, itens) => ({ fornecedor, itens, venda: { aliquotaNF: 0, parcelas: [{ valor: 1000, vencimento: '2026-01-10' }] }, compra: { parcelas: [{ valor: 600, vencimento: '2026-01-05' }] } });
+  const r = calc.vendasPorFabricante([
+    contrato('OpenAI'),
+    contrato('', [{ fornecedor: 'OpenAI', valor: 750 }, { fornecedor: 'Google', valor: 250 }]),
+    contrato(''),
+    Object.assign(contrato('Zoom'), { status: 'cancelado' })
+  ], '2026-02-01');
+  assert.deepStrictEqual(r.map((x) => [x.fabricante, x.n, x.venda, x.lucro]), [
+    ['OpenAI', 2, 1750, 700], ['Sem fabricante', 1, 1000, 400], ['Google', 1, 250, 100]
+  ]);
+});
