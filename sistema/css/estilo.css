@@ -785,3 +785,13 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .navega-mes { display: flex; align-items: center; gap: 10px; }
 .navega-mes .botao { padding: 2px 10px; font-size: 1.05rem; line-height: 1.3; }
 .tabela-meses tr.selecionado td { background: var(--info-fundo); font-weight: 600; }
+
+/* Agenda: "Próximos 30 dias" com a mesma altura do calendário; o que passar rola dentro do quadro */
+.painel-proximos .avisos { overflow-y: auto; }
+@media (min-width: 901px) {
+  .painel-proximos { position: relative; min-height: 320px; }
+  .painel-proximos .proximos-dentro { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .painel-proximos .painel-cab { flex: 0 0 auto; }
+  .painel-proximos .avisos { flex: 1; min-height: 0; }
+}
+@media (max-width: 900px) { .painel-proximos .avisos { max-height: 70vh; } }
