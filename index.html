@@ -1159,6 +1159,27 @@ form.contact-form{
   .info-panel{padding:16px 22px;}
   .info-list{gap:9px;}
 }
+/* Celular: menu compacto, logo abaixo do botão ☰, com a largura do item mais
+   longo; cada item vira um botão. */
+@media (max-width:760px){
+  nav.main-nav{
+    left:auto;right:12px;top:72px;
+    width:max-content;
+    padding:8px;gap:6px;
+    border:1px solid rgba(255,255,255,0.10);
+    border-radius:12px;
+    box-shadow:0 14px 32px rgba(0,0,0,0.35);
+  }
+  nav.main-nav a{
+    padding:12px 18px;
+    border-bottom:0;
+    border-radius:8px;
+    background:rgba(255,255,255,0.05);
+  }
+  nav.main-nav a:hover,
+  nav.main-nav a.is-current{background:rgba(255,255,255,0.12);}
+  nav.main-nav a::after{left:18px;right:18px;bottom:6px;}
+}
 </style>
   <!-- Vercel Web Analytics -->
   <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
