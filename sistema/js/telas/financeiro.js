@@ -129,14 +129,13 @@
       (op.cabecalho || '') +
       '<section class="secao-inicio secao-resumo">' +
       '<div class="kpis kpis-2 kpis-compactos">' +
-      kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque') +
+      kpi('Valor total em contratos', moeda(g.totalContratos), contratos.length + ' contratos', 'destaque kpi-centro') +
       kpi('Recebido', moeda(g.recebido), g.totalContratos ? pct(g.recebido / g.totalContratos) + ' do total' : '') +
       kpi('A receber', moeda(g.aReceber), g.valorAtrasado ? '<span class="negativo">' + moeda(g.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
       kpi('A pagar (compras parceladas)', moeda(g.aPagar), 'de ' + moeda(g.totalCompras) + ' em compras') +
       kpi('Impostos', moeda(g.impostos), 'NF e compras') +
-      kpi('Lucro bruto', moeda(g.lucroBruto), g.totalContratos ? pct(g.lucroBruto / g.totalContratos) + ' de margem' : '') +
       kpi('Despesas e custos', moeda(g.despesas), 'contador, custos fixos e outras, até este mês') +
-      kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro bruto − despesas e custos') +
+      kpi('Lucro líquido', '<span class="' + (g.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(g.lucroLiquido) + '</span>', 'lucro dos contratos − despesas e custos') +
       '</div>' +
 
       '<section class="painel painel-mapa"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div class="mapa-coluna">' +

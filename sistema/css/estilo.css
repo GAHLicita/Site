@@ -696,6 +696,9 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
    ocupa a tela inteira e a rolagem pula de uma para a outra (scroll-snap). */
 .secao-inicio { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .kpis-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* quadro de destaque sozinho na 1ª linha, centralizado e do tamanho dos outros */
+.kpis-2 .kpi-centro { grid-column: 1 / -1; justify-self: center; width: calc(50% - 5px); }
+@media (max-width: 480px) { .kpis-2 .kpi-centro { width: 100%; } }
 @media (max-width: 480px) { .kpis-2 { grid-template-columns: minmax(0, 1fr); } }
 .kpis-compactos { gap: 10px; }
 .kpis-compactos .kpi { padding: 10px 14px; gap: 2px; justify-content: center; }
