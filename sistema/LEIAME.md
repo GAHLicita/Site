@@ -82,10 +82,10 @@ link para criar uma senha nova.
   vigência e datas de disputa das licitações entram sozinhos.
 - **Licitações**: editais em análise, propostas, disputas, ganhas e perdidas. Uma licitação
   ganha vira contrato com um clique.
-- **Despesas**: contador, DAS e outros custos fixos, que entram no lucro líquido.
-- **Custos**: serviços que a empresa paga todo mês ou todo ano (hospedagem do site, plano de
-  e-mail, domínio, assinaturas…), com nome, fornecedor, valor, vencimento e uma grade mês a mês
-  para marcar o que já foi pago, mudar o valor de um mês ou indicar que não houve cobrança.
+- **Despesas**: todos os gastos da empresa num lugar só. Mostra o que foi gasto em cada mês (custos
+  fixos, mensalidade do contador e despesas avulsas), com botão "Paguei" em cada item, uma tabela mês a
+  mês do ano e a grade dos **custos fixos** (hospedagem do site, plano de e-mail, domínio, portais de
+  disputa, assinaturas…), onde cada mês pode ser marcado como pago, ter o valor mudado ou ficar sem cobrança.
 - **Contabilidade**: mensalidade do contador em cada mês (valor pago, se já pagou e quando),
   dados do escritório contábil (contador, telefone, honorário, regime)
   e uma pasta por mês com as guias (DAS, DARF, INSS…) e documentos enviados pelo contador,

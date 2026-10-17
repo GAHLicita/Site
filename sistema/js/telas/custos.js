@@ -1,12 +1,11 @@
-/* Tela Custos: serviços que a empresa paga todo mês ou todo ano (hospedagem, e-mail, domínio…),
-   com uma grade mês a mês para marcar o que já foi pago. Entram no lucro líquido. */
+/* Custos fixos: serviços que a empresa paga todo mês ou todo ano (hospedagem, e-mail, domínio, portais…),
+   com uma grade mês a mês para marcar o que já foi pago. Aparecem dentro da tela Despesas. */
 (function () {
   const { esc, moeda, dataBR, mesBR, opcoes, janela, lerForm, aviso, botaoExcluir, linkSeguro, MESES_CURTOS } = GAH.u;
   const calc = GAH.calc;
   const D = GAH.dados;
   const CATEGORIAS = ['Hospedagem do site', 'Domínio', 'Plano de e-mail', 'Software e assinaturas', 'Telefone e internet', 'Certificado digital', 'Portais de licitação', 'Marketing', 'Outros'];
   const FORMAS = ['Cartão de crédito', 'Boleto', 'Pix', 'Débito automático', 'Transferência'];
-  let anoEscolhido = null;
 
   function formServico(item) {
     const hoje = calc.hoje();
@@ -91,26 +90,19 @@
     aviso(p.pago ? 'Marcado como pago' : 'Marcado como em aberto');
   }
 
-  GAH.telas.custos = function (main) {
+  /* Grade dos custos fixos (serviços × meses do ano), usada dentro da tela Despesas. */
+  function gradeCustos(ano) {
     const hoje = calc.hoje();
     const mesAtual = calc.mesDe(hoje);
     const custos = D.lista('custos').slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-    const anos = [...new Set(custos.map((c) => Number((c.inicio || mesAtual).slice(0, 4))).concat(Number(hoje.slice(0, 4))))].sort();
-    if (!anoEscolhido) anoEscolhido = Number(hoje.slice(0, 4));
-    if (!anos.includes(anoEscolhido)) anos.push(anoEscolhido);
-    anos.sort();
-    if (!anos.includes(anoEscolhido + 1)) anos.push(anoEscolhido + 1);
-    const lanc = calc.custosNoPeriodo(custos, [], anoEscolhido + '-12').filter((l) => l.mes.startsWith(String(anoEscolhido)));
-    const doAnoAteHoje = lanc.filter((l) => l.mes <= mesAtual);
+    const lanc = calc.custosNoPeriodo(custos, [], ano + '-12').filter((l) => l.mes.startsWith(String(ano)));
     const totalAno = lanc.reduce((s, l) => s + l.valor, 0);
-    const pagoAno = lanc.filter((l) => l.pago).reduce((s, l) => s + l.valor, 0);
-    const vencido = doAnoAteHoje.filter((l) => !l.pago && l.data < hoje).reduce((s, l) => s + l.valor, 0);
-    const ativos = custos.filter((c) => !c.fim || c.fim >= mesAtual);
-    const mensalFixo = ativos.reduce((s, c) => s + (c.periodicidade === 'anual' ? calc.num(c.valor) / 12 : calc.num(c.valor)), 0);
-    const meses = Array.from({ length: 12 }, (_, i) => anoEscolhido + '-' + String(i + 1).padStart(2, '0'));
+    const meses = Array.from({ length: 12 }, (_, i) => ano + '-' + String(i + 1).padStart(2, '0'));
     const porCelula = {};
     lanc.forEach((l) => (porCelula[l.custoId + '|' + l.mes] = l));
     const totalMes = meses.map((m) => lanc.filter((l) => l.mes === m).reduce((s, l) => s + l.valor, 0));
+    const ativos = custos.filter((c) => !c.fim || c.fim >= mesAtual);
+    const mensalFixo = ativos.reduce((s, c) => s + (c.periodicidade === 'anual' ? calc.num(c.valor) / 12 : calc.num(c.valor)), 0);
 
     const celula = (c, m) => {
       const l = porCelula[c.id + '|' + m];
@@ -120,38 +112,33 @@
         return '<td class="celula-mes vazia">' + (dentro && p.semCobranca ? '<button type="button" class="mes-btn sem" data-mes="' + m + '" data-custo="' + esc(c.id) + '" title="Sem cobrança">sem</button>' : '<span class="texto-suave">·</span>') + '</td>';
       }
       const estado = l.pago ? 'pago' : l.data < hoje ? 'vencido' : 'aberto';
-      const titulo = moeda(l.valor) + ' — ' + (l.pago ? 'pago' + (p.data ? ' em ' + dataBR(p.data) : '') : estado === 'vencido' ? 'vencido em ' + dataBR(l.data) : 'vence em ' + dataBR(l.data)) + '';
+      const titulo = moeda(l.valor) + ' — ' + (l.pago ? 'pago' + (p.data ? ' em ' + dataBR(p.data) : '') : estado === 'vencido' ? 'vencido em ' + dataBR(l.data) : 'vence em ' + dataBR(l.data));
       return '<td class="celula-mes"><button type="button" class="mes-btn ' + estado + '" data-mes="' + m + '" data-custo="' + esc(c.id) + '" title="' + esc(titulo) + '" aria-label="' + esc(c.nome + ', ' + mesBR(m) + ': ' + titulo) + '">' +
         (l.pago ? '✓' : estado === 'vencido' ? '!' : '') + '<span>' + esc(moeda(l.valor).replace('R$', '').trim()) + '</span></button></td>';
     };
 
-    main.innerHTML =
-      '<div class="cabecalho-tela"><div><h1>Custos</h1><p>Serviços que a empresa paga todo mês ou todo ano. Entram no Financeiro e são abatidos do lucro líquido.</p></div>' +
-      '<div class="acoes"><select class="filtro" id="cu-ano" aria-label="Ano">' + anos.map((a) => '<option' + (a === anoEscolhido ? ' selected' : '') + '>' + a + '</option>').join('') + '</select><button class="botao" id="novo-custo">+ Novo custo</button></div></div>' +
-      '<div class="kpis">' +
-      '<div class="kpi destaque"><span class="kpi-rotulo">Custo fixo por mês</span><span class="kpi-valor">' + moeda(mensalFixo) + '</span><span class="kpi-nota">' + ativos.length + ' serviço(s) ativo(s); anuais divididos por 12</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">Total previsto em ' + anoEscolhido + '</span><span class="kpi-valor">' + moeda(totalAno) + '</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">Já pago em ' + anoEscolhido + '</span><span class="kpi-valor">' + moeda(pagoAno) + '</span></div>' +
-      '<div class="kpi' + (vencido ? ' alerta' : '') + '"><span class="kpi-rotulo">Vencido sem pagar</span><span class="kpi-valor">' + moeda(vencido) + '</span></div>' +
-      '</div>' +
-      '<section class="painel"><div class="painel-cab"><div><h2>Pagamentos de ' + anoEscolhido + '</h2><span class="sub">Clique no mês para marcar como pago, mudar o valor ou dizer que não houve cobrança.</span></div>' +
+    return '<section class="painel"><div class="painel-cab"><div><h2>Custos fixos · ' + ano + '</h2><span class="sub">Domínio, site, e-mail, portais de disputa e outros serviços que se repetem. Custo fixo atual: <b>' + moeda(mensalFixo) + '/mês</b> (' + ativos.length + ' ativo(s); anuais divididos por 12). Clique no mês para marcar como pago, mudar o valor ou dizer que não houve cobrança.</span></div>' +
       '<div class="legenda" style="margin:0"><span><i style="background:var(--ok-fundo);border:1px solid var(--ok)"></i>Pago</span><span><i style="background:var(--superficie);border:1px solid var(--linha-forte)"></i>Em aberto</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Vencido</span></div></div>' +
       (custos.length
         ? '<div class="tabela-rolagem"><table class="tabela grade-custos"><thead><tr><th>Serviço</th>' + MESES_CURTOS.map((m) => '<th class="valor">' + m + '</th>').join('') + '<th class="valor">Total</th></tr></thead><tbody>' +
           custos.map((c) => {
             const total = lanc.filter((l) => l.custoId === c.id).reduce((s, l) => s + l.valor, 0);
             const link = linkSeguro(c.link);
-            return '<tr><td><button type="button" class="link-botao nome-servico" data-editar="' + esc(c.id) + '">' + esc(c.nome) + '</button>' +
+            return '<tr><td><button type="button" class="link-botao nome-servico" data-editar-custo="' + esc(c.id) + '">' + esc(c.nome) + '</button>' +
               '<span class="sub">' + esc([c.fornecedor, c.categoria, c.periodicidade === 'anual' ? 'anual' : 'mensal', moeda(c.valor), c.formaPagamento].filter(Boolean).join(' · ')) + (link ? ' · <a href="' + esc(link) + '" target="_blank" rel="noopener">acessar</a>' : '') + (c.fim && c.fim < mesAtual ? ' · <b>encerrado</b>' : '') + '</span></td>' +
               meses.map((m) => celula(c, m)).join('') + '<td class="valor"><b>' + moeda(total) + '</b></td></tr>';
           }).join('') +
           '</tbody><tfoot><tr><td>Total do mês</td>' + totalMes.map((t) => '<td class="valor">' + (t ? esc(moeda(t).replace('R$', '').trim()) : '—') + '</td>').join('') + '<td class="valor">' + moeda(totalAno) + '</td></tr></tfoot></table></div>'
-        : '<div class="vazio"><strong>Nenhum custo cadastrado</strong>Cadastre a hospedagem do site, o plano de e-mail, o domínio e outros serviços que a empresa paga.</div>') +
+        : '<div class="vazio"><strong>Nenhum custo fixo cadastrado</strong>Cadastre a hospedagem do site, o plano de e-mail, o domínio, os portais de disputa e outros serviços que a empresa paga.</div>') +
       '</section>';
+  }
 
-    main.querySelector('#novo-custo').addEventListener('click', () => formServico(null));
-    main.querySelector('#cu-ano').addEventListener('change', (e) => { anoEscolhido = Number(e.target.value); GAH.telas.custos(main); });
-    main.querySelectorAll('[data-editar]').forEach((b) => b.addEventListener('click', () => formServico(D.obter('custos', b.dataset.editar))));
-    main.querySelectorAll('.mes-btn').forEach((b) => b.addEventListener('click', () => formMes(D.obter('custos', b.dataset.custo), b.dataset.mes)));
-  };
+  function ligarGrade(raiz) {
+    raiz.querySelectorAll('[data-editar-custo]').forEach((b) => b.addEventListener('click', () => formServico(D.obter('custos', b.dataset.editarCusto))));
+    raiz.querySelectorAll('.mes-btn').forEach((b) => b.addEventListener('click', () => formMes(D.obter('custos', b.dataset.custo), b.dataset.mes)));
+  }
+
+  GAH.custos = { formServico, formMes, alternarPago, gradeCustos, ligarGrade };
+  // o endereço antigo #/custos abre a tela Despesas, onde os custos fixos ficam agora
+  GAH.telas.custos = function (main) { GAH.telas.despesas(main); };
 })();

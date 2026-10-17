@@ -252,4 +252,5 @@
       formDocumento(comp, doMes(comp).documentos.find((x) => x.id === id));
     }));
   };
+  GAH.contabilidade = { formMensalidade };
 })();
