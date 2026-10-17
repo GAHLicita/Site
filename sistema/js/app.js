@@ -324,7 +324,7 @@
     const rodape =
       (c.id ? '<button type="button" class="botao perigo" id="excluir-contrato">Excluir contrato</button>' : '') +
       '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-contrato" class="botao">Salvar contrato</button></div>';
-    const j = janela({ titulo: c.id ? 'Editar contrato' : 'Novo contrato', corpo, rodape });
+    const j = janela({ titulo: opcoesForm.titulo || (c.id ? 'Editar contrato' : 'Novo contrato'), corpo, rodape });
     const $ = (s) => j.el.querySelector(s);
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
 
@@ -394,6 +394,39 @@
       } catch (erro) {
         aviso('Não foi possível salvar: ' + erro.message, true);
       }
+    });
+  };
+
+  /* Renovação: abre um contrato novo já preenchido com o mesmo órgão, licença, fabricante e valores, com a
+     vigência começando no dia seguinte ao fim do contrato atual e com a mesma duração. A entrega fica em branco,
+     então o contrato aparece em Contratos como renovação aguardando "Licenças entregues". */
+  GAH.renovarContrato = function (anterior) {
+    if (!anterior) return;
+    const inicio = anterior.vigenciaFim ? calc.addDias(anterior.vigenciaFim, 1) : calc.hoje();
+    const duracao = anterior.vigenciaInicio && anterior.vigenciaFim ? calc.diasEntre(anterior.vigenciaInicio, anterior.vigenciaFim) : 364;
+    const v = anterior.venda || {};
+    const k = anterior.compra || {};
+    const qtdV = v.qtdParcelas || (v.parcelas && v.parcelas.length) || 1;
+    const qtdK = k.qtdParcelas || (k.parcelas && k.parcelas.length) || 1;
+    const somaV = (v.parcelas || []).reduce((t, p) => t + calc.num(p.valor), 0);
+    const somaK = (k.parcelas || []).reduce((t, p) => t + calc.num(p.valor), 0);
+    const novo = {
+      clienteId: anterior.clienteId,
+      status: 'ativo',
+      produto: anterior.produto || '',
+      fornecedor: anterior.fornecedor || '',
+      quantidade: anterior.quantidade || '',
+      modalidade: anterior.modalidade || '',
+      itens: JSON.parse(JSON.stringify(anterior.itens || [])),
+      vigenciaInicio: inicio,
+      vigenciaFim: calc.addDias(inicio, duracao),
+      dataEntrega: '',
+      venda: { forma: v.forma || 'integral', qtdParcelas: qtdV, aliquotaNF: v.aliquotaNF, valorTotal: v.valorTotal || somaV, primeiroVencimento: calc.addDias(inicio, 30) },
+      compra: { forma: k.forma || 'avista', qtdParcelas: qtdK, aliquotaCompra: k.aliquotaCompra, valorTotal: k.valorTotal || somaK, primeiroVencimento: inicio }
+    };
+    GAH.formContrato(novo, {
+      titulo: 'Renovar contrato — confira datas e valores',
+      aoSalvar: () => aviso('Renovação salva. Em Contratos ela aguarda o ok de "Licenças entregues".')
     });
   };
 
@@ -529,6 +562,7 @@
       '<div class="sub">' + prazo + '</div>' +
       '</div><div class="acoes">' + seloVigencia(s) +
       (drive ? '<a class="botao secundario pequeno" href="' + esc(drive) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '') +
+      (c.status !== 'cancelado' && !calc.renovacoes(D.lista('contratos'), calc.hoje()).porAnterior[c.id] ? '<button type="button" class="botao secundario pequeno" data-renovar-contrato="' + esc(c.id) + '">Renovar</button>' : '') +
       '<button type="button" class="botao secundario pequeno" data-editar-contrato="' + esc(c.id) + '">Editar</button></div></div>' +
       '<div class="lados">' +
       '<section class="lado"><h4>Recebimento do órgão <span class="selo info">' + nomeForma(c.venda && c.venda.forma) + '</span></h4>' +
@@ -556,6 +590,8 @@
     raiz.addEventListener('click', (e) => {
       const ed = e.target.closest('[data-editar-contrato]');
       if (ed) GAH.formContrato(D.obter('contratos', ed.dataset.editarContrato));
+      const rn = e.target.closest('[data-renovar-contrato]');
+      if (rn) GAH.renovarContrato(D.obter('contratos', rn.dataset.renovarContrato));
       const ep = e.target.closest('[data-editar-parcelas]');
       if (ep) {
         const [id, lado] = ep.dataset.editarParcelas.split('|');

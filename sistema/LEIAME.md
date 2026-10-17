@@ -76,6 +76,8 @@ link para criar uma senha nova.
   vencidos sem renovação, os contratos anteriores já renovados e os cancelados. Uma renovação
   (contrato novo do mesmo órgão e fabricante, começando perto do fim do anterior) mostra a vigência
   do contrato atual até você clicar em **Licenças entregues**; daí passa a mostrar a nova vigência.
+  Para lançar uma renovação, abra o contrato atual e clique em **Renovar**: o formulário já vem com o
+  mesmo órgão, licença, fabricante e valores, e a vigência começando no dia seguinte ao fim do atual.
 - **Agenda**: calendário com disputas, reuniões e prazos. Vencimentos de parcelas, fins de
   vigência e datas de disputa das licitações entram sozinhos.
 - **Licitações**: editais em análise, propostas, disputas, ganhas e perdidas. Uma licitação

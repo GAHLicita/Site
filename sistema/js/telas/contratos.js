@@ -50,6 +50,7 @@
       .sort((a, b) => a.grupo - b.grupo || (a.grupo >= 2 ? (b.vigFim || '').localeCompare(a.vigFim || '') : (a.vigFim || '9').localeCompare(b.vigFim || '9')) || a.orgao.localeCompare(b.orgao));
     const TITULO_GRUPO = { 1: 'Sem data de vigência', 2: 'Vencidos sem renovação', 3: 'Contratos anteriores, já renovados', 4: 'Cancelados' };
     const selo = (x) => {
+      if (x.grupo === 3) return '<span class="selo info">Renovado</span>';
       if (!x.anterior) return seloVigencia(x.s);
       const n = calc.diasEntre(hoje, x.vigFim);
       return '<span class="selo ' + (n < 0 ? 'critico' : 'alerta') + '">' + (n < 0 ? 'Entrega atrasada' : n === 0 ? 'Entregar hoje' : 'Entregar em ' + n + ' dias') + '</span>';
