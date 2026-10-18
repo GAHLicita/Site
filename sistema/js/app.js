@@ -175,7 +175,7 @@
       '</div>' +
       '<h3 style="margin-top:8px">Faturamento: para onde vai a nota fiscal</h3>' +
       '<div class="form-grade">' +
-      '<div class="campo"><label for="cli-fat-email">E-mail para envio da NF</label><input id="cli-fat-email" name="fatEmail" type="email" value="' + esc((c.faturamento || {}).email) + '"></div>' +
+      '<div class="campo"><label for="cli-fat-email">E-mail para envio da NF</label><input id="cli-fat-email" name="fatEmail" type="email" multiple placeholder="Mais de um: separe por vírgula" value="' + esc((c.faturamento || {}).email) + '"></div>' +
       '<div class="campo"><label for="cli-fat-resp">Responsável pelo faturamento / pagamento</label><input id="cli-fat-resp" name="fatResponsavel" value="' + esc((c.faturamento || {}).responsavel) + '"></div>' +
       '<div class="campo"><label for="cli-fat-tel">Telefone do faturamento</label><input id="cli-fat-tel" name="fatTelefone" inputmode="tel" value="' + esc((c.faturamento || {}).telefone) + '"></div>' +
       '<div class="campo"><label for="cli-fat-portal">Portal / sistema para enviar a NF</label><input id="cli-fat-portal" name="fatPortal" value="' + esc((c.faturamento || {}).portal) + '" placeholder="Ex.: e-mail, SEI, 1Doc, protocolo"></div>' +

@@ -216,7 +216,12 @@
         for (const parcial of json.atualizar[c] || []) {
           const atual = cache[c].find((x) => x.id === parcial.id);
           if (!atual) continue;
-          const novo = Object.assign({}, atual, limpar(parcial));
+          // campos que são objetos (ex.: faturamento) são mesclados: só muda o que veio no arquivo
+          const novo = Object.assign({}, atual);
+          for (const [k, v] of Object.entries(limpar(parcial))) {
+            const ehObjeto = (x) => x && typeof x === 'object' && !Array.isArray(x);
+            novo[k] = ehObjeto(v) && ehObjeto(atual[k]) ? Object.assign({}, atual[k], v) : v;
+          }
           if (modoDemo()) cache[c][cache[c].indexOf(atual)] = novo;
           else {
             const { id, ...resto } = novo;
