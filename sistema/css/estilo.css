@@ -745,6 +745,8 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .secao-inicio > .grade > .painel { display: flex; flex-direction: column; min-height: 0; }
   .secao-inicio > .grade > .painel > .tabela-rolagem { flex: 1; overflow: auto; min-height: 0; }
   .secao-inicio .tabela-rolagem thead th { position: sticky; top: 0; z-index: 1; }
+  /* o total fica sempre visível no rodapé do quadro, mesmo rolando */
+  .secao-inicio .tabela-rolagem tfoot td { position: sticky; bottom: 0; z-index: 1; }
   .secao-inicio .painel-cab { flex: 0 0 auto; }
 
   /* 1ª seção: 8 quadros (4 linhas de 2) à esquerda e o mapa à direita */

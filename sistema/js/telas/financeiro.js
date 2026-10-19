@@ -194,7 +194,8 @@
           p.contratos.map((k) => '<tr class="linha-detalhe" data-de="' + chave + '" data-contrato="' + esc(k.contratoId) + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(nomeContrato(k.contratoId)) + (k.atrasado ? ' <span class="negativo">· em atraso</span>' : '') + '</td><td class="valor">' + (k.entra ? moeda(k.entra) : '—') + '</td><td class="valor">' + (k.sai ? moeda(k.sai) : '—') + '</td><td class="valor ' + (k.entra - k.sai < 0 ? 'negativo' : '') + '">' + moeda(k.entra - k.sai) + '</td></tr>').join('') +
           p.gastos.map((d) => '<tr class="linha-detalhe gasto" data-de="' + chave + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(d.descricao) + (d.categoria ? ' <span class="texto-suave">· ' + esc(d.categoria) + '</span>' : '') + '</td><td class="valor">—</td><td class="valor">' + moeda(d.valor) + '</td><td class="valor negativo">−' + moeda(d.valor) + '</td></tr>').join('');
       }).join('') +
-      '</tbody></table></div></section>' +
+      '</tbody><tfoot><tr><td>Total em 12 meses</td><td class="valor">' + moeda(previsao.reduce((t, p) => t + p.entra, 0)) + '</td><td class="valor">' + moeda(previsao.reduce((t, p) => t + p.sai, 0)) + '</td>' +
+      (() => { const saldo = previsao.reduce((t, p) => t + p.saldo, 0); return '<td class="valor ' + (saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(saldo) + '</td>'; })() + '</tr></tfoot></table></div></section>' +
       '<section class="painel"><div class="painel-cab"><div><h2>Vendas por fabricante</h2><span class="sub">Contratos com várias licenças entram em cada fabricante</span></div>' +
       '<div class="visao-financeira" role="group" aria-label="Quais contratos entram neste quadro">' +
       '<button type="button" data-visao-quadro="fabricantes" data-valor="total" aria-pressed="' + (visaoFab === 'total') + '">Total</button>' +
