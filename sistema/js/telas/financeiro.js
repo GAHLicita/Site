@@ -101,7 +101,8 @@
   GAH.renderFinanceiro = function (main, op) {
     op = op || {};
     const hoje = calc.hoje();
-    const contratos = D.lista('contratos');
+    // contratos fechados e ainda não entregues "andam" para o mês atual quando o mês deles já passou
+    const contratos = calc.adiarNaoEntregues(D.lista('contratos'), hoje);
     const mesAtual = calc.mesDe(hoje);
     const despesas = GAH.despesasCompletas(mesAtual);
     const clientes = D.lista('clientes');
@@ -125,7 +126,9 @@
     // contratos cujas licenças ainda não foram entregues: na opção Total aparecem destacados no detalhe dos meses
     const renov = calc.renovacoes(contratos, hoje);
     const naoEntregue = new Set(contratos.filter((c) => !calc.licencasEntregues(c, hoje, renov)).map((c) => c.id));
-    const marcaEntrega = (id) => (naoEntregue.has(id) ? ' <span class="selo alerta selo-mini">a entregar</span>' : '');
+    const adiado = {};
+    contratos.forEach((c) => { if (c.adiadoMeses) adiado[c.id] = c.adiadoMeses; });
+    const marcaEntrega = (id) => (naoEntregue.has(id) ? ' <span class="selo alerta selo-mini">a entregar</span>' : '') + (adiado[id] ? ' <span class="selo selo-mini" title="O órgão ainda não pediu a entrega: os valores passaram para este mês">adiado ' + adiado[id] + ' ' + (adiado[id] > 1 ? 'meses' : 'mês') + '</span>' : '');
     const classeEntrega = (id) => (naoEntregue.has(id) ? ' a-entregar' : '');
     const visaoPrev = GAH.visaoDoQuadro('previsao');
     const visaoFab = GAH.visaoDoQuadro('fabricantes');

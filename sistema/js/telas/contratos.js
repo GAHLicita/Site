@@ -81,7 +81,8 @@
             const vig = x.anterior
               ? dataBR(x.vigIni) + '<span class="sub">até <b>' + dataBR(x.vigFim) + '</b> (atual)</span><span class="sub renovacao-info">Renovado: ' + dataBR(c.vigenciaInicio) + ' a ' + dataBR(c.vigenciaFim) + '</span>' +
                 '<button type="button" class="botao verde botao-entregue" data-entregue="' + esc(c.id) + '">Licenças entregues</button>'
-              : dataBR(c.vigenciaInicio) + '<span class="sub">até ' + dataBR(c.vigenciaFim) + '</span>';
+              : dataBR(c.vigenciaInicio) + '<span class="sub">até ' + dataBR(c.vigenciaFim) + '</span>' +
+                (!x.entregue && c.status !== 'cancelado' ? '<span class="sub renovacao-info">Aguardando entrega</span><button type="button" class="botao verde botao-entregue" data-entregue="' + esc(c.id) + '">Licenças entregues</button>' : '');
             return titulo + '<tr class="clicavel' + (x.grupo >= 3 ? ' linha-apagada' : '') + '" data-id="' + esc(c.id) + '"><td><span class="nome">' + esc(orgao) + (ufCliente(c.clienteId) ? ' <span class="texto-suave">· ' + esc(ufCliente(c.clienteId)) + '</span>' : '') + '</span><span class="sub">' + esc([c.produto, c.fornecedor].filter(Boolean).join(' · ')) + '</span></td>' +
             '<td>' + vig + '</td>' +
             '<td>' + nomeForma(c.venda && c.venda.forma) + '<span class="sub">' + s.parcelasRecebidas + '/' + s.totalParcelasVenda + ' recebida(s)</span></td>' +

@@ -244,13 +244,43 @@
   };
 
   /* Licenças já entregues? Renovação: só depois do ok de entrega (veja C.renovacoes). Demais contratos:
-     marcado como entregue, ou data de entrega já passada; sem data de entrega, vale o início da vigência. */
+     marcado como entregue, ou com data de entrega já chegada. Sem data de entrega = ainda não entregue
+     (contrato fechado esperando o órgão pedir a entrega). */
   C.licencasEntregues = function (c, hoje, ren) {
     const r = ren && ren[c.id];
     if (r) return !r.pendente;
     if (c.licencasEntregues) return true;
-    if (c.dataEntrega) return c.dataEntrega <= hoje;
-    return !c.vigenciaInicio || c.vigenciaInicio <= hoje;
+    return !!c.dataEntrega && c.dataEntrega <= hoje;
+  };
+
+  /* Contrato fechado e ainda não entregue: enquanto o órgão não pede a entrega, os valores em aberto não podem
+     ficar presos num mês que já passou. Se a primeira parcela em aberto (venda sem NF emitida, ou compra não paga)
+     é de um mês anterior ao atual, todas as parcelas em aberto do contrato andam o mesmo número de meses,
+     de modo que a primeira caia no mês atual (nunca antes de hoje). Devolve cópias; o contrato salvo não muda. */
+  C.adiarNaoEntregues = function (contratos, hoje) {
+    hoje = hoje || C.hoje();
+    const mesAtual = C.mesDe(hoje);
+    const ren = C.renovacoes(contratos, hoje);
+    // antes da entrega a NF ainda não vale: a venda em aberto anda junto, mesmo com emissão prevista
+    const aberta = (lado, p) => !p.pago && p.vencimento;
+    return (contratos || []).map((c) => {
+      if (c.status === 'cancelado' || C.licencasEntregues(c, hoje, ren)) return c;
+      const datas = [];
+      ['venda', 'compra'].forEach((l) => ((c[l] && c[l].parcelas) || []).forEach((p) => { if (aberta(l, p)) datas.push(p.vencimento); }));
+      if (!datas.length) return c;
+      const primeira = datas.sort()[0];
+      if (C.mesDe(primeira) >= mesAtual) return c;
+      const meses = (Number(mesAtual.slice(0, 4)) - Number(primeira.slice(0, 4))) * 12 + Number(mesAtual.slice(5, 7)) - Number(primeira.slice(5, 7));
+      const novo = JSON.parse(JSON.stringify(c));
+      ['venda', 'compra'].forEach((l) => ((novo[l] && novo[l].parcelas) || []).forEach((p) => {
+        if (!aberta(l, p)) return;
+        const ajusta = (data) => { const d = C.addMeses(data, meses); return d < hoje && C.mesDe(d) === mesAtual ? hoje : d; };
+        p.vencimento = ajusta(p.vencimento);
+        if (p.emissao && C.mesDe(p.emissao) < mesAtual) p.emissao = ajusta(p.emissao);
+      }));
+      novo.adiadoMeses = meses;
+      return novo;
+    });
   };
 
   /* Vendas por fabricante. Um contrato com licenças de vários fabricantes (lista 'itens', cada uma com

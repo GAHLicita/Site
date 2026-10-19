@@ -131,6 +131,7 @@ test('licencasEntregues: renovação pendente não conta; demais pela data de en
   assert.strictEqual(calc.licencasEntregues({ id: 'd', dataEntrega: '2026-11-01' }, hoje, ren), false);
   assert.strictEqual(calc.licencasEntregues({ id: 'e', dataEntrega: '2026-10-17' }, hoje, ren), true);
   assert.strictEqual(calc.licencasEntregues({ id: 'f', vigenciaInicio: '2027-01-01' }, hoje, ren), false);
+  assert.strictEqual(calc.licencasEntregues({ id: 'h', vigenciaInicio: '2026-01-01' }, hoje, ren), false); // sem data de entrega = não entregue
   assert.strictEqual(calc.licencasEntregues({ id: 'g', licencasEntregues: true, dataEntrega: '2027-01-01' }, hoje, ren), true);
 });
 
@@ -147,4 +148,18 @@ test('previsaoCaixa detalha entradas e saídas por contrato', () => {
   assert.strictEqual(q[0].sai, 350);
   assert.deepStrictEqual(q[0].contratos, [{ contratoId: 'z', entra: 500, sai: 320, recebido: 500, pago: 320, atrasado: false }]);
   assert.strictEqual(q[0].gastos[0].pago, true);
+});
+
+test('adiarNaoEntregues leva para o mês atual o contrato fechado e não entregue', () => {
+  const nao = { id: 'n', clienteId: 'o', vigenciaInicio: '2026-12-01', vigenciaFim: '2027-11-30',
+    venda: { parcelas: [{ valor: 100, vencimento: '2026-09-10' }, { valor: 100, vencimento: '2026-10-10' }] },
+    compra: { parcelas: [{ valor: 60, vencimento: '2026-09-05' }] } };
+  const entregue = { id: 'e', clienteId: 'p', dataEntrega: '2026-08-01', vigenciaInicio: '2026-08-01', vigenciaFim: '2027-07-31',
+    venda: { parcelas: [{ valor: 50, vencimento: '2026-09-10' }] }, compra: { parcelas: [] } };
+  const [a, b] = calc.adiarNaoEntregues([nao, entregue], '2026-11-20');
+  assert.deepStrictEqual(a.venda.parcelas.map((p) => p.vencimento), ['2026-11-20', '2026-12-10']);
+  assert.deepStrictEqual(a.compra.parcelas.map((p) => p.vencimento), ['2026-11-20']);
+  assert.strictEqual(a.adiadoMeses, 2);
+  assert.strictEqual(b, entregue); // entregue não muda (atrasado continua atrasado)
+  assert.strictEqual(nao.venda.parcelas[0].vencimento, '2026-09-10'); // original intacto
 });

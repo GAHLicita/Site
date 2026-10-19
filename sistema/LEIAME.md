@@ -98,6 +98,10 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- **Contrato fechado e ainda não entregue** (sem data de entrega e sem o ok de "Licenças entregues"): se o mês
+  dos valores em aberto já passou, eles andam sozinhos para o mês atual no Início (tabela mês a mês, gráfico,
+  previsão de caixa e quadros), com a etiqueta "adiado". O contrato salvo não muda.
+
 - Na tabela **Valores mês a mês** e na **Previsão de caixa**, clique no mês para ver de quais contratos
   (e de quais despesas) vem cada valor; clique no contrato para abri-lo.
 
