@@ -258,6 +258,18 @@
       '</div>';
   }
 
+  const MEIOS_COMPRA = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito']];
+  const BANDEIRAS = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Diners', 'Outra'];
+  const bancosCartao = () => [...new Set(D.lista('contratos').map((x) => x.compra && x.compra.cartao && x.compra.cartao.banco).filter(Boolean))].sort();
+  /* Texto curto de como a compra foi paga (usado no quadro do contrato). */
+  GAH.textoMeioCompra = function (k) {
+    if (!k || !k.meio) return '';
+    if (k.meio === 'real') return 'Pago em real';
+    if (k.meio === 'dolar') return 'Pago em dólar' + (k.valorDolar ? ': US$ ' + Number(k.valorDolar).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '') + (k.cotacaoDolar ? ' (cotação R$ ' + Number(k.cotacaoDolar).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ')' : '');
+    const c = k.cartao || {};
+    return 'Cartão de crédito' + [c.banco, c.bandeira, c.final ? 'final ' + c.final : '', c.parcelas > 1 ? c.parcelas + 'x' : ''].filter(Boolean).map((x) => ' · ' + x).join('');
+  };
+
   GAH.formContrato = function (contrato, opcoesForm) {
     opcoesForm = opcoesForm || {};
     const cfg = D.configuracao();
@@ -317,6 +329,14 @@
       '<div class="campo" id="k-qtd-campo"><label for="k-qtd">Nº de parcelas</label><input id="k-qtd" type="number" min="1" max="120" value="' + esc(qtdK) + '"></div>' +
       '<div class="campo"><label for="k-venc">1º pagamento</label><input id="k-venc" type="date" value="' + esc(k.primeiroVencimento || (k.parcelas && k.parcelas[0] && k.parcelas[0].vencimento) || '') + '"></div>' +
       '<div class="campo"><label for="k-aliq">Imposto na compra (%)</label><input id="k-aliq" type="number" step="0.01" min="0" value="' + esc(k.aliquotaCompra) + '"><span class="ajuda">IOF, câmbio ou outro custo sobre a compra.</span></div>' +
+      // como a compra foi paga: dinheiro em real, dinheiro em dólar ou cartão de crédito (banco, bandeira, final)
+      '<div class="campo"><label for="k-meio">Pago com</label><select id="k-meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-meio="dolar"><label for="k-usd">Valor em dólar (US$)</label><input id="k-usd" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
+      '<div class="campo" data-meio="dolar"><label for="k-cot">Cotação usada (R$ por US$)</label><input id="k-cot" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
+      '<div class="campo" data-meio="cartao"><label for="k-banco">Banco do cartão</label><input id="k-banco" list="lista-bancos-cartao" value="' + esc((k.cartao || {}).banco) + '" placeholder="Ex.: Banco do Brasil, Nubank"><datalist id="lista-bancos-cartao">' + bancosCartao().map((b) => '<option value="' + esc(b) + '">').join('') + '</datalist></div>' +
+      '<div class="campo" data-meio="cartao"><label for="k-bandeira">Bandeira</label><select id="k-bandeira">' + opcoes(BANDEIRAS, (k.cartao || {}).bandeira || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-meio="cartao"><label for="k-final">Final do cartão (4 últimos dígitos)</label><input id="k-final" inputmode="numeric" maxlength="4" value="' + esc((k.cartao || {}).final) + '" placeholder="0000"><span class="ajuda">Só os 4 últimos números. Nunca o número inteiro.</span></div>' +
+      '<div class="campo" data-meio="cartao"><label for="k-parcartao">Parcelas no cartão</label><input id="k-parcartao" type="number" min="1" max="24" value="' + esc((k.cartao || {}).parcelas) + '" placeholder="1"></div>' +
       '</div></div>' +
       '<div class="previa" id="previa-contrato"></div>' +
       '<div class="campo" style="margin-top:12px"><label for="ct-obs">Observações</label><textarea id="ct-obs" name="observacoes">' + esc(c.observacoes) + '</textarea></div>' +
@@ -357,6 +377,9 @@
     }
     j.el.querySelector('form').addEventListener('input', atualizar);
     atualizar();
+    const mostrarMeio = () => j.el.querySelectorAll('[data-meio]').forEach((el) => (el.hidden = el.dataset.meio !== $('#k-meio').value));
+    $('#k-meio').addEventListener('change', mostrarMeio);
+    mostrarMeio();
     $('#ct-add-item').addEventListener('click', () => {
       $('#ct-itens').insertAdjacentHTML('beforeend', linhaItem({}));
       $('#ct-itens').lastElementChild.querySelector('input').focus();
@@ -379,6 +402,12 @@
       const mudouK = !kAnt.parcelas || !kAnt.parcelas.length || kAnt.forma !== t.formaK || calc.num(kAnt.valorTotal) !== t.totalK || (kAnt.qtdParcelas || kAnt.parcelas.length) !== t.qK || (kAnt.primeiroVencimento || '') !== t.vencK;
       const venda = Object.assign({}, vAnt, { forma: t.formaV, valorTotal: t.totalV, qtdParcelas: t.qV, primeiroVencimento: t.vencV, aliquotaNF: t.aliqV });
       const compra = Object.assign({}, kAnt, { forma: t.formaK, valorTotal: t.totalK, qtdParcelas: t.qK, primeiroVencimento: t.vencK, aliquotaCompra: t.aliqK });
+      const meio = $('#k-meio').value;
+      compra.meio = meio;
+      compra.valorDolar = meio === 'dolar' && $('#k-usd').value !== '' ? Number($('#k-usd').value) : '';
+      compra.cotacaoDolar = meio === 'dolar' && $('#k-cot').value !== '' ? Number($('#k-cot').value) : '';
+      const finalCartao = $('#k-final').value.replace(/\D/g, '').slice(-4);
+      compra.cartao = meio === 'cartao' ? { banco: $('#k-banco').value.trim(), bandeira: $('#k-bandeira').value, final: finalCartao, parcelas: $('#k-parcartao').value === '' ? '' : Number($('#k-parcartao').value) } : null;
       if (mudouV) venda.parcelas = refazerParcelas(vAnt.parcelas, t.totalV, t.qV, t.vencV || dados.dataEntrega || hoje);
       if (mudouK) compra.parcelas = refazerParcelas(kAnt.parcelas, t.totalK, t.qK, t.vencK || dados.dataEntrega || hoje);
       try {
@@ -575,6 +604,7 @@
       '<div class="mini-numeros"><div><span>Valor de compra</span><b>' + moeda(s.compra) + '</b></div><div><span>Pago</span><b>' + moeda(s.pago) + '</b></div><div><span>Falta pagar</span><b>' + moeda(s.aPagar) + '</b></div></div>' +
       '<div class="progresso" title="' + Math.round(percPag) + '% pago"><i style="width:' + percPag + '%;background:var(--navy-suave)"></i></div>' +
       '<div class="texto-suave" style="font-size:.85rem">' + s.parcelasPagas + ' de ' + s.totalParcelasCompra + ' parcela(s) paga(s)' + (s.parcelasPagar ? ' · faltam ' + s.parcelasPagar : '') + '</div>' +
+      (GAH.textoMeioCompra(c.compra) ? '<div class="meio-compra">' + esc(GAH.textoMeioCompra(c.compra)) + '</div>' : '') +
       '<details data-chave="' + esc(c.id) + '-compra"><summary>Ver parcelas</summary>' + tabelaParcelas(c, 'compra') + '<p style="margin:8px 0 0"><button type="button" class="link-botao" data-editar-parcelas="' + esc(c.id) + '|compra">Editar valores e datas</button></p></details>' +
       '</section></div>' +
       '<div class="resultado"><span>Imposto NF (' + (calc.num(c.venda && c.venda.aliquotaNF)).toLocaleString('pt-BR') + '%): <b>' + moeda(s.impostoNF) + '</b></span>' +
