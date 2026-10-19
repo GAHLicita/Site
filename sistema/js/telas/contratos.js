@@ -74,7 +74,7 @@
       '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues' + (naoEntregues ? ' (' + naoEntregues + ' fora)' : '') + '</button></div>' +
       '</div></div>' +
       (linhas.length
-        ? '<div class="tabela-rolagem"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
+        ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
           linhas.map((x, i) => {
             const { c, s, orgao } = x;
             const titulo = x.grupo && (i === 0 || linhas[i - 1].grupo !== x.grupo) ? '<tr class="linha-grupo"><td colspan="9">' + TITULO_GRUPO[x.grupo] + '</td></tr>' : '';

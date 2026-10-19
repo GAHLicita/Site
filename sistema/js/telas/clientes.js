@@ -46,7 +46,7 @@
       '<select class="filtro" id="cli-sit" aria-label="Situação">' + opcoes([['ativos', 'Com contrato vigente'], ['receber', 'Com valor a receber'], ['atraso', 'Com pagamento atrasado'], ['pagar', 'Com compra a pagar']], filtro.situacao, 'Todas as situações') + '</select>' +
       '</div></div>' +
       (linhas.length
-        ? '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Órgão</th><th>Contato principal</th><th class="valor">Contratos</th><th>Próximo fim de vigência</th><th class="valor">A receber</th><th class="valor">A pagar</th><th>Drive</th></tr></thead><tbody>' +
+        ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-clientes"><thead><tr><th>Órgão</th><th>Contato principal</th><th class="valor">Contratos</th><th>Próximo fim de vigência</th><th class="valor">A receber</th><th class="valor">A pagar</th><th>Drive</th></tr></thead><tbody>' +
           linhas.map(({ c, r }) => {
             const ct = (c.contatos || [])[0] || {};
             const drive = linkSeguro(c.linkDrive);

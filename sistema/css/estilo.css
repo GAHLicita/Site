@@ -832,3 +832,15 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .linha-detalhe[data-contrato]:hover td { color: var(--tinta); }
 .linha-detalhe[data-contrato]:hover td:first-child { text-decoration: underline; text-decoration-color: var(--linha-forte); }
 .linha-detalhe.gasto td:first-child { font-style: italic; }
+
+/* Contratos e Clientes: ao rolar a página, o cabeçalho da tabela fica preso logo abaixo do topo.
+   (overflow-x: clip não cria área de rolagem, então o cabeçalho acompanha a página) */
+@media (min-width: 1000px) {
+  .tabela-rolagem.cabecalho-fixo { overflow-x: clip; }
+  .cabecalho-fixo thead th { position: sticky; top: var(--altura-topo); z-index: 5; box-shadow: 0 1px 0 var(--linha-forte); }
+}
+
+/* Início: no detalhe dos meses (opção Total), contrato com licenças ainda não entregues */
+.linha-detalhe.a-entregar td { background: var(--alerta-fundo); color: var(--alerta); }
+.selo-mini { font-size: 0.68rem; padding: 0 7px; margin-left: 4px; vertical-align: 1px; }
+@media (max-width: 1200px) { .tabela-clientes th, .tabela-clientes td { padding-inline: 7px; } .tabela-clientes { font-size: 0.85rem; } }
