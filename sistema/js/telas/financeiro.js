@@ -135,7 +135,7 @@
       kpi('A pagar (compras parceladas)', moeda(v.aPagar), 'de ' + moeda(v.totalCompras) + ' em compras') +
       kpi('Impostos', moeda(v.impostos), 'NF e compras') +
       kpi('Despesas e custos', moeda(v.despesas), 'contador, custos fixos e outras, até este mês') +
-      kpi('Lucro líquido', '<span class="' + (v.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(v.lucroLiquido) + '</span>', 'lucro dos contratos − despesas e custos') +
+      kpi('Lucro líquido', '<span class="' + (v.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(v.lucroLiquido) + '</span>', (v.totalContratos ? pct(v.lucroLiquido / v.totalContratos) + ' do valor total em contratos · ' : '') + 'lucro dos contratos − despesas e custos') +
       '</div></div>' +
 
       '<section class="painel painel-mapa"><div class="painel-cab"><h2>Onde estamos presentes</h2><span class="sub">Estados com órgãos atendidos</span></div><div class="painel-corpo"><div class="mapa-area"><div class="mapa-coluna">' +
