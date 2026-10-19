@@ -230,6 +230,42 @@
           feitos++;
         }
       }
+      // arquivo de acréscimo: listas (ex.: contatos) ganham só os itens novos, sem repetir quem já está lá
+      // (mesmo telefone); quem já existe com o mesmo primeiro nome e sem telefone recebe o telefone.
+      // Campos que são objetos (ex.: faturamento) só têm preenchidas as informações que estavam vazias.
+      const soDigitos = (t) => String(t || '').replace(/\D/g, '').slice(-8);
+      const primeiroNome = (s) => String(s || '').trim().split(/\s+/)[0].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      for (const c of Object.keys(json.acrescentar || {})) {
+        if (!COLECOES.includes(c)) continue;
+        for (const parcial of json.acrescentar[c] || []) {
+          const atual = cache[c].find((x) => x.id === parcial.id);
+          if (!atual) continue;
+          const novo = Object.assign({}, atual);
+          for (const [k, v] of Object.entries(limpar(parcial))) {
+            if (k === 'id') continue;
+            if (Array.isArray(v)) {
+              const lista = (Array.isArray(atual[k]) ? atual[k] : []).map((x) => Object.assign({}, x));
+              for (const item of v) {
+                if (item.telefone && lista.some((x) => soDigitos(x.telefone) && soDigitos(x.telefone) === soDigitos(item.telefone))) continue;
+                const mesmo = lista.find((x) => !soDigitos(x.telefone) && primeiroNome(x.nome) && primeiroNome(x.nome) === primeiroNome(item.nome));
+                if (mesmo) { Object.keys(item).forEach((ch) => { if (!mesmo[ch]) mesmo[ch] = item[ch]; }); continue; }
+                lista.push(item);
+              }
+              novo[k] = lista;
+            } else if (v && typeof v === 'object') {
+              const obj = Object.assign({}, atual[k]);
+              Object.keys(v).forEach((ch) => { if (!obj[ch]) obj[ch] = v[ch]; });
+              novo[k] = obj;
+            } else if (!atual[k]) novo[k] = v;
+          }
+          if (modoDemo()) cache[c][cache[c].indexOf(atual)] = novo;
+          else {
+            const { id, ...resto } = novo;
+            await fb.fs.setDoc(fb.fs.doc(fb.db, c, id), resto);
+          }
+          feitos++;
+        }
+      }
       // itens que um backup mais novo pede para apagar (ex.: lançamentos que mudaram de lugar)
       for (const c of Object.keys(json.remover || {})) {
         if (!COLECOES.includes(c)) continue;
