@@ -881,6 +881,32 @@
   }
 
   document.addEventListener('DOMContentLoaded', iniciar);
+
+  /* Aviso de versão nova: versao.json muda a cada publicação. Se mudar com o sistema aberto, mostra uma faixa
+     para atualizar (na tela de login atualiza sozinho, porque não há nada em edição). F5 mantém o login. */
+  let versaoAberta = null;
+  async function conferirVersao() {
+    try {
+      const r = await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const v = (await r.json()).versao;
+      if (!versaoAberta) { versaoAberta = v; return; }
+      if (v === versaoAberta) return;
+      if (!usuarioAtual) { location.reload(); return; }
+      if (document.getElementById('faixa-versao')) return;
+      const faixa = document.createElement('div');
+      faixa.id = 'faixa-versao';
+      faixa.className = 'faixa-versao';
+      faixa.setAttribute('role', 'status');
+      faixa.innerHTML = '<span>Há uma versão nova do sistema.</span><button type="button" class="botao pequeno">Atualizar agora</button><span class="texto-pequeno">Salve o que estiver editando antes.</span>';
+      faixa.querySelector('button').addEventListener('click', () => location.reload());
+      const topo = document.querySelector('.topo');
+      if (topo) topo.after(faixa); else document.body.prepend(faixa);
+    } catch (e) { /* sem internet: tenta de novo depois */ }
+  }
+  conferirVersao();
+  setInterval(() => { if (!document.hidden) conferirVersao(); }, 3 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) conferirVersao(); });
   // Voltou com o botão "voltar" e o navegador restaurou a página da memória: também pede o login.
   window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;

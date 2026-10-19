@@ -814,3 +814,7 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .visao-financeira button[aria-pressed="true"] { background: var(--navy); color: var(--creme); }
 .visao-financeira button:hover:not([aria-pressed="true"]) { color: var(--tinta); }
 @media (max-width: 480px) { .visao-financeira { flex-direction: column; border-radius: 12px; } .visao-financeira button { border-radius: 9px; } }
+
+/* Faixa "versão nova do sistema" (aparece logo abaixo do topo) */
+.faixa-versao { position: sticky; top: var(--altura-topo); z-index: 40; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; background: var(--info-fundo); color: var(--info); border-bottom: 1px solid var(--linha); padding: 8px 16px; font-size: 0.9rem; font-weight: 600; }
+.faixa-versao .texto-pequeno { font-weight: 400; font-size: 0.8rem; color: var(--tinta-2); }

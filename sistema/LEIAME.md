@@ -151,3 +151,10 @@ No dia a dia: na primeira vez em cada computador, abra a Agenda e clique em **Co
 Depois disso, a cada login o sistema conecta e sincroniza o Google sozinho (uma janelinha do Google pode
 abrir e fechar rapidamente). Se o navegador bloquear essa janelinha, permita pop-ups para
 www.gahlicita.com.br ou clique em **Reconectar** na Agenda.
+
+## Aviso de versão nova
+
+O arquivo `versao.json` muda a cada publicação (um gancho de commit atualiza a data sozinho quando algo em
+`sistema/` muda). Com o sistema aberto, ele confere esse arquivo a cada 3 minutos e quando a aba volta a ficar
+visível; se mudou, aparece a faixa "Há uma versão nova do sistema" com o botão **Atualizar agora**. Na tela de
+login a página atualiza sozinha.
