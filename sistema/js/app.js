@@ -636,14 +636,16 @@
   GAH.eventosAutomaticos = function () {
     const ev = [];
     const ren = calc.renovacoes(D.lista('contratos'), calc.hoje());
-    for (const c of D.lista('contratos')) {
+    // contratos fechados e não entregues: vencimentos acompanham o adiamento (mesma regra do Início)
+    for (const c of calc.adiarNaoEntregues(D.lista('contratos'), calc.hoje())) {
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
+      const obsAdiado = c.adiadoMeses ? ' · adiado (aguardando entrega)' : '';
       ((c.venda && c.venda.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ chave: 'receber:' + c.id + ':' + i, data: p.vencimento, tipo: 'receber', titulo: 'Receber ' + moeda(p.valor) + ' — ' + orgao, detalhe: c.produto + ' · parcela ' + (i + 1) + '/' + c.venda.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
+        if (!p.pago && p.vencimento) ev.push({ chave: 'receber:' + c.id + ':' + i, data: p.vencimento, tipo: 'receber', titulo: 'Receber ' + moeda(p.valor) + ' — ' + orgao, detalhe: c.produto + ' · parcela ' + (i + 1) + '/' + c.venda.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
       ((c.compra && c.compra.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length, link: '#/clientes/' + c.clienteId, valor: p.valor });
+        if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
       // já renovado: com as licenças novas entregues não há o que fazer; sem entregar, o aviso vira "entregar licenças"
       const renovacao = ren.porAnterior[c.id] && ren[ren.porAnterior[c.id]];
