@@ -98,6 +98,9 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- Na tabela **Valores mês a mês** e na **Previsão de caixa**, clique no mês para ver de quais contratos
+  (e de quais despesas) vem cada valor; clique no contrato para abri-lo.
+
 - **Total × Só licenças entregues** (Início e Contratos): "Total" conta todos os contratos, inclusive
   renovações já fechadas mas com licenças ainda não entregues (situação futura). "Só licenças entregues"
   conta apenas os contratos já entregues (situação atual), com as parcelas a receber e a pagar em aberto

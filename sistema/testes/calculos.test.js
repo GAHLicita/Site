@@ -38,11 +38,15 @@ test('resumoContrato soma recebido, a receber, parcelas e lucro', () => {
 
 test('faturamentoMensal usa a emissão da NF para venda e o vencimento para compra', () => {
   const c = {
+    id: 'x',
     venda: { aliquotaNF: 10, parcelas: [{ valor: 1000, emissao: '2026-08-20', vencimento: '2026-09-29', pago: true }] },
     compra: { aliquotaCompra: 0, parcelas: [{ valor: 700, vencimento: '2026-08-20', pago: true }] }
   };
-  const m = calc.faturamentoMensal([c], [{ valor: 50, data: '2026-08-10' }], 2026);
-  assert.deepStrictEqual(m[7], { mes: '2026-08', venda: 1000, compra: 700, impostos: 100, despesas: 50, lucro: 150 });
+  const m = calc.faturamentoMensal([c], [{ valor: 50, data: '2026-08-10', descricao: 'Contador' }], 2026);
+  const { mes, venda, compra, impostos, despesas, lucro } = m[7];
+  assert.deepStrictEqual({ mes, venda, compra, impostos, despesas, lucro }, { mes: '2026-08', venda: 1000, compra: 700, impostos: 100, despesas: 50, lucro: 150 });
+  assert.deepStrictEqual(m[7].contratos, [{ contratoId: 'x', venda: 1000, compra: 700, impostos: 100, lucro: 200 }]);
+  assert.deepStrictEqual(m[7].gastos, [{ descricao: 'Contador', categoria: '', valor: 50, pago: false }]);
   assert.strictEqual(m[8].venda, 0);
 });
 
@@ -128,4 +132,12 @@ test('licencasEntregues: renovação pendente não conta; demais pela data de en
   assert.strictEqual(calc.licencasEntregues({ id: 'e', dataEntrega: '2026-10-17' }, hoje, ren), true);
   assert.strictEqual(calc.licencasEntregues({ id: 'f', vigenciaInicio: '2027-01-01' }, hoje, ren), false);
   assert.strictEqual(calc.licencasEntregues({ id: 'g', licencasEntregues: true, dataEntrega: '2027-01-01' }, hoje, ren), true);
+});
+
+test('previsaoCaixa detalha entradas e saídas por contrato', () => {
+  const c = { id: 'k', venda: { parcelas: [{ valor: 300, vencimento: '2026-09-10' }, { valor: 200, vencimento: '2026-11-10' }] }, compra: { parcelas: [{ valor: 150, vencimento: '2026-10-05' }] } };
+  const p = calc.previsaoCaixa([c], [{ valor: 40, data: '2026-10-20', descricao: 'E-mail' }], '2026-10-01', 3);
+  assert.deepStrictEqual(p[0].contratos, [{ contratoId: 'k', entra: 300, sai: 150, atrasado: true }]);
+  assert.strictEqual(p[0].gastos[0].descricao, 'E-mail');
+  assert.deepStrictEqual(p[1].contratos, [{ contratoId: 'k', entra: 200, sai: 0, atrasado: false }]);
 });

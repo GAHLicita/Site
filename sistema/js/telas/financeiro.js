@@ -4,6 +4,15 @@
   const calc = GAH.calc;
   const D = GAH.dados;
   let anoEscolhido = null;
+  const abertos = new Set(); // meses expandidos nas tabelas (ex.: 'mm|2026-10', 'pc|2026-11')
+
+  /* Nome do contrato para as linhas de detalhe: órgão · licença. */
+  function nomeContrato(id) {
+    const c = D.obter('contratos', id);
+    if (!c) return 'Contrato';
+    return GAH.u.nomeCliente(c.clienteId) + ' · ' + (c.produto || 'licença');
+  }
+  const seta = (chave) => '<span class="seta-expandir" aria-hidden="true">' + (abertos.has(chave) ? '▾' : '▸') + '</span>';
 
   function mapa(estadosAtivos, contagem) {
     const m = GAH.mapaBrasil;
@@ -156,7 +165,14 @@
       '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues</button></div>' +
       '<select class="filtro" id="fin-ano" aria-label="Ano">' + listaAnos.map((a) => '<option' + (a === anoEscolhido ? ' selected' : '') + '>' + a + '</option>').join('') + '</select></div></div>' +
       '<div class="tabela-rolagem"><table class="tabela tabela-compacta"><thead><tr><th>' + anoEscolhido + '</th><th class="valor">Preço de venda</th><th class="valor">Preço de compra</th><th class="valor">Impostos</th><th class="valor">Despesas e custos</th><th class="valor">Lucro líquido</th></tr></thead><tbody>' +
-      meses.map((m, i) => '<tr><td>' + MESES[i].charAt(0).toUpperCase() + MESES[i].slice(1) + '</td><td class="valor">' + moeda(m.venda) + '</td><td class="valor">' + moeda(m.compra) + '</td><td class="valor">' + moeda(m.impostos) + '</td><td class="valor">' + moeda(m.despesas) + '</td><td class="valor ' + (m.lucro < 0 ? 'negativo' : '') + '">' + moeda(m.lucro) + '</td></tr>').join('') +
+      meses.map((m, i) => {
+        const chave = 'mm|' + m.mes;
+        const tem = m.contratos.length || m.gastos.length;
+        const aberto = abertos.has(chave);
+        return '<tr class="' + (tem ? 'linha-expandir' : '') + (aberto ? ' aberta' : '') + '"' + (tem ? ' data-expandir="' + chave + '" tabindex="0" aria-expanded="' + aberto + '"' : '') + '><td>' + (tem ? seta(chave) : '<span class="seta-expandir"></span>') + MESES[i].charAt(0).toUpperCase() + MESES[i].slice(1) + '</td><td class="valor">' + moeda(m.venda) + '</td><td class="valor">' + moeda(m.compra) + '</td><td class="valor">' + moeda(m.impostos) + '</td><td class="valor">' + moeda(m.despesas) + '</td><td class="valor ' + (m.lucro < 0 ? 'negativo' : '') + '">' + moeda(m.lucro) + '</td></tr>' +
+          m.contratos.map((k) => '<tr class="linha-detalhe" data-de="' + chave + '" data-contrato="' + esc(k.contratoId) + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(nomeContrato(k.contratoId)) + '</td><td class="valor">' + (k.venda ? moeda(k.venda) : '—') + '</td><td class="valor">' + (k.compra ? moeda(k.compra) : '—') + '</td><td class="valor">' + (k.impostos ? moeda(k.impostos) : '—') + '</td><td class="valor">—</td><td class="valor ' + (k.lucro < 0 ? 'negativo' : '') + '">' + moeda(k.lucro) + '</td></tr>').join('') +
+          m.gastos.map((d) => '<tr class="linha-detalhe gasto" data-de="' + chave + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(d.descricao) + (d.categoria ? ' <span class="texto-suave">· ' + esc(d.categoria) + '</span>' : '') + '</td><td class="valor">—</td><td class="valor">—</td><td class="valor">—</td><td class="valor">' + moeda(d.valor) + '</td><td class="valor negativo">−' + moeda(d.valor) + '</td></tr>').join('');
+      }).join('') +
       '</tbody><tfoot><tr><td>Total</td><td class="valor">' + moeda(tot.venda) + '</td><td class="valor">' + moeda(tot.compra) + '</td><td class="valor">' + moeda(tot.impostos) + '</td><td class="valor">' + moeda(tot.despesas) + '</td><td class="valor">' + moeda(tot.lucro) + '</td></tr></tfoot></table></div></section></section>' +
 
       '<section class="secao-inicio secao-grafico"><section class="painel"><div class="painel-cab"><div><h2>Faturamento mês a mês · ' + anoEscolhido + '</h2><span class="sub">Os mesmos números da tabela, em barras' + (visao === 'entregues' ? ' · só licenças entregues' : '') + '</span></div>' +
@@ -170,7 +186,14 @@
       '<button type="button" data-visao-quadro="previsao" data-valor="total" aria-pressed="' + (visaoPrev === 'total') + '">Total</button>' +
       '<button type="button" data-visao-quadro="previsao" data-valor="entregues" aria-pressed="' + (visaoPrev === 'entregues') + '">Só entregues</button></div></div>' +
       '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Mês</th><th class="valor">Entra</th><th class="valor">Sai</th><th class="valor">Saldo</th></tr></thead><tbody>' +
-      previsao.map((p) => '<tr><td>' + esc(mesBR(p.mes)) + '</td><td class="valor">' + moeda(p.entra) + '</td><td class="valor">' + moeda(p.sai) + '</td><td class="valor ' + (p.saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(p.saldo) + '</td></tr>').join('') +
+      previsao.map((p) => {
+        const chave = 'pc|' + p.mes;
+        const tem = p.contratos.length || p.gastos.length;
+        const aberto = abertos.has(chave);
+        return '<tr class="' + (tem ? 'linha-expandir' : '') + (aberto ? ' aberta' : '') + '"' + (tem ? ' data-expandir="' + chave + '" tabindex="0" aria-expanded="' + aberto + '"' : '') + '><td>' + (tem ? seta(chave) : '<span class="seta-expandir"></span>') + esc(mesBR(p.mes)) + '</td><td class="valor">' + moeda(p.entra) + '</td><td class="valor">' + moeda(p.sai) + '</td><td class="valor ' + (p.saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(p.saldo) + '</td></tr>' +
+          p.contratos.map((k) => '<tr class="linha-detalhe" data-de="' + chave + '" data-contrato="' + esc(k.contratoId) + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(nomeContrato(k.contratoId)) + (k.atrasado ? ' <span class="negativo">· em atraso</span>' : '') + '</td><td class="valor">' + (k.entra ? moeda(k.entra) : '—') + '</td><td class="valor">' + (k.sai ? moeda(k.sai) : '—') + '</td><td class="valor ' + (k.entra - k.sai < 0 ? 'negativo' : '') + '">' + moeda(k.entra - k.sai) + '</td></tr>').join('') +
+          p.gastos.map((d) => '<tr class="linha-detalhe gasto" data-de="' + chave + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(d.descricao) + (d.categoria ? ' <span class="texto-suave">· ' + esc(d.categoria) + '</span>' : '') + '</td><td class="valor">—</td><td class="valor">' + moeda(d.valor) + '</td><td class="valor negativo">−' + moeda(d.valor) + '</td></tr>').join('');
+      }).join('') +
       '</tbody></table></div></section>' +
       '<section class="painel"><div class="painel-cab"><div><h2>Vendas por fabricante</h2><span class="sub">Contratos com várias licenças entram em cada fabricante</span></div>' +
       '<div class="visao-financeira" role="group" aria-label="Quais contratos entram neste quadro">' +
@@ -183,6 +206,22 @@
         : '<div class="vazio"><strong>Sem contratos ainda</strong>Cadastre um contrato para ver as vendas por fabricante.</div>') +
       '</section></div></section>' +
       (op.rodape ? '<section class="secao-inicio">' + op.rodape + '</section>' : '');
+
+    // abre e fecha o detalhe do mês (sem redesenhar a tela) e abre o contrato ao clicar numa linha de detalhe
+    const alternar = (tr) => {
+      const chave = tr.dataset.expandir;
+      const abrir = !abertos.has(chave);
+      if (abrir) abertos.add(chave); else abertos.delete(chave);
+      tr.classList.toggle('aberta', abrir);
+      tr.setAttribute('aria-expanded', String(abrir));
+      tr.querySelector('.seta-expandir').textContent = abrir ? '▾' : '▸';
+      main.querySelectorAll('tr[data-de="' + chave + '"]').forEach((d) => (d.hidden = !abrir));
+    };
+    main.querySelectorAll('tr[data-expandir]').forEach((tr) => {
+      tr.addEventListener('click', () => alternar(tr));
+      tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(tr); } });
+    });
+    main.querySelectorAll('tr[data-contrato]').forEach((tr) => tr.addEventListener('click', () => GAH.abrirContrato && GAH.abrirContrato(tr.dataset.contrato)));
 
     main.querySelectorAll('[data-visao-quadro]').forEach((bt) => bt.addEventListener('click', () => {
       GAH.visaoDoQuadro(bt.dataset.visaoQuadro, bt.dataset.valor);

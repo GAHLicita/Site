@@ -818,3 +818,15 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 /* Faixa "versão nova do sistema" (aparece logo abaixo do topo) */
 .faixa-versao { position: sticky; top: var(--altura-topo); z-index: 40; display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; background: var(--info-fundo); color: var(--info); border-bottom: 1px solid var(--linha); padding: 8px 16px; font-size: 0.9rem; font-weight: 600; }
 .faixa-versao .texto-pequeno { font-weight: 400; font-size: 0.8rem; color: var(--tinta-2); }
+
+/* Início: meses que abrem o detalhe por contrato */
+.linha-expandir { cursor: pointer; }
+.linha-expandir:hover td { background: var(--superficie-2); }
+.linha-expandir.aberta td { background: var(--info-fundo); font-weight: 600; }
+.seta-expandir { display: inline-block; width: 1.1em; color: var(--tinta-2); font-size: 0.8em; }
+.linha-detalhe td { font-size: 0.82rem; color: var(--tinta-2); background: var(--superficie-2); }
+.linha-detalhe td:first-child { padding-left: 30px; }
+.linha-detalhe[data-contrato] { cursor: pointer; }
+.linha-detalhe[data-contrato]:hover td { color: var(--tinta); }
+.linha-detalhe[data-contrato]:hover td:first-child { text-decoration: underline; text-decoration-color: var(--linha-forte); }
+.linha-detalhe.gasto td:first-child { font-style: italic; }

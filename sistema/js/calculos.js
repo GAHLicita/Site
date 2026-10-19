@@ -165,12 +165,14 @@
   C.faturamentoMensal = function (contratos, despesas, ano) {
     const meses = [];
     for (let m = 1; m <= 12; m++) {
-      meses.push({ mes: ano + '-' + pad(m), venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0 });
+      meses.push({ mes: ano + '-' + pad(m), venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0, porContrato: {}, gastos: [] });
     }
     const idx = (data) => {
       const mes = C.mesDe(data);
       return mes.slice(0, 4) === String(ano) ? Number(mes.slice(5, 7)) - 1 : -1;
     };
+    // detalhe de cada mês: quanto de cada contrato entrou nele (venda, compra e impostos)
+    const doContrato = (m, c) => (m.porContrato[c.id] = m.porContrato[c.id] || { contratoId: c.id, venda: 0, compra: 0, impostos: 0 });
     for (const c of contratos.filter(valido)) {
       const aliqNF = num(c.venda && c.venda.aliquotaNF) / 100;
       const aliqCompra = num(c.compra && c.compra.aliquotaCompra) / 100;
@@ -179,17 +181,26 @@
         if (i < 0) continue;
         meses[i].venda += num(p.valor);
         meses[i].impostos += num(p.valor) * aliqNF;
+        const k = doContrato(meses[i], c);
+        k.venda += num(p.valor);
+        k.impostos += num(p.valor) * aliqNF;
       }
       for (const p of (c.compra && c.compra.parcelas) || []) {
         const i = idx(p.vencimento);
         if (i < 0) continue;
         meses[i].compra += num(p.valor);
         meses[i].impostos += num(p.valor) * aliqCompra;
+        const k = doContrato(meses[i], c);
+        k.compra += num(p.valor);
+        k.impostos += num(p.valor) * aliqCompra;
       }
     }
     for (const d of despesas) {
       const i = idx(d.data);
-      if (i >= 0) meses[i].despesas += num(d.valor);
+      if (i >= 0) {
+        meses[i].despesas += num(d.valor);
+        meses[i].gastos.push({ descricao: d.descricao || 'Despesa', categoria: d.categoria || '', valor: centavos(num(d.valor)), pago: !!d.pago });
+      }
     }
     for (const m of meses) {
       m.venda = centavos(m.venda);
@@ -197,6 +208,10 @@
       m.impostos = centavos(m.impostos);
       m.despesas = centavos(m.despesas);
       m.lucro = centavos(m.venda - m.compra - m.impostos - m.despesas);
+      m.contratos = Object.values(m.porContrato)
+        .map((k) => ({ contratoId: k.contratoId, venda: centavos(k.venda), compra: centavos(k.compra), impostos: centavos(k.impostos), lucro: centavos(k.venda - k.compra - k.impostos) }))
+        .sort((a, b) => b.venda - a.venda || b.compra - a.compra);
+      delete m.porContrato;
     }
     return meses;
   };
@@ -271,28 +286,44 @@
     for (let i = 0; i < (quantosMeses || 6); i++) {
       const mes = C.mesDe(C.addMeses(inicio + '-01', i));
       pos[mes] = lista.length;
-      lista.push({ mes, entra: 0, sai: 0, saldo: 0 });
+      lista.push({ mes, entra: 0, sai: 0, saldo: 0, porContrato: {}, gastos: [] });
     }
     const mesAlvo = (data) => {
       const mes = C.mesDe(data);
       return mes < inicio ? inicio : mes; // atrasados contam no mês atual
     };
+    // detalhe de cada mês: de qual contrato vem cada entrada e cada saída (com as parcelas atrasadas marcadas)
+    const doContrato = (m, c) => (m.porContrato[c.id] = m.porContrato[c.id] || { contratoId: c.id, entra: 0, sai: 0, atrasado: false });
     for (const c of contratos.filter(valido)) {
       for (const p of (c.venda && c.venda.parcelas) || []) {
         if (p.pago || !p.vencimento) continue;
         const i = pos[mesAlvo(p.vencimento)];
-        if (i !== undefined) lista[i].entra += num(p.valor);
+        if (i === undefined) continue;
+        lista[i].entra += num(p.valor);
+        const k = doContrato(lista[i], c);
+        k.entra += num(p.valor);
+        if (C.mesDe(p.vencimento) < inicio || p.vencimento < hoje) k.atrasado = true;
       }
       for (const p of (c.compra && c.compra.parcelas) || []) {
         if (p.pago || !p.vencimento) continue;
         const i = pos[mesAlvo(p.vencimento)];
-        if (i !== undefined) lista[i].sai += num(p.valor);
+        if (i === undefined) continue;
+        lista[i].sai += num(p.valor);
+        doContrato(lista[i], c).sai += num(p.valor);
       }
     }
     for (const d of despesas) {
       if (d.pago || !d.data) continue;
       const i = pos[mesAlvo(d.data)];
-      if (i !== undefined) lista[i].sai += num(d.valor);
+      if (i === undefined) continue;
+      lista[i].sai += num(d.valor);
+      lista[i].gastos.push({ descricao: d.descricao || 'Despesa', categoria: d.categoria || '', valor: centavos(num(d.valor)), data: d.data });
+    }
+    for (const m of lista) {
+      m.contratos = Object.values(m.porContrato)
+        .map((k) => Object.assign(k, { entra: centavos(k.entra), sai: centavos(k.sai) }))
+        .sort((a, b) => b.entra - a.entra || b.sai - a.sai);
+      delete m.porContrato;
     }
     for (const l of lista) {
       l.entra = centavos(l.entra);
