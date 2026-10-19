@@ -33,6 +33,22 @@
     try { return localStorage.getItem(CHAVE_LEMBRAR) === '1'; } catch (e) { return false; }
   }
 
+  /* A permissão do Google (vale ~1 hora) fica guardada só nesta aba (sessionStorage). Assim, ao clicar em
+     "Atualizar agora" ou apertar F5, a Agenda continua conectada sem pedir nada. Fechar a aba, sair do
+     sistema ou ir para outro site apaga a permissão. */
+  const CHAVE_TOKEN = 'gah-google-token';
+  function guardarToken() {
+    try { sessionStorage.setItem(CHAVE_TOKEN, JSON.stringify({ token, expira: tokenExpira })); } catch (e) { /* ignora */ }
+  }
+  function apagarTokenGuardado() {
+    try { sessionStorage.removeItem(CHAVE_TOKEN); } catch (e) { /* ignora */ }
+  }
+  try {
+    const salvo = JSON.parse(sessionStorage.getItem(CHAVE_TOKEN) || 'null');
+    if (salvo && salvo.token && Date.now() < salvo.expira) { token = salvo.token; tokenExpira = salvo.expira; }
+    else apagarTokenGuardado();
+  } catch (e) { /* ignora */ }
+
   function carregarGis() {
     if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
     if (carregandoGis) return carregandoGis;
@@ -58,6 +74,7 @@
           if (r.error) { reject(new Error(r.error_description || r.error)); return; }
           token = r.access_token;
           tokenExpira = Date.now() + (Number(r.expires_in) || 3600) * 1000 - 60000;
+          guardarToken();
           lembrar(true);
           resolve();
         },
@@ -72,7 +89,7 @@
     const r = await fetch(API + agendaId() + caminho, Object.assign({}, opcoes, {
       headers: Object.assign({ Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, (opcoes || {}).headers)
     }));
-    if (r.status === 401) { token = null; avisar(); throw Object.assign(new Error('A conexão com o Google expirou. Conecte de novo.'), { semToken: true }); }
+    if (r.status === 401) { token = null; apagarTokenGuardado(); avisar(); throw Object.assign(new Error('A conexão com o Google expirou. Conecte de novo.'), { semToken: true }); }
     if (r.status === 404 || r.status === 410) return null;
     if (!r.ok) throw new Error('Google Agenda: ' + r.status + ' ' + (await r.text()).slice(0, 200));
     return r.status === 204 ? null : r.json();
@@ -246,9 +263,19 @@
       } catch (e) { console.warn(e); }
     },
 
+    /* Esquece a permissão desta aba sem desligar a conexão automática do próximo login. */
+    esquecerToken() {
+      token = null;
+      tokenExpira = 0;
+      apagarTokenGuardado();
+      Object.keys(cache).forEach((k) => delete cache[k]);
+      avisar();
+    },
+
     desconectar() {
       if (token && window.google) google.accounts.oauth2.revoke(token, () => {});
       token = null;
+      apagarTokenGuardado();
       lembrar(false);
       Object.keys(cache).forEach((k) => delete cache[k]);
       avisar();

@@ -790,7 +790,7 @@
       topo() +
       (D.modoDemo() ? '<div class="faixa-demo">Modo demonstração — os dados ficam salvos só neste navegador. Para usar com login de verdade, siga o LEIAME.md.</div>' : '') +
       '<main class="conteudo" id="conteudo"></main>';
-    document.getElementById('sair').addEventListener('click', () => D.sair());
+    document.getElementById('sair').addEventListener('click', () => { if (GAH.google) GAH.google.esquecerToken(); D.sair(); });
     if (D.erroBanco) {
       const faixa = document.createElement('div');
       faixa.className = 'faixa-demo';
@@ -869,7 +869,10 @@
       saiu = sessionStorage.getItem('gah-sair') === '1' || !nav || nav.type !== 'reload';
       sessionStorage.removeItem('gah-sair');
     } catch (e) { saiu = true; }
-    if (saiu) await D.encerrarSessao().catch(() => {});
+    if (saiu) {
+      if (GAH.google) GAH.google.esquecerToken();
+      await D.encerrarSessao().catch(() => {});
+    }
     D.observarLogin((u) => {
       if (u) {
         if (!usuarioAtual) iniciarSistema(u);
