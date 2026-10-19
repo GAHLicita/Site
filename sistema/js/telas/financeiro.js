@@ -111,13 +111,15 @@
     // a tabela e o gráfico mês a mês seguem a mesma escolha dos quadros (Total ou Só licenças entregues)
     const meses = calc.faturamentoMensal(contratosVisao, GAH.despesasCompletas(anoEscolhido + '-12'), anoEscolhido);
     const tot = meses.reduce((t, m) => ({ venda: t.venda + m.venda, compra: t.compra + m.compra, impostos: t.impostos + m.impostos, despesas: t.despesas + m.despesas, lucro: t.lucro + m.lucro }), { venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0 });
-    const previsao = calc.previsaoCaixa(contratosVisao, GAH.despesasCompletas(calc.mesDe(calc.addMeses(mesAtual + '-01', 11))), hoje, 12);
+    const visaoPrev = GAH.visaoDoQuadro('previsao');
+    const visaoFab = GAH.visaoDoQuadro('fabricantes');
+    const previsao = calc.previsaoCaixa(GAH.contratosDaVisao(contratos, visaoPrev, hoje), GAH.despesasCompletas(calc.mesDe(calc.addMeses(mesAtual + '-01', 11))), hoje, 12);
 
     const porUF = {};
     const comContrato = new Set(contratos.filter((c) => c.status !== 'cancelado').map((c) => c.clienteId));
     clientes.filter((c) => comContrato.has(c.id) && c.uf).forEach((c) => (porUF[c.uf] = (porUF[c.uf] || 0) + 1));
 
-    const fabricantes = calc.vendasPorFabricante(contratosVisao, hoje);
+    const fabricantes = calc.vendasPorFabricante(GAH.contratosDaVisao(contratos, visaoFab, hoje), hoje);
 
     const kpi = (rotulo, valor, nota, cls) => '<div class="kpi ' + (cls || '') + '"><span class="kpi-rotulo">' + rotulo + '</span><span class="kpi-valor">' + valor + '</span>' + (nota ? '<span class="kpi-nota">' + nota + '</span>' : '') + '</div>';
 
@@ -163,11 +165,17 @@
       '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div></section></section>' +
 
       '<section class="secao-inicio"><div class="grade grade-2">' +
-      '<section class="painel"><div class="painel-cab"><h2>Previsão de caixa</h2><span class="sub">Parcelas em aberto nos próximos 12 meses (atrasadas contam no mês atual)' + (visao === 'entregues' ? ' · só licenças entregues' : '') + '</span></div>' +
+      '<section class="painel"><div class="painel-cab"><div><h2>Previsão de caixa</h2><span class="sub">Parcelas em aberto nos próximos 12 meses (atrasadas contam no mês atual)</span></div>' +
+      '<div class="visao-financeira" role="group" aria-label="Quais contratos entram neste quadro">' +
+      '<button type="button" data-visao-quadro="previsao" data-valor="total" aria-pressed="' + (visaoPrev === 'total') + '">Total</button>' +
+      '<button type="button" data-visao-quadro="previsao" data-valor="entregues" aria-pressed="' + (visaoPrev === 'entregues') + '">Só entregues</button></div></div>' +
       '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Mês</th><th class="valor">Entra</th><th class="valor">Sai</th><th class="valor">Saldo</th></tr></thead><tbody>' +
       previsao.map((p) => '<tr><td>' + esc(mesBR(p.mes)) + '</td><td class="valor">' + moeda(p.entra) + '</td><td class="valor">' + moeda(p.sai) + '</td><td class="valor ' + (p.saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(p.saldo) + '</td></tr>').join('') +
       '</tbody></table></div></section>' +
-      '<section class="painel"><div class="painel-cab"><h2>Vendas por fabricante</h2><span class="sub">Contratos com várias licenças entram em cada fabricante' + (visao === 'entregues' ? ' · só licenças entregues' : '') + '</span></div>' +
+      '<section class="painel"><div class="painel-cab"><div><h2>Vendas por fabricante</h2><span class="sub">Contratos com várias licenças entram em cada fabricante</span></div>' +
+      '<div class="visao-financeira" role="group" aria-label="Quais contratos entram neste quadro">' +
+      '<button type="button" data-visao-quadro="fabricantes" data-valor="total" aria-pressed="' + (visaoFab === 'total') + '">Total</button>' +
+      '<button type="button" data-visao-quadro="fabricantes" data-valor="entregues" aria-pressed="' + (visaoFab === 'entregues') + '">Só entregues</button></div></div>' +
       (fabricantes.length
         ? '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Fabricante</th><th class="valor">Contratos</th><th class="valor">Venda</th><th class="valor">Lucro</th></tr></thead><tbody>' +
           fabricantes.map((v) => '<tr><td class="nome">' + esc(v.fabricante) + '</td><td class="valor">' + v.n + '</td><td class="valor">' + moeda(v.venda) + '</td><td class="valor">' + moeda(v.lucro) + '</td></tr>').join('') +
@@ -176,6 +184,10 @@
       '</section></div></section>' +
       (op.rodape ? '<section class="secao-inicio">' + op.rodape + '</section>' : '');
 
+    main.querySelectorAll('[data-visao-quadro]').forEach((bt) => bt.addEventListener('click', () => {
+      GAH.visaoDoQuadro(bt.dataset.visaoQuadro, bt.dataset.valor);
+      (op.redesenhar || (() => GAH.telas.inicio(main)))();
+    }));
     main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => {
       GAH.visaoFinanceira(bt.dataset.visao);
       (op.redesenhar || (() => GAH.telas.inicio(main)))();

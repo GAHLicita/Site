@@ -618,6 +618,14 @@
     if (nova) { try { localStorage.setItem('gah-visao-financeira', nova); } catch (e) { /* ignora */ } return nova; }
     try { return localStorage.getItem('gah-visao-financeira') === 'entregues' ? 'entregues' : 'total'; } catch (e) { return 'total'; }
   };
+  /* Escolha própria de um quadro (ex.: 'previsao', 'fabricantes'). Enquanto o quadro não tiver escolha
+     própria, segue a escolha geral acima. */
+  GAH.visaoDoQuadro = function (quadro, nova) {
+    const chave = 'gah-visao-' + quadro;
+    if (nova) { try { localStorage.setItem(chave, nova); } catch (e) { /* ignora */ } return nova; }
+    try { const v = localStorage.getItem(chave); if (v === 'entregues' || v === 'total') return v; } catch (e) { /* ignora */ }
+    return GAH.visaoFinanceira();
+  };
   GAH.contratosDaVisao = function (contratos, visao, hoje) {
     if (visao !== 'entregues') return contratos;
     const ren = calc.renovacoes(contratos, hoje);
