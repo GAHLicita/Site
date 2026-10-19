@@ -293,10 +293,22 @@
       return mes < inicio ? inicio : mes; // atrasados contam no mês atual
     };
     // detalhe de cada mês: de qual contrato vem cada entrada e cada saída (com as parcelas atrasadas marcadas)
-    const doContrato = (m, c) => (m.porContrato[c.id] = m.porContrato[c.id] || { contratoId: c.id, entra: 0, sai: 0, atrasado: false });
+    // Parcelas já pagas ou recebidas entram no mês do pagamento (se esse mês estiver na previsão), marcadas como
+    // realizadas: assim o mês atual mostra o que já saiu e entrou, mais o que ainda falta.
+    const doContrato = (m, c) => (m.porContrato[c.id] = m.porContrato[c.id] || { contratoId: c.id, entra: 0, sai: 0, recebido: 0, pago: 0, atrasado: false });
+    const realizado = (p) => pos[C.mesDe(p.dataPagamento || p.vencimento || '')];
     for (const c of contratos.filter(valido)) {
       for (const p of (c.venda && c.venda.parcelas) || []) {
-        if (p.pago || !p.vencimento) continue;
+        if (p.pago) {
+          const i = realizado(p);
+          if (i === undefined) continue;
+          lista[i].entra += num(p.valor);
+          const k = doContrato(lista[i], c);
+          k.entra += num(p.valor);
+          k.recebido += num(p.valor);
+          continue;
+        }
+        if (!p.vencimento) continue;
         const i = pos[mesAlvo(p.vencimento)];
         if (i === undefined) continue;
         lista[i].entra += num(p.valor);
@@ -305,7 +317,16 @@
         if (C.mesDe(p.vencimento) < inicio || p.vencimento < hoje) k.atrasado = true;
       }
       for (const p of (c.compra && c.compra.parcelas) || []) {
-        if (p.pago || !p.vencimento) continue;
+        if (p.pago) {
+          const i = realizado(p);
+          if (i === undefined) continue;
+          lista[i].sai += num(p.valor);
+          const k = doContrato(lista[i], c);
+          k.sai += num(p.valor);
+          k.pago += num(p.valor);
+          continue;
+        }
+        if (!p.vencimento) continue;
         const i = pos[mesAlvo(p.vencimento)];
         if (i === undefined) continue;
         lista[i].sai += num(p.valor);
@@ -313,15 +334,15 @@
       }
     }
     for (const d of despesas) {
-      if (d.pago || !d.data) continue;
-      const i = pos[mesAlvo(d.data)];
+      if (!d.data) continue;
+      const i = d.pago ? pos[C.mesDe(d.dataPagamento || d.data)] : pos[mesAlvo(d.data)];
       if (i === undefined) continue;
       lista[i].sai += num(d.valor);
-      lista[i].gastos.push({ descricao: d.descricao || 'Despesa', categoria: d.categoria || '', valor: centavos(num(d.valor)), data: d.data });
+      lista[i].gastos.push({ descricao: d.descricao || 'Despesa', categoria: d.categoria || '', valor: centavos(num(d.valor)), data: d.data, pago: !!d.pago });
     }
     for (const m of lista) {
       m.contratos = Object.values(m.porContrato)
-        .map((k) => Object.assign(k, { entra: centavos(k.entra), sai: centavos(k.sai) }))
+        .map((k) => Object.assign(k, { entra: centavos(k.entra), sai: centavos(k.sai), recebido: centavos(k.recebido), pago: centavos(k.pago) }))
         .sort((a, b) => b.entra - a.entra || b.sai - a.sai);
       delete m.porContrato;
     }

@@ -844,3 +844,4 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .linha-detalhe.a-entregar td { background: var(--alerta-fundo); color: var(--alerta); }
 .selo-mini { font-size: 0.68rem; padding: 0 7px; margin-left: 4px; vertical-align: 1px; }
 @media (max-width: 1200px) { .tabela-clientes th, .tabela-clientes td { padding-inline: 7px; } .tabela-clientes { font-size: 0.85rem; } }
+.linha-detalhe td.valor .selo-mini { display: table; margin: 2px 0 0 auto; }

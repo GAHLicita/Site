@@ -137,7 +137,14 @@ test('licencasEntregues: renovação pendente não conta; demais pela data de en
 test('previsaoCaixa detalha entradas e saídas por contrato', () => {
   const c = { id: 'k', venda: { parcelas: [{ valor: 300, vencimento: '2026-09-10' }, { valor: 200, vencimento: '2026-11-10' }] }, compra: { parcelas: [{ valor: 150, vencimento: '2026-10-05' }] } };
   const p = calc.previsaoCaixa([c], [{ valor: 40, data: '2026-10-20', descricao: 'E-mail' }], '2026-10-01', 3);
-  assert.deepStrictEqual(p[0].contratos, [{ contratoId: 'k', entra: 300, sai: 150, atrasado: true }]);
+  assert.deepStrictEqual(p[0].contratos, [{ contratoId: 'k', entra: 300, sai: 150, recebido: 0, pago: 0, atrasado: true }]);
   assert.strictEqual(p[0].gastos[0].descricao, 'E-mail');
-  assert.deepStrictEqual(p[1].contratos, [{ contratoId: 'k', entra: 200, sai: 0, atrasado: false }]);
+  assert.deepStrictEqual(p[1].contratos, [{ contratoId: 'k', entra: 200, sai: 0, recebido: 0, pago: 0, atrasado: false }]);
+  // compra já paga no mês atual continua aparecendo como saída daquele mês, marcada como paga
+  const c2 = { id: 'z', venda: { parcelas: [{ valor: 500, vencimento: '2026-10-10', pago: true, dataPagamento: '2026-10-12' }] }, compra: { parcelas: [{ valor: 320, vencimento: '2026-10-05', pago: true, dataPagamento: '2026-10-06' }, { valor: 99, vencimento: '2026-09-05', pago: true, dataPagamento: '2026-09-06' }] } };
+  const q = calc.previsaoCaixa([c2], [{ valor: 30, data: '2026-10-02', pago: true, descricao: 'Domínio' }], '2026-10-15', 2);
+  assert.strictEqual(q[0].entra, 500);
+  assert.strictEqual(q[0].sai, 350);
+  assert.deepStrictEqual(q[0].contratos, [{ contratoId: 'z', entra: 500, sai: 320, recebido: 500, pago: 320, atrasado: false }]);
+  assert.strictEqual(q[0].gastos[0].pago, true);
 });

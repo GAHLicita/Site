@@ -12,6 +12,8 @@
     if (!c) return 'Contrato';
     return GAH.u.nomeCliente(c.clienteId) + ' · ' + (c.produto || 'licença');
   }
+  // marca, no detalhe da previsão, o valor que já foi pago ou recebido
+  const feito = (parte, total, palavra) => (!parte ? '' : '<span class="selo ok selo-mini">' + (parte >= total - 0.005 ? palavra : moeda(parte) + ' ' + palavra) + '</span>');
   const seta = (chave) => '<span class="seta-expandir" aria-hidden="true">' + (abertos.has(chave) ? '▾' : '▸') + '</span>';
 
   function mapa(estadosAtivos, contagem) {
@@ -186,7 +188,7 @@
       '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div></section></section>' +
 
       '<section class="secao-inicio"><div class="grade grade-2">' +
-      '<section class="painel"><div class="painel-cab"><div><h2>Previsão de caixa</h2><span class="sub">Parcelas em aberto nos próximos 12 meses (atrasadas contam no mês atual)</span></div>' +
+      '<section class="painel"><div class="painel-cab"><div><h2>Previsão de caixa</h2><span class="sub">Próximos 12 meses: no mês atual entra também o que já foi pago e recebido; atrasadas contam no mês atual</span></div>' +
       '<div class="visao-financeira" role="group" aria-label="Quais contratos entram neste quadro">' +
       '<button type="button" data-visao-quadro="previsao" data-valor="total" aria-pressed="' + (visaoPrev === 'total') + '">Total</button>' +
       '<button type="button" data-visao-quadro="previsao" data-valor="entregues" aria-pressed="' + (visaoPrev === 'entregues') + '">Só entregues</button></div></div>' +
@@ -196,8 +198,8 @@
         const tem = p.contratos.length || p.gastos.length;
         const aberto = abertos.has(chave);
         return '<tr class="' + (tem ? 'linha-expandir' : '') + (aberto ? ' aberta' : '') + '"' + (tem ? ' data-expandir="' + chave + '" tabindex="0" aria-expanded="' + aberto + '"' : '') + '><td>' + (tem ? seta(chave) : '<span class="seta-expandir"></span>') + esc(mesBR(p.mes)) + '</td><td class="valor">' + moeda(p.entra) + '</td><td class="valor">' + moeda(p.sai) + '</td><td class="valor ' + (p.saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(p.saldo) + '</td></tr>' +
-          p.contratos.map((k) => '<tr class="linha-detalhe' + classeEntrega(k.contratoId) + '" data-de="' + chave + '" data-contrato="' + esc(k.contratoId) + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(nomeContrato(k.contratoId)) + marcaEntrega(k.contratoId) + (k.atrasado ? ' <span class="negativo">· em atraso</span>' : '') + '</td><td class="valor">' + (k.entra ? moeda(k.entra) : '—') + '</td><td class="valor">' + (k.sai ? moeda(k.sai) : '—') + '</td><td class="valor ' + (k.entra - k.sai < 0 ? 'negativo' : '') + '">' + moeda(k.entra - k.sai) + '</td></tr>').join('') +
-          p.gastos.map((d) => '<tr class="linha-detalhe gasto" data-de="' + chave + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(d.descricao) + (d.categoria ? ' <span class="texto-suave">· ' + esc(d.categoria) + '</span>' : '') + '</td><td class="valor">—</td><td class="valor">' + moeda(d.valor) + '</td><td class="valor negativo">−' + moeda(d.valor) + '</td></tr>').join('');
+          p.contratos.map((k) => '<tr class="linha-detalhe' + classeEntrega(k.contratoId) + '" data-de="' + chave + '" data-contrato="' + esc(k.contratoId) + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(nomeContrato(k.contratoId)) + marcaEntrega(k.contratoId) + (k.atrasado ? ' <span class="negativo">· em atraso</span>' : '') + '</td><td class="valor">' + (k.entra ? moeda(k.entra) + feito(k.recebido, k.entra, 'recebido') : '—') + '</td><td class="valor">' + (k.sai ? moeda(k.sai) + feito(k.pago, k.sai, 'pago') : '—') + '</td><td class="valor ' + (k.entra - k.sai < 0 ? 'negativo' : '') + '">' + moeda(k.entra - k.sai) + '</td></tr>').join('') +
+          p.gastos.map((d) => '<tr class="linha-detalhe gasto" data-de="' + chave + '"' + (aberto ? '' : ' hidden') + '><td>' + esc(d.descricao) + (d.categoria ? ' <span class="texto-suave">· ' + esc(d.categoria) + '</span>' : '') + '</td><td class="valor">—</td><td class="valor">' + moeda(d.valor) + (d.pago ? feito(d.valor, d.valor, 'pago') : '') + '</td><td class="valor negativo">−' + moeda(d.valor) + '</td></tr>').join('');
       }).join('') +
       '</tbody><tfoot><tr><td>Total em 12 meses</td><td class="valor">' + moeda(previsao.reduce((t, p) => t + p.entra, 0)) + '</td><td class="valor">' + moeda(previsao.reduce((t, p) => t + p.sai, 0)) + '</td>' +
       (() => { const saldo = previsao.reduce((t, p) => t + p.saldo, 0); return '<td class="valor ' + (saldo < 0 ? 'negativo' : 'positivo') + '">' + moeda(saldo) + '</td>'; })() + '</tr></tfoot></table></div></section>' +
