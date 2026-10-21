@@ -117,14 +117,14 @@
         (l.pago ? '✓' : estado === 'vencido' ? '!' : '') + '<span>' + esc(moeda(l.valor).replace('R$', '').trim()) + '</span></button></td>';
     };
 
-    return '<section class="painel"><div class="painel-cab"><div><h2>Custos fixos · ' + ano + '</h2><span class="sub">Domínio, site, e-mail, portais de disputa e outros serviços que se repetem. Custo fixo atual: <b>' + moeda(mensalFixo) + '/mês</b> (' + ativos.length + ' ativo(s); anuais divididos por 12). Clique no mês para marcar como pago, mudar o valor ou dizer que não houve cobrança.</span></div>' +
+    return '<section class="painel"><div class="painel-cab"><div><h2>Custos fixos · ' + ano + '</h2><span class="sub">Domínio, site, e-mail, portais de disputa e outros serviços que se repetem. Custo fixo atual: <b>' + moeda(mensalFixo) + '/mês</b> (' + ativos.length + ' ativo(s); anuais divididos por 12). Clique no mês para marcar como pago, mudar o valor ou dizer que não houve cobrança. Clique no <b>nome do serviço</b> para editar ou excluir.</span></div>' +
       '<div class="legenda" style="margin:0"><span><i style="background:var(--ok-fundo);border:1px solid var(--ok)"></i>Pago</span><span><i style="background:var(--superficie);border:1px solid var(--linha-forte)"></i>Em aberto</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Vencido</span></div></div>' +
       (custos.length
         ? '<div class="tabela-rolagem"><table class="tabela grade-custos"><thead><tr><th>Serviço</th>' + MESES_CURTOS.map((m) => '<th class="valor">' + m + '</th>').join('') + '<th class="valor">Total</th></tr></thead><tbody>' +
           custos.map((c) => {
             const total = lanc.filter((l) => l.custoId === c.id).reduce((s, l) => s + l.valor, 0);
             const link = linkSeguro(c.link);
-            return '<tr><td><button type="button" class="link-botao nome-servico" data-editar-custo="' + esc(c.id) + '">' + esc(c.nome) + '</button>' +
+            return '<tr><td><button type="button" class="link-botao nome-servico" data-editar-custo="' + esc(c.id) + '" title="Editar ou excluir este serviço">' + esc(c.nome) + ' <span aria-hidden="true">✎</span></button>' +
               '<span class="sub">' + esc([c.fornecedor, c.categoria, c.periodicidade === 'anual' ? 'anual' : 'mensal', moeda(c.valor), c.formaPagamento].filter(Boolean).join(' · ')) + (link ? ' · <a href="' + esc(link) + '" target="_blank" rel="noopener">acessar</a>' : '') + (c.fim && c.fim < mesAtual ? ' · <b>encerrado</b>' : '') + '</span></td>' +
               meses.map((m) => celula(c, m)).join('') + '<td class="valor"><b>' + moeda(total) + '</b></td></tr>';
           }).join('') +
