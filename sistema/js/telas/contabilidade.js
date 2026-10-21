@@ -38,7 +38,7 @@
 
   /* Guia ou documento de um mês. Guias com valor podem entrar nas Despesas. */
   function formDocumento(comp, doc) {
-    const d = doc || { tipo: 'DAS (Simples Nacional)', lancarDespesa: true };
+    const d = doc || { tipo: 'DAS (Simples Nacional)', lancarDespesa: false };
     const corpo =
       '<form id="form-doc" class="form-grade">' +
       '<div class="campo"><label for="dc-tipo">Tipo</label><select id="dc-tipo" name="tipo">' + opcoes(TIPOS, d.tipo) + '</select></div>' +
@@ -47,13 +47,22 @@
       '<div class="campo"><label for="dc-valor">Valor (se for guia)</label><input id="dc-valor" name="valor" type="number" step="0.01" min="0" value="' + esc(d.valor) + '"></div>' +
       '<div class="campo"><label for="dc-venc">Vencimento</label><input id="dc-venc" name="vencimento" type="date" value="' + esc(d.vencimento) + '"></div>' +
       '<label class="parcela-check largo"><input type="checkbox" name="pago"' + (d.pago ? ' checked' : '') + '> Já foi paga</label>' +
-      '<label class="parcela-check largo"><input type="checkbox" name="lancarDespesa"' + (d.lancarDespesa ? ' checked' : '') + '> Somar nas Despesas da empresa</label>' +
+      '<label class="parcela-check largo" id="dc-somar"><input type="checkbox" name="lancarDespesa"' + (d.lancarDespesa ? ' checked' : '') + '> Somar nas Despesas da empresa</label>' +
+      '<p class="texto-suave largo" id="dc-aviso-das" style="margin:0;font-size:.84rem"><b>DAS:</b> não entra nas Despesas, porque já está contado em <b>Impostos</b> (o imposto de cada NF). Somar de novo contaria o mesmo gasto duas vezes.</p>' +
       '<p class="texto-suave largo" style="margin:0;font-size:.84rem">Os honorários do contador entram pela "Mensalidade do contador" de cada mês, para não contar duas vezes.</p>' +
       '</form>';
     const rodape = (d.id ? '<button type="button" class="botao perigo" id="excluir-doc">Excluir</button>' : '') +
       '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-doc" class="botao">Salvar</button></div>';
     const j = janela({ titulo: (d.id ? 'Editar documento' : 'Novo documento') + ' — ' + mesBR(comp), corpo, rodape, estreita: true });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
+    // DAS nunca soma nas Despesas: esconde a opção e mostra o porquê
+    const ehDas = () => /^DAS/i.test(j.el.querySelector('#dc-tipo').value);
+    const mostrarDas = () => {
+      j.el.querySelector('#dc-somar').style.display = ehDas() ? 'none' : '';
+      j.el.querySelector('#dc-aviso-das').style.display = ehDas() ? '' : 'none';
+    };
+    j.el.querySelector('#dc-tipo').addEventListener('change', mostrarDas);
+    mostrarDas();
 
     async function gravar(lista) {
       await D.salvar('contabilidade', Object.assign({}, doMes(comp), { documentos: lista }));
@@ -67,6 +76,7 @@
     j.el.querySelector('#form-doc').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const novo = Object.assign({}, d, lerForm(ev.target));
+      if (/^DAS/i.test(novo.tipo)) novo.lancarDespesa = false;
       if (!novo.id) novo.id = D.novoId();
       novo.dataPagamento = novo.pago ? novo.dataPagamento || calc.hoje() : '';
       const lista = doMes(comp).documentos.filter((x) => x.id !== novo.id).concat(novo);

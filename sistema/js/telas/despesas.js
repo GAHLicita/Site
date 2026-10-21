@@ -41,7 +41,7 @@
 
   /* Todos os gastos do ano, cada um com o mês a que pertence e de onde veio. */
   function gastosDoAno(ano) {
-    const avulsas = D.lista('despesas')
+    const avulsas = GAH.despesasLancadas()
       .filter((d) => (d.data || '').startsWith(String(ano)))
       .map((d) => ({ origem: 'despesas', id: d.id, mes: d.data.slice(0, 7), data: d.data, descricao: d.descricao, categoria: d.categoria || 'Outros', valor: calc.num(d.valor), pago: !!d.pago }));
     const automaticas = calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ano + '-12')

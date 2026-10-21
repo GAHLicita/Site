@@ -637,9 +637,17 @@
     });
   };
 
+  /* Despesas lançadas, sem as guias de DAS: o DAS já está contado nos Impostos (imposto da NF), então
+     somá-lo também nas despesas contaria o mesmo gasto duas vezes. */
+  GAH.despesasLancadas = function () {
+    const das = new Set();
+    D.lista('contabilidade').forEach((m) => (m.documentos || []).forEach((d) => { if (/^DAS/i.test(d.tipo || '')) das.add('guia-' + d.id); }));
+    return D.lista('despesas').filter((d) => !das.has(d.id));
+  };
+
   /* Despesas lançadas + custos fixos + mensalidades do contador, até o mês informado (AAAA-MM). */
   GAH.despesasCompletas = function (ateMes) {
-    return D.lista('despesas').concat(calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateMes || calc.mesDe(calc.hoje())));
+    return GAH.despesasLancadas().concat(calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateMes || calc.mesDe(calc.hoje())));
   };
 
   /* Visão financeira escolhida pelo usuário: 'total' (todos os contratos, inclusive renovações ainda não
