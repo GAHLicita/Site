@@ -700,10 +700,10 @@
     ['inicio', 'Início'],
     ['clientes', 'Clientes'],
     ['contratos', 'Contratos'],
-    ['agenda', 'Agenda'],
-    ['licitacoes', 'Licitações'],
     ['despesas', 'Despesas'],
     ['contabilidade', 'Contabilidade'],
+    ['licitacoes', 'Licitações'],
+    ['agenda', 'Agenda'],
     ['bancos', 'Contas bancárias']
   ];
   let usuarioAtual = null;
