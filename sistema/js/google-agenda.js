@@ -1,7 +1,8 @@
 /* Sincronização com o Google Agenda (conta contato@gahlicita.com.br), nos dois sentidos.
    - Sistema → Google: compromissos da Agenda e datas de disputa das Licitações viram eventos no Google.
-     Os lançamentos automáticos (parcelas a receber e a pagar, fins de vigência, custos e mensalidade do
-     contador) também vão, do dia de hoje em diante, e somem do Google quando forem pagos ou mudarem.
+     Os lançamentos automáticos (parcelas a pagar, fins de vigência, custos e mensalidade do contador) também
+     vão, do dia de hoje em diante, sem alarme, e somem do Google quando forem pagos ou mudarem. Parcelas a
+     receber não vão. Disputas avisam 15 minutos antes do horário.
    - Google → Sistema: os eventos do Google aparecem no calendário do sistema; se um evento criado pelo
      sistema for alterado ou apagado no Google, o compromisso do sistema acompanha.
    Usa o login do Google no navegador (Google Identity Services) e a Google Calendar API.
@@ -95,6 +96,13 @@
     return r.status === 204 ? null : r.json();
   }
 
+  /* Alarmes no Google: só as disputas (licitações e compromissos do tipo Disputa) avisam, 15 minutos antes
+     do horário. O resto (fins de vigência, pagamentos, reuniões, prazos) fica na agenda sem alarme. */
+  const SEM_ALARME = { useDefault: false, overrides: [] };
+  const alarme = (item) => (item.disputa && item.hora ? { useDefault: false, overrides: [{ method: 'popup', minutes: 15 }] } : SEM_ALARME);
+  // Sobe quando muda o formato dos eventos: os já enviados ao Google são reenviados uma vez.
+  const VERSAO_EVENTO = 2;
+
   /* ---------- conversão compromisso ↔ evento ---------- */
   function evento(item) {
     const fimDia = calc.addDias(item.data, 1);
@@ -106,6 +114,7 @@
       location: item.local || '',
       description: [item.descricao, item.orgao ? 'Órgão: ' + item.orgao : '', 'Criado pelo Sistema GAH Licita'].filter(Boolean).join('\n\n'),
       colorId: item.disputa ? '9' : undefined,
+      reminders: alarme(item),
       extendedProperties: { private: { gahColecao: item.colecao, gahId: item.id } }
     });
   }
@@ -142,7 +151,7 @@
     const corpo = JSON.stringify(evento(item));
     let ev = doc.googleEventId ? await api('/events/' + encodeURIComponent(doc.googleEventId), { method: 'PATCH', body: corpo }) : null;
     if (!ev) ev = await api('/events', { method: 'POST', body: corpo });
-    await D.salvar(colecao, Object.assign({}, D.obter(colecao, doc.id) || doc, { googleEventId: ev.id, googlePendente: false, googleAtualizado: ev.updated }));
+    await D.salvar(colecao, Object.assign({}, D.obter(colecao, doc.id) || doc, { googleEventId: ev.id, googlePendente: false, googleAtualizado: ev.updated, googleVersao: VERSAO_EVENTO }));
   }
 
   async function apagar(doc) {
@@ -150,8 +159,8 @@
   }
 
   /* ---------- lançamentos automáticos: vencimentos, fins de vigência e custos ---------- */
-  const COR_AUTO = { receber: '10', pagar: '6', renovacao: '11' };
-  const ROTULO_AUTO = { receber: 'A receber', pagar: 'A pagar', renovacao: 'Fim de vigência' };
+  const COR_AUTO = { pagar: '6', renovacao: '11' };
+  const ROTULO_AUTO = { pagar: 'A pagar', renovacao: 'Fim de vigência' };
   // Id fixo por lançamento (o Google aceita letras de a a v e números): o mesmo vencimento nunca vira dois eventos.
   function idAuto(chave) {
     return 'gah' + Array.from(new TextEncoder().encode(chave), (b) => b.toString(16).padStart(2, '0')).join('');
@@ -165,10 +174,12 @@
       end: { date: calc.addDias(e.data, 1) },
       colorId: COR_AUTO[e.tipo],
       transparency: 'transparent',
+      reminders: SEM_ALARME,
       extendedProperties: { private: { gahAuto: '1', gahChave: e.chave } }
     };
   }
-  const assinatura = (ev) => [ev.summary, ev.description, ev.start && ev.start.date, ev.colorId].join('|');
+  const semAlarme = (ev) => !!ev.reminders && ev.reminders.useDefault === false && !(ev.reminders.overrides || []).length;
+  const assinatura = (ev) => [ev.summary, ev.description, ev.start && ev.start.date, ev.colorId, semAlarme(ev)].join('|');
 
   async function listarAutomaticos(desde) {
     const itens = [];
@@ -307,10 +318,12 @@
       const hoje = calc.hoje();
       const fila = [];
       D.lista('agenda').forEach((x) => {
-        if (x.googlePendente || (!x.googleEventId && !x.concluido && x.data >= hoje)) fila.push(['agenda', x]);
+        const desatualizado = x.googleEventId && (x.googleVersao || 1) < VERSAO_EVENTO && x.data >= hoje;
+        if (x.googlePendente || desatualizado || (!x.googleEventId && !x.concluido && x.data >= hoje)) fila.push(['agenda', x]);
       });
       D.lista('licitacoes').forEach((x) => {
-        if (x.googlePendente || (!x.googleEventId && paraSincronizar('licitacoes', x) && x.dataDisputa >= hoje)) fila.push(['licitacoes', x]);
+        const desatualizado = x.googleEventId && (x.googleVersao || 1) < VERSAO_EVENTO && paraSincronizar('licitacoes', x) && x.dataDisputa >= hoje;
+        if (x.googlePendente || desatualizado || (!x.googleEventId && paraSincronizar('licitacoes', x) && x.dataDisputa >= hoje)) fila.push(['licitacoes', x]);
       });
       const r = { enviados: 0, removidos: 0, erros: [] };
       for (const [c, doc] of fila) {

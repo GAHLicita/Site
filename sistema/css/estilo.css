@@ -848,4 +848,4 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* Contrato: como a compra foi paga */
 .meio-compra { font-size: 0.85rem; font-weight: 600; color: var(--info); margin-top: 4px; }
-[data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden] { display: none !important; }
+[data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden], #ct-entrega-campo[hidden] { display: none !important; }

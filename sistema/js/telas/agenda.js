@@ -104,7 +104,7 @@
     }
 
     main.innerHTML =
-      '<div class="cabecalho-tela"><div><h1>Agenda</h1><p>Disputas, reuniões e prazos. Vencimentos de parcelas e fins de vigência entram sozinhos.</p></div>' +
+      '<div class="cabecalho-tela"><div><h1>Agenda</h1><p>Disputas, reuniões e prazos. Pagamentos a fazer, fins de vigência e disputas entram sozinhos.</p></div>' +
       '<div class="acoes"><button class="botao" id="novo-ag">+ Novo compromisso</button></div></div>' +
       faixaGoogle() +
       '<div class="grade grade-lateral">' +
@@ -113,7 +113,7 @@
       '<button class="botao secundario pequeno" id="mes-prox" aria-label="Próximo mês">›</button><button class="botao secundario pequeno" id="mes-hoje">Hoje</button></div>' +
       '<label class="parcela-check"><input type="checkbox" id="ag-auto"' + (estado.automaticos ? ' checked' : '') + '> Mostrar vencimentos automáticos</label></div>' +
       '<div class="tabela-rolagem"><div class="calendario">' + grade + '</div></div>' +
-      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--ok-fundo);border:1px solid var(--ok)"></i>A receber</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
+      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
       '</section>' +
       '<section class="painel painel-proximos"><div class="proximos-dentro"><div class="painel-cab"><h2>Próximos 30 dias</h2>' + (proximos.length ? '<span class="sub">' + proximos.length + ' item(ns)</span>' : '') + '</div>' +
       (proximos.length

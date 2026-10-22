@@ -292,6 +292,8 @@
     const produtos = [...new Set(D.lista('contratos').map((x) => x.produto).filter(Boolean))].sort();
     const fornecedores = [...new Set(D.lista('contratos').map((x) => x.fornecedor).filter(Boolean))].sort();
 
+    // contrato novo fica pendente de entrega até marcar "Entregue" (aqui ou no botão Licenças entregues)
+    const jaEntregue = !!c.licencasEntregues || (!!c.dataEntrega && c.dataEntrega <= hoje);
     const corpo =
       '<form id="form-contrato">' +
       '<div class="form-secao"><h3>Contrato</h3><div class="form-grade">' +
@@ -303,7 +305,8 @@
       '<div class="campo"><label for="ct-numero">Nº do contrato / processo</label><input id="ct-numero" name="numeroContrato" value="' + esc(c.numeroContrato) + '"></div>' +
       '<div class="campo"><label for="ct-empenho">Nº da nota de empenho</label><input id="ct-empenho" name="numeroEmpenho" value="' + esc(c.numeroEmpenho) + '"></div>' +
       '<div class="campo"><label for="ct-dataempenho">Recebimento da NE</label><input id="ct-dataempenho" name="dataEmpenho" type="date" value="' + esc(c.dataEmpenho) + '"></div>' +
-      '<div class="campo"><label for="ct-entrega">Entrega da licença</label><input id="ct-entrega" name="dataEntrega" type="date" value="' + esc(c.dataEntrega) + '"></div>' +
+      '<div class="campo"><label for="ct-entregue">Entrega das licenças</label><select id="ct-entregue" data-ignorar>' + opcoes([['pendente', 'Pendente de entrega'], ['entregue', 'Entregue']], jaEntregue ? 'entregue' : 'pendente') + '</select></div>' +
+      '<div class="campo" id="ct-entrega-campo"><label for="ct-entrega">Data da entrega</label><input id="ct-entrega" name="dataEntrega" type="date" value="' + esc(jaEntregue ? c.dataEntrega || hoje : '') + '"></div>' +
       '<div class="campo"><label for="ct-vini">Início da vigência</label><input id="ct-vini" name="vigenciaInicio" type="date" value="' + esc(c.vigenciaInicio) + '"></div>' +
       '<div class="campo"><label for="ct-vfim">Fim da vigência</label><input id="ct-vfim" name="vigenciaFim" type="date" value="' + esc(c.vigenciaFim) + '"></div>' +
       '<div class="campo"><label for="ct-status">Situação</label><select id="ct-status" name="status">' + opcoes([['ativo', 'Ativo'], ['encerrado', 'Encerrado'], ['cancelado', 'Cancelado']], c.status) + '</select></div>' +
@@ -377,6 +380,13 @@
     }
     j.el.querySelector('form').addEventListener('input', atualizar);
     atualizar();
+    const mostrarEntrega = () => {
+      const entregue = $('#ct-entregue').value === 'entregue';
+      $('#ct-entrega-campo').hidden = !entregue;
+      if (entregue && !$('#ct-entrega').value) $('#ct-entrega').value = hoje;
+    };
+    $('#ct-entregue').addEventListener('change', mostrarEntrega);
+    mostrarEntrega();
     const mostrarMeio = () => j.el.querySelectorAll('[data-meio]').forEach((el) => (el.hidden = el.dataset.meio !== $('#k-meio').value));
     $('#k-meio').addEventListener('change', mostrarMeio);
     mostrarMeio();
@@ -395,6 +405,9 @@
     $('#form-contrato').addEventListener('submit', async (e) => {
       e.preventDefault();
       const dados = lerForm($('#form-contrato'));
+      const entregue = $('#ct-entregue').value === 'entregue';
+      dados.licencasEntregues = entregue;
+      dados.dataEntrega = entregue ? dados.dataEntrega || hoje : '';
       const t = termos();
       const vAnt = c.venda || {};
       const kAnt = c.compra || {};
@@ -592,6 +605,7 @@
       '</div><div class="acoes">' + seloVigencia(s) +
       (drive ? '<a class="botao secundario pequeno" href="' + esc(drive) + '" target="_blank" rel="noopener">Abrir no Drive</a>' : '') +
       (c.status !== 'cancelado' && !calc.renovacoes(D.lista('contratos'), calc.hoje()).porAnterior[c.id] ? '<button type="button" class="botao secundario pequeno" data-renovar-contrato="' + esc(c.id) + '">Renovar</button>' : '') +
+      (c.status !== 'cancelado' && !calc.licencasEntregues(c, calc.hoje(), calc.renovacoes(D.lista('contratos'), calc.hoje())) ? '<button type="button" class="botao verde pequeno" data-marcar-entregue="' + esc(c.id) + '">Licenças entregues</button>' : '') +
       '<button type="button" class="botao secundario pequeno" data-editar-contrato="' + esc(c.id) + '">Editar</button></div></div>' +
       '<div class="lados">' +
       '<section class="lado"><h4>Recebimento do órgão <span class="selo info">' + nomeForma(c.venda && c.venda.forma) + '</span></h4>' +
@@ -615,11 +629,23 @@
     );
   };
 
+  /* Ok de entrega das licenças: grava a data de hoje (ou a data de entrega já passada). Renovação passa a
+     mostrar a nova vigência. */
+  GAH.marcarEntregue = async function (id) {
+    const c = D.obter('contratos', id);
+    if (!c) return;
+    const hoje = calc.hoje();
+    await D.salvar('contratos', Object.assign({}, c, { licencasEntregues: true, dataEntrega: c.dataEntrega && c.dataEntrega <= hoje ? c.dataEntrega : hoje }));
+    aviso('Entrega das licenças registrada');
+  };
+
   /* Liga os botões de um bloco de contrato. */
   GAH.ligarContratos = function (raiz) {
     raiz.addEventListener('click', (e) => {
       const ed = e.target.closest('[data-editar-contrato]');
       if (ed) GAH.formContrato(D.obter('contratos', ed.dataset.editarContrato));
+      const me = e.target.closest('[data-marcar-entregue]');
+      if (me) { me.disabled = true; GAH.marcarEntregue(me.dataset.marcarEntregue); }
       const rn = e.target.closest('[data-renovar-contrato]');
       if (rn) GAH.renovarContrato(D.obter('contratos', rn.dataset.renovarContrato));
       const ep = e.target.closest('[data-editar-parcelas]');
@@ -679,9 +705,7 @@
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
       const obsAdiado = c.adiadoMeses ? ' · adiado (aguardando entrega)' : '';
-      ((c.venda && c.venda.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ chave: 'receber:' + c.id + ':' + i, data: p.vencimento, tipo: 'receber', titulo: 'Receber ' + moeda(p.valor) + ' — ' + orgao, detalhe: c.produto + ' · parcela ' + (i + 1) + '/' + c.venda.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
-      });
+      // parcelas a receber não entram: o órgão paga antes ou depois do vencimento, então a data não serve de lembrete
       ((c.compra && c.compra.parcelas) || []).forEach((p, i) => {
         if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });

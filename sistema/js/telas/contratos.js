@@ -117,13 +117,10 @@
     main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => { GAH.visaoFinanceira(bt.dataset.visao); GAH.telas.contratos(main); }));
     ['#ct-vig', '#ct-forma', '#ct-ano'].forEach((s) => main.querySelector(s).addEventListener('change', reler));
     main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', (e) => { if (!e.target.closest('[data-entregue]')) abrirContrato(tr.dataset.id); }));
-    // Ok de entrega da renovação: a partir daí o contrato passa a mostrar a nova vigência.
-    main.querySelectorAll('[data-entregue]').forEach((b) => b.addEventListener('click', async () => {
-      const c = D.obter('contratos', b.dataset.entregue);
-      if (!c) return;
+    // Ok de entrega das licenças (renovação: a partir daí passa a mostrar a nova vigência).
+    main.querySelectorAll('[data-entregue]').forEach((b) => b.addEventListener('click', () => {
       b.disabled = true;
-      await D.salvar('contratos', Object.assign({}, c, { licencasEntregues: true, dataEntrega: c.dataEntrega && c.dataEntrega <= hoje ? c.dataEntrega : hoje }));
-      GAH.u.aviso('Licenças da renovação entregues: o contrato agora mostra a nova vigência');
+      GAH.marcarEntregue(b.dataset.entregue);
     }));
   };
 })();
