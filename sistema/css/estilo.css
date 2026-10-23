@@ -849,3 +849,33 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 /* Contrato: como a compra foi paga */
 .meio-compra { font-size: 0.85rem; font-weight: 600; color: var(--info); margin-top: 4px; }
 [data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden], #ct-entrega-campo[hidden] { display: none !important; }
+
+/* ---------- Relatório (tela e impressão) ---------- */
+.controles-relatorio { margin: 14px 0 18px; }
+.relatorio { display: flex; flex-direction: column; gap: 18px; }
+.relatorio-titulo h2 { margin: 0; }
+.kpis-relatorio { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .kpis-relatorio { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .kpis-relatorio { grid-template-columns: minmax(0, 1fr); } }
+.tabela-relatorio tfoot td { font-weight: 700; border-top: 2px solid var(--linha); }
+.tabela-relatorio .selo { font-size: 0.72rem; padding: 2px 8px; white-space: nowrap; }
+.relatorio-vazio { padding: 14px 18px; text-align: left; }
+
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+  html, body { background: #fff !important; color: #111 !important; }
+  .topo, .faixa-demo, #faixa-versao, .nao-imprimir, .aviso-rapido { display: none !important; }
+  .conteudo { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  .painel, .kpi { box-shadow: none !important; background: #fff !important; border-color: #bbb !important; }
+  .kpi.destaque { background: #fff !important; }
+  .kpi.destaque .kpi-valor, .kpi-valor { color: #111 !important; }
+  .kpi.destaque .kpi-rotulo, .kpi.destaque .kpi-nota { color: #444 !important; }
+  .kpis-relatorio { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpi-valor { font-size: 1rem; }
+  .tabela-rolagem { overflow: visible !important; }
+  .tabela-relatorio { font-size: 8.5pt; }
+  .tabela-relatorio th, .tabela-relatorio td { padding: 4px 6px !important; }
+  .tabela-relatorio thead { display: table-header-group; }
+  .tabela-relatorio tr { break-inside: avoid; }
+  .secao-relatorio .painel-cab { break-after: avoid; }
+}

@@ -163,3 +163,29 @@ test('adiarNaoEntregues leva para o mês atual o contrato fechado e não entregu
   assert.strictEqual(b, entregue); // entregue não muda (atrasado continua atrasado)
   assert.strictEqual(nao.venda.parcelas[0].vencimento, '2026-09-10'); // original intacto
 });
+
+test('relatorio junta contratos firmados, recebimentos, pagamentos e gastos do período', () => {
+  const antigo = { id: 'a', clienteId: 'o', fornecedor: 'F', vigenciaInicio: '2025-10-01', vigenciaFim: '2026-09-30', licencasEntregues: true,
+    venda: { aliquotaNF: 10, parcelas: [{ valor: 1000, vencimento: '2025-11-01', pago: true, dataPagamento: '2025-11-03' }] },
+    compra: { parcelas: [{ valor: 600, vencimento: '2025-10-01', pago: true, dataPagamento: '2025-10-01' }] } };
+  const renov = { id: 'r', clienteId: 'o', fornecedor: 'F', vigenciaInicio: '2026-10-01', vigenciaFim: '2027-09-30',
+    venda: { aliquotaNF: 10, parcelas: [{ valor: 500, vencimento: '2026-10-20', pago: true, dataPagamento: '2026-11-02', nf: '12' }, { valor: 500, vencimento: '2026-11-20' }] },
+    compra: { parcelas: [{ valor: 700, vencimento: '2026-10-05', pago: true, dataPagamento: '2026-10-06' }] } };
+  const novo = { id: 'n', clienteId: 'x', fornecedor: 'G', vigenciaInicio: '2026-10-15', vigenciaFim: '2027-10-14',
+    venda: { parcelas: [{ valor: 300, vencimento: '2026-10-30', pago: true }] }, compra: { parcelas: [] } };
+  const cancelado = Object.assign({}, novo, { id: 'c', status: 'cancelado' });
+  const gastos = [{ data: '2026-10-10', valor: 50, pago: true, descricao: 'Site' }, { data: '2026-11-05', valor: 99, descricao: 'Fora' },
+    { data: '2026-10-10', mes: '2026-10', valor: 500, pago: false, descricao: 'Mensalidade do contador' }];
+  const r = calc.relatorio([antigo, renov, novo, cancelado], gastos, '2026-10', '2026-10', '2026-10-20');
+  assert.deepStrictEqual(r.contratos.map((x) => [x.contratoId, x.renovacao]), [['r', true], ['n', false]]);
+  assert.deepStrictEqual(r.recebimentos.map((x) => [x.contratoId, x.valor]), [['n', 300]]); // sem data de pagamento: vale o vencimento
+  assert.deepStrictEqual(r.pagamentos.map((x) => [x.contratoId, x.valor, x.entregue]), [['r', 700, false]]);
+  assert.strictEqual(r.gastos.length, 2);
+  assert.deepStrictEqual(
+    [r.totais.novos, r.totais.renovacoes, r.totais.valorContratos, r.totais.recebido, r.totais.pago, r.totais.gastos, r.totais.gastosEmAberto, r.totais.saldo],
+    [1, 1, 1300, 300, 700, 550, 500, -950]);
+  const ano = calc.relatorio([antigo, renov, novo], gastos, '2026-01', '2026-12', '2026-10-20');
+  assert.strictEqual(ano.meses.length, 12);
+  assert.strictEqual(ano.meses[10].recebido, 500); // recebido em novembro
+  assert.strictEqual(ano.meses[9].pago, 700);
+});

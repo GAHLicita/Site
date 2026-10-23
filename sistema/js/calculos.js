@@ -430,6 +430,65 @@
     return lista;
   };
 
+  /* Relatório da empresa num período de meses (de..ate, AAAA-MM, inclusive):
+     - contratos firmados no período (pelo início da vigência), separando novos e renovações;
+     - recebimentos: parcelas de venda pagas pelos órgãos, pela data do pagamento;
+     - pagamentos: parcelas de compra pagas aos fornecedores, pela data do pagamento;
+     - gastos: despesas, custos fixos e mensalidade do contador do mês a que se referem (pagos ou não).
+     'gastos' chega no formato das despesas ({ data, valor, pago, descricao, categoria, mes? }).
+     Contratos cancelados ficam de fora. Devolve as listas, os totais e um resumo por mês. */
+  C.relatorio = function (contratos, gastos, de, ate, hoje) {
+    hoje = hoje || C.hoje();
+    const dentro = (data) => !!data && C.mesDe(data) >= de && C.mesDe(data) <= ate;
+    const validos = (contratos || []).filter(valido);
+    const ren = C.renovacoes(validos, hoje);
+    const r = { de, ate, contratos: [], recebimentos: [], pagamentos: [], gastos: [] };
+    for (const c of validos) {
+      const s = C.resumoContrato(c, hoje);
+      const firmado = c.vigenciaInicio || c.dataEmpenho || c.dataEntrega;
+      if (dentro(firmado)) {
+        r.contratos.push({ contratoId: c.id, data: firmado, renovacao: !!ren[c.id], entregue: C.licencasEntregues(c, hoje, ren),
+          venda: s.venda, compra: s.compra, impostos: centavos(s.impostoNF + s.impostoCompra), lucro: s.lucro });
+      }
+      const entregue = C.licencasEntregues(c, hoje, ren);
+      ((c.venda && c.venda.parcelas) || []).forEach((p, i, todas) => {
+        const data = p.pago ? p.dataPagamento || p.vencimento : '';
+        if (dentro(data)) r.recebimentos.push({ contratoId: c.id, data, parcela: (i + 1) + '/' + todas.length, nf: p.nf || '', valor: centavos(num(p.valor)) });
+      });
+      ((c.compra && c.compra.parcelas) || []).forEach((p, i, todas) => {
+        const data = p.pago ? p.dataPagamento || p.vencimento : '';
+        if (dentro(data)) r.pagamentos.push({ contratoId: c.id, data, parcela: (i + 1) + '/' + todas.length, entregue, valor: centavos(num(p.valor)) });
+      });
+    }
+    for (const g of gastos || []) {
+      const mes = g.mes || C.mesDe(g.data);
+      if (mes >= de && mes <= ate) r.gastos.push({ mes, data: g.data, descricao: g.descricao || 'Despesa', categoria: g.categoria || '', valor: centavos(num(g.valor)), pago: !!g.pago, dataPagamento: g.dataPagamento || '' });
+    }
+    const porData = (a, b) => (a.data || '').localeCompare(b.data || '');
+    ['contratos', 'recebimentos', 'pagamentos', 'gastos'].forEach((k) => r[k].sort(porData));
+    const soma = (lista, campo) => centavos(lista.reduce((t, x) => t + num(x[campo]), 0));
+    const totais = (lista) => ({
+      novos: lista.contratos.filter((x) => !x.renovacao).length,
+      renovacoes: lista.contratos.filter((x) => x.renovacao).length,
+      valorContratos: soma(lista.contratos, 'venda'),
+      lucroContratos: soma(lista.contratos, 'lucro'),
+      recebido: soma(lista.recebimentos, 'valor'),
+      pago: soma(lista.pagamentos, 'valor'),
+      gastos: soma(lista.gastos, 'valor'),
+      gastosEmAberto: soma(lista.gastos.filter((x) => !x.pago), 'valor')
+    });
+    r.totais = totais(r);
+    r.totais.saldo = centavos(r.totais.recebido - r.totais.pago - r.totais.gastos);
+    r.meses = [];
+    for (let mes = de; mes <= ate; mes = C.mesDe(C.addMeses(mes + '-01', 1))) {
+      const doMes = (lista) => lista.filter((x) => (x.mes || C.mesDe(x.data)) === mes);
+      const t = totais({ contratos: doMes(r.contratos), recebimentos: doMes(r.recebimentos), pagamentos: doMes(r.pagamentos), gastos: doMes(r.gastos) });
+      t.saldo = centavos(t.recebido - t.pago - t.gastos);
+      r.meses.push(Object.assign({ mes }, t));
+    }
+    return r;
+  };
+
   raiz.GAH = raiz.GAH || {};
   raiz.GAH.calc = C;
   if (typeof module !== 'undefined' && module.exports) module.exports = C;

@@ -94,6 +94,12 @@ link para criar uma senha nova.
   valor podem entrar automaticamente nas Despesas.
 - **Contas bancárias**: banco, agência, conta, titular e chaves Pix de cada conta da
   empresa, com botão para copiar os dados e mandar aos órgãos. Não guarde senhas ali.
+- **Relatório** (botão ao lado de Ajustes): relatório da empresa de um mês ou de um ano, para imprimir,
+  salvar em PDF ou baixar como planilha (.csv). Traz o resumo do período (contratos firmados, recebido dos
+  órgãos, pago aos fornecedores, despesas e custos, saldo), o mês a mês (no relatório do ano), os contratos
+  firmados ou renovados (pelo início da vigência, com a situação da entrega), os recebimentos e os pagamentos
+  das licenças (pela data do pagamento) e as despesas e custos (pelo mês a que se referem, até o mês atual).
+  Contratos cancelados ficam de fora.
 - **Ajustes** (botão ao lado de Sair): impostos padrão, tema claro/escuro, backup (.json), exportação para Excel
   (.csv) e importação de dados.
 
