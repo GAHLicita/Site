@@ -176,15 +176,17 @@ test('relatorio junta contratos firmados, recebimentos, pagamentos e gastos do p
   const cancelado = Object.assign({}, novo, { id: 'c', status: 'cancelado' });
   const gastos = [{ data: '2026-10-10', valor: 50, pago: true, descricao: 'Site' }, { data: '2026-11-05', valor: 99, descricao: 'Fora' },
     { data: '2026-10-10', mes: '2026-10', valor: 500, pago: false, descricao: 'Mensalidade do contador' }];
-  const r = calc.relatorio([antigo, renov, novo, cancelado], gastos, '2026-10', '2026-10', '2026-10-20');
+  const guias = [{ data: '2026-10-20', mes: '2026-09', valor: 120, pago: true, descricao: 'DAS' }, { data: '2026-11-20', mes: '2026-10', valor: 90, descricao: 'DAS' }];
+  const r = calc.relatorio([antigo, renov, novo, cancelado], gastos, '2026-10', '2026-10', '2026-10-20', guias);
   assert.deepStrictEqual(r.contratos.map((x) => [x.contratoId, x.renovacao]), [['r', true], ['n', false]]);
   assert.deepStrictEqual(r.recebimentos.map((x) => [x.contratoId, x.valor]), [['n', 300]]); // sem data de pagamento: vale o vencimento
   assert.deepStrictEqual(r.pagamentos.map((x) => [x.contratoId, x.valor, x.entregue]), [['r', 700, false]]);
   assert.strictEqual(r.gastos.length, 2);
   assert.deepStrictEqual(
-    [r.totais.novos, r.totais.renovacoes, r.totais.valorContratos, r.totais.recebido, r.totais.pago, r.totais.gastos, r.totais.gastosEmAberto, r.totais.saldo],
-    [1, 1, 1300, 300, 700, 550, 500, -950]);
-  const ano = calc.relatorio([antigo, renov, novo], gastos, '2026-01', '2026-12', '2026-10-20');
+    [r.totais.novos, r.totais.renovacoes, r.totais.valorContratos, r.totais.recebido, r.totais.pago, r.totais.gastos, r.totais.gastosEmAberto, r.totais.impostos, r.totais.saldo],
+    [1, 1, 1300, 300, 700, 550, 500, 120, -1070]); // DAS pelo mês do vencimento (a de competência outubro vence em novembro)
+  const ano = calc.relatorio([antigo, renov, novo], gastos, '2026-01', '2026-12', '2026-10-20', guias);
+  assert.strictEqual(ano.meses[10].impostos, 90);
   assert.strictEqual(ano.meses.length, 12);
   assert.strictEqual(ano.meses[10].recebido, 500); // recebido em novembro
   assert.strictEqual(ano.meses[9].pago, 700);

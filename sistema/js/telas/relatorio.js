@@ -6,6 +6,7 @@
   const D = GAH.dados;
 
   const estado = { tipo: 'mes', mes: '', ano: '' };
+  const GUIA_IMPOSTO = /^(DAS|DARF|GPS|FGTS|ISS)/i;
   const maiuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
   function periodo() {
@@ -19,9 +20,19 @@
     // gastos: só os que já ocorreram (até o mês atual), pelo mês a que se referem
     const mesAtual = calc.mesDe(hoje);
     const ateGastos = ate < mesAtual ? ate : mesAtual;
-    const gastos = GAH.despesasLancadas().filter((d) => calc.mesDe(d.data) <= ateGastos)
+    // impostos: guias da Contabilidade (DAS, DARF, INSS, FGTS, ISS) pelo mês do vencimento. A guia que também foi
+    // lançada nas Despesas ("Somar nas Despesas") sai das despesas aqui, para não contar duas vezes.
+    const impostos = [];
+    const guiasDeImposto = new Set();
+    D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id)).forEach((m) => (m.documentos || []).forEach((d) => {
+      if (!GUIA_IMPOSTO.test(d.tipo || '') || !calc.num(d.valor)) return;
+      guiasDeImposto.add('guia-' + d.id);
+      impostos.push({ data: d.vencimento || calc.addMeses(m.id + '-20', 1), mes: m.id, valor: d.valor, pago: d.pago, dataPagamento: d.dataPagamento,
+        categoria: d.tipo, descricao: [d.tipo, d.descricao].filter(Boolean).join(' — ') });
+    }));
+    const gastos = D.lista('despesas').filter((d) => !guiasDeImposto.has(d.id) && calc.mesDe(d.data) <= ateGastos)
       .concat(calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateGastos));
-    const r = calc.relatorio(D.lista('contratos'), gastos, de, ate, hoje);
+    const r = calc.relatorio(D.lista('contratos'), gastos, de, ate, hoje, impostos);
     r.gastosAte = ateGastos < ate ? ateGastos : '';
     return r;
   }
@@ -46,18 +57,37 @@
 
     const kpis = '<div class="kpis kpis-relatorio">' +
       '<div class="kpi"><span class="kpi-rotulo">Contratos firmados</span><span class="kpi-valor">' + moeda(t.valorContratos) + '</span><span class="kpi-nota">' + t.novos + ' novo(s) · ' + t.renovacoes + ' renovação(ões)</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">Recebido dos órgãos</span><span class="kpi-valor">' + moeda(t.recebido) + '</span><span class="kpi-nota">' + r.recebimentos.length + ' pagamento(s)</span></div>' +
-      '<div class="kpi"><span class="kpi-rotulo">Pago aos fornecedores</span><span class="kpi-valor">' + moeda(t.pago) + '</span><span class="kpi-nota">compra das licenças</span></div>' +
+      '<div class="kpi"><span class="kpi-rotulo">Receitas</span><span class="kpi-valor">' + moeda(t.recebido) + '</span><span class="kpi-nota">recebido dos órgãos · ' + r.recebimentos.length + ' pagamento(s)</span></div>' +
+      '<div class="kpi"><span class="kpi-rotulo">Compra das licenças</span><span class="kpi-valor">' + moeda(t.pago) + '</span><span class="kpi-nota">pago aos fornecedores</span></div>' +
+      '<div class="kpi"><span class="kpi-rotulo">Impostos</span><span class="kpi-valor">' + moeda(t.impostos) + '</span><span class="kpi-nota">' + (t.impostosEmAberto ? moeda(t.impostosEmAberto) + ' ainda não pago' : 'guias que venceram no período') + '</span></div>' +
       '<div class="kpi"><span class="kpi-rotulo">Despesas e custos</span><span class="kpi-valor">' + moeda(t.gastos) + '</span><span class="kpi-nota">' + (t.gastosEmAberto ? moeda(t.gastosEmAberto) + ' ainda não pago' : 'tudo pago') + '</span></div>' +
-      '<div class="kpi destaque"><span class="kpi-rotulo">Saldo do período</span><span class="kpi-valor">' + moeda(t.saldo) + '</span><span class="kpi-nota">recebido − pago − despesas</span></div>' +
+      '<div class="kpi destaque"><span class="kpi-rotulo">Resultado do período</span><span class="kpi-valor">' + moeda(t.saldo) + '</span><span class="kpi-nota">receitas − compras − impostos − despesas</span></div>' +
       '</div>';
 
+    // balancete: receitas e saídas agrupadas por tipo (impostos por guia, despesas por categoria)
+    const grupos = (lista) => Object.entries(lista.reduce((g, x) => { const k = x.categoria || 'Outros'; g[k] = (g[k] || 0) + x.valor; return g; }, {})).sort((a, b) => b[1] - a[1]);
+    const linhaB = (rotulo, valor, classe) => '<tr' + (classe ? ' class="' + classe + '"' : '') + '><td>' + rotulo + '</td><td class="valor">' + (valor === null ? '' : moeda(valor)) + '</td></tr>';
+    const saidas = t.pago + t.impostos + t.gastos;
+    const balancete = secao('Balancete do período', 'Receitas pela data do recebimento; compras pela data do pagamento; impostos pelo vencimento da guia; despesas pelo mês a que se referem',
+      '<div class="tabela-rolagem"><table class="tabela tabela-relatorio tabela-balancete"><tbody>' +
+      linhaB('Receitas', null, 'grupo') +
+      linhaB('Recebimentos dos órgãos', t.recebido, 'item') +
+      linhaB('Total de receitas', t.recebido, 'subtotal') +
+      linhaB('Saídas', null, 'grupo') +
+      linhaB('Compra das licenças (fornecedores)', t.pago, 'item') +
+      linhaB('Impostos', t.impostos, 'item') +
+      grupos(r.impostos).map(([k, v]) => linhaB(esc(k), v, 'subitem')).join('') +
+      linhaB('Despesas e custos', t.gastos, 'item') +
+      grupos(r.gastos).map(([k, v]) => linhaB(esc(k), v, 'subitem')).join('') +
+      linhaB('Total de saídas', saidas, 'subtotal') +
+      '</tbody><tfoot>' + linhaB('Resultado do período', t.saldo, t.saldo < 0 ? 'negativo' : '') + '</tfoot></table></div>');
+
     const mesAMes = !varios ? '' : secao('Mês a mês', '', tabela(
-      [{ t: 'Mês' }, { t: 'Contratos' }, { t: 'Valor dos contratos', valor: 1 }, { t: 'Recebido', valor: 1 }, { t: 'Pago fornecedores', valor: 1 }, { t: 'Despesas e custos', valor: 1 }, { t: 'Saldo', valor: 1 }],
+      [{ t: 'Mês' }, { t: 'Contratos' }, { t: 'Valor dos contratos', valor: 1 }, { t: 'Receitas', valor: 1 }, { t: 'Compras', valor: 1 }, { t: 'Impostos', valor: 1 }, { t: 'Despesas e custos', valor: 1 }, { t: 'Resultado', valor: 1 }],
       r.meses.map((m) => '<tr><td>' + maiuscula(MESES[Number(m.mes.slice(5, 7)) - 1]) + '</td><td>' + (m.novos + m.renovacoes || '—') + '</td><td class="valor">' + moeda(m.valorContratos) +
-        '</td><td class="valor">' + moeda(m.recebido) + '</td><td class="valor">' + moeda(m.pago) + '</td><td class="valor">' + moeda(m.gastos) +
+        '</td><td class="valor">' + moeda(m.recebido) + '</td><td class="valor">' + moeda(m.pago) + '</td><td class="valor">' + moeda(m.impostos) + '</td><td class="valor">' + moeda(m.gastos) +
         '</td><td class="valor ' + (m.saldo >= 0 ? '' : 'negativo') + '">' + moeda(m.saldo) + '</td></tr>'),
-      '<tr><td>Total</td><td>' + (t.novos + t.renovacoes) + '</td><td class="valor">' + moeda(t.valorContratos) + '</td><td class="valor">' + moeda(t.recebido) + '</td><td class="valor">' + moeda(t.pago) +
+      '<tr><td>Total</td><td>' + (t.novos + t.renovacoes) + '</td><td class="valor">' + moeda(t.valorContratos) + '</td><td class="valor">' + moeda(t.recebido) + '</td><td class="valor">' + moeda(t.pago) + '</td><td class="valor">' + moeda(t.impostos) +
         '</td><td class="valor">' + moeda(t.gastos) + '</td><td class="valor">' + moeda(t.saldo) + '</td></tr>', ''));
 
     const contratos = secao('Contratos firmados ou renovados', 'Pelo início da vigência', tabela(
@@ -91,6 +121,14 @@
       '<tr><td colspan="6">Total</td><td class="valor">' + moeda(t.pago) + '</td></tr>',
       'Nenhum pagamento a fornecedor no período.'));
 
+    const impostos = secao('Impostos', 'Guias da Contabilidade (DAS, DARF, INSS, FGTS, ISS) que venceram no período', tabela(
+      [{ t: 'Vencimento' }, { t: 'Guia' }, { t: 'Competência' }, { t: 'Situação' }, { t: 'Valor', valor: 1 }],
+      r.impostos.map((x) => '<tr><td>' + dataBR(x.data) + '</td><td>' + esc(x.descricao) + '</td><td>' + (x.competencia ? esc(mesBR(x.competencia)) : '—') + '</td><td>' +
+        (x.pago ? '<span class="selo ok">Pago' + (x.dataPagamento ? ' em ' + dataBR(x.dataPagamento) : '') + '</span>' : '<span class="selo alerta">Em aberto</span>') +
+        '</td><td class="valor">' + moeda(x.valor) + '</td></tr>'),
+      '<tr><td colspan="4">Total</td><td class="valor">' + moeda(t.impostos) + '</td></tr>',
+      'Nenhuma guia de imposto venceu no período. Cadastre as guias em Contabilidade, com valor e vencimento.'));
+
     const gastos = secao('Despesas e custos', 'Custos fixos, contador e despesas avulsas do mês a que se referem' + (r.gastosAte ? ', até ' + mesBR(r.gastosAte) : ''), tabela(
       [{ t: 'Vencimento' }, { t: 'Descrição' }, { t: 'Categoria' }, { t: 'Situação' }, { t: 'Valor', valor: 1 }],
       r.gastos.map((x) => '<tr><td>' + dataBR(x.data) + '</td><td>' + esc(x.descricao) + '</td><td>' + esc(x.categoria) + '</td><td>' +
@@ -100,7 +138,7 @@
       'Nenhuma despesa ou custo no período.'));
 
     return '<div class="relatorio-titulo"><h2>Relatório GAH Licita — ' + esc(maiuscula(p.nome)) + '</h2><span class="sub">Emitido em ' + dataBR(calc.hoje()) + '</span></div>' +
-      kpis + mesAMes + contratos + recebimentos + pagamentos + gastos;
+      kpis + balancete + mesAMes + contratos + recebimentos + pagamentos + impostos + gastos;
   }
 
   /* Planilha (.csv) com as mesmas listas, separadas por seção. */
@@ -114,11 +152,13 @@
       r.recebimentos.map((x) => { const c = contrato(x.contratoId); return [dataBR(x.data), nomeCliente(c.clienteId), c.produto, x.parcela, x.nf, n(x.valor)]; }));
     sec('Pagamentos das licenças', ['Data', 'Fabricante', 'Licença', 'Órgão', 'Parcela', 'Entrega', 'Valor'],
       r.pagamentos.map((x) => { const c = contrato(x.contratoId); return [dataBR(x.data), c.fornecedor, c.produto, nomeCliente(c.clienteId), x.parcela, x.entregue ? 'Entregue' : 'Pendente', n(x.valor)]; }));
+    sec('Impostos', ['Vencimento', 'Guia', 'Competência', 'Pago', 'Data do pagamento', 'Valor'],
+      r.impostos.map((x) => [dataBR(x.data), x.descricao, x.competencia ? mesBR(x.competencia) : '', x.pago ? 'Sim' : 'Não', x.dataPagamento ? dataBR(x.dataPagamento) : '', n(x.valor)]));
     sec('Despesas e custos', ['Vencimento', 'Descrição', 'Categoria', 'Pago', 'Data do pagamento', 'Valor'],
       r.gastos.map((x) => [dataBR(x.data), x.descricao, x.categoria, x.pago ? 'Sim' : 'Não', x.dataPagamento ? dataBR(x.dataPagamento) : '', n(x.valor)]));
     const t = r.totais;
-    sec('Resumo', ['Contratos novos', 'Renovações', 'Valor dos contratos', 'Recebido', 'Pago fornecedores', 'Despesas e custos', 'Saldo'],
-      [[t.novos, t.renovacoes, n(t.valorContratos), n(t.recebido), n(t.pago), n(t.gastos), n(t.saldo)]]);
+    sec('Balancete', ['Contratos novos', 'Renovações', 'Valor dos contratos', 'Receitas', 'Compra das licenças', 'Impostos', 'Despesas e custos', 'Resultado'],
+      [[t.novos, t.renovacoes, n(t.valorContratos), n(t.recebido), n(t.pago), n(t.impostos), n(t.gastos), n(t.saldo)]]);
     return '﻿' + linhas.map((l) => l.map((v) => {
       const s = String(v === undefined || v === null ? '' : v);
       return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -142,7 +182,7 @@
     const r = dadosDoRelatorio();
 
     main.innerHTML =
-      '<div class="cabecalho-tela nao-imprimir"><div><h1>Relatório</h1><p>Relatório da empresa de um mês ou de um ano: contratos firmados ou renovados, recebimentos, pagamentos das licenças, despesas e custos.</p></div>' +
+      '<div class="cabecalho-tela nao-imprimir"><div><h1>Relatório</h1><p>Balancete da empresa de um mês ou de um ano: receitas, compras das licenças, impostos, despesas e custos, e os contratos firmados ou renovados.</p></div>' +
       '<div class="acoes"><button type="button" class="botao secundario" id="rel-csv">Baixar planilha (.csv)</button><button type="button" class="botao" id="rel-imprimir">Imprimir ou salvar em PDF</button></div></div>' +
       '<div class="filtros nao-imprimir controles-relatorio">' +
       '<select class="filtro" id="rel-tipo" aria-label="Tipo de relatório">' + opcoes([['mes', 'Relatório do mês'], ['ano', 'Relatório do ano']], estado.tipo) + '</select>' +

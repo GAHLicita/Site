@@ -434,15 +434,17 @@
      - contratos firmados no período (pelo início da vigência), separando novos e renovações;
      - recebimentos: parcelas de venda pagas pelos órgãos, pela data do pagamento;
      - pagamentos: parcelas de compra pagas aos fornecedores, pela data do pagamento;
-     - gastos: despesas, custos fixos e mensalidade do contador do mês a que se referem (pagos ou não).
-     'gastos' chega no formato das despesas ({ data, valor, pago, descricao, categoria, mes? }).
+     - gastos: despesas, custos fixos e mensalidade do contador do mês a que se referem (pagos ou não);
+     - impostos: guias (DAS, DARF, INSS…) pelo mês do vencimento (pagas ou não).
+     'gastos' e 'impostos' chegam no formato das despesas ({ data, valor, pago, descricao, categoria, mes? });
+     nos impostos, 'data' é o vencimento e 'mes' a competência da guia.
      Contratos cancelados ficam de fora. Devolve as listas, os totais e um resumo por mês. */
-  C.relatorio = function (contratos, gastos, de, ate, hoje) {
+  C.relatorio = function (contratos, gastos, de, ate, hoje, impostos) {
     hoje = hoje || C.hoje();
     const dentro = (data) => !!data && C.mesDe(data) >= de && C.mesDe(data) <= ate;
     const validos = (contratos || []).filter(valido);
     const ren = C.renovacoes(validos, hoje);
-    const r = { de, ate, contratos: [], recebimentos: [], pagamentos: [], gastos: [] };
+    const r = { de, ate, contratos: [], recebimentos: [], pagamentos: [], gastos: [], impostos: [] };
     for (const c of validos) {
       const s = C.resumoContrato(c, hoje);
       const firmado = c.vigenciaInicio || c.dataEmpenho || c.dataEntrega;
@@ -464,8 +466,11 @@
       const mes = g.mes || C.mesDe(g.data);
       if (mes >= de && mes <= ate) r.gastos.push({ mes, data: g.data, descricao: g.descricao || 'Despesa', categoria: g.categoria || '', valor: centavos(num(g.valor)), pago: !!g.pago, dataPagamento: g.dataPagamento || '' });
     }
+    for (const g of impostos || []) {
+      if (dentro(g.data)) r.impostos.push({ data: g.data, competencia: g.mes || '', descricao: g.descricao || 'Guia', categoria: g.categoria || '', valor: centavos(num(g.valor)), pago: !!g.pago, dataPagamento: g.dataPagamento || '' });
+    }
     const porData = (a, b) => (a.data || '').localeCompare(b.data || '');
-    ['contratos', 'recebimentos', 'pagamentos', 'gastos'].forEach((k) => r[k].sort(porData));
+    ['contratos', 'recebimentos', 'pagamentos', 'gastos', 'impostos'].forEach((k) => r[k].sort(porData));
     const soma = (lista, campo) => centavos(lista.reduce((t, x) => t + num(x[campo]), 0));
     const totais = (lista) => ({
       novos: lista.contratos.filter((x) => !x.renovacao).length,
@@ -475,15 +480,18 @@
       recebido: soma(lista.recebimentos, 'valor'),
       pago: soma(lista.pagamentos, 'valor'),
       gastos: soma(lista.gastos, 'valor'),
-      gastosEmAberto: soma(lista.gastos.filter((x) => !x.pago), 'valor')
+      gastosEmAberto: soma(lista.gastos.filter((x) => !x.pago), 'valor'),
+      impostos: soma(lista.impostos, 'valor'),
+      impostosEmAberto: soma(lista.impostos.filter((x) => !x.pago), 'valor')
     });
     r.totais = totais(r);
-    r.totais.saldo = centavos(r.totais.recebido - r.totais.pago - r.totais.gastos);
+    r.totais.saldo = centavos(r.totais.recebido - r.totais.pago - r.totais.impostos - r.totais.gastos);
     r.meses = [];
     for (let mes = de; mes <= ate; mes = C.mesDe(C.addMeses(mes + '-01', 1))) {
       const doMes = (lista) => lista.filter((x) => (x.mes || C.mesDe(x.data)) === mes);
-      const t = totais({ contratos: doMes(r.contratos), recebimentos: doMes(r.recebimentos), pagamentos: doMes(r.pagamentos), gastos: doMes(r.gastos) });
-      t.saldo = centavos(t.recebido - t.pago - t.gastos);
+      const t = totais({ contratos: doMes(r.contratos), recebimentos: doMes(r.recebimentos), pagamentos: doMes(r.pagamentos), gastos: doMes(r.gastos),
+        impostos: r.impostos.filter((x) => C.mesDe(x.data) === mes) });
+      t.saldo = centavos(t.recebido - t.pago - t.impostos - t.gastos);
       r.meses.push(Object.assign({ mes }, t));
     }
     return r;
