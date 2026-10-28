@@ -285,22 +285,36 @@
 
   /* Vendas por fabricante. Um contrato com licenças de vários fabricantes (lista 'itens', cada uma com
      fornecedor e valor) é dividido entre eles na proporção do valor de cada licença; o contrato conta uma
-     vez para cada fabricante que aparece nele. Sem 'itens', vale o campo fornecedor do contrato. */
+     vez para cada fabricante que aparece nele. Sem 'itens', vale o campo fornecedor do contrato.
+     Compra informada por licença (compra.porLicenca): o lucro de cada fabricante usa a compra real das licenças
+     dele (a venda sem valor por licença é dividida na proporção da compra). */
   C.vendasPorFabricante = function (contratos, hoje) {
     const mapa = {};
     for (const c of contratos || []) {
       if (c.status === 'cancelado') continue;
       const s = C.resumoContrato(c, hoje);
-      const itens = (c.itens || []).filter((i) => String(i.fornecedor || '').trim() && num(i.valor) > 0);
+      const porLicenca = !!(c.compra && c.compra.porLicenca);
+      const compraItem = (i) => (porLicenca && i.compra ? num(i.compra.valorTotal) : 0);
+      const itens = (c.itens || []).filter((i) => String(i.fornecedor || '').trim() && (num(i.valor) > 0 || compraItem(i) > 0));
       const soma = itens.reduce((t, i) => t + num(i.valor), 0);
+      const somaCompra = itens.reduce((t, i) => t + compraItem(i), 0);
       const partes = {};
-      if (itens.length && soma > 0) itens.forEach((i) => { const f = String(i.fornecedor).trim(); partes[f] = (partes[f] || 0) + num(i.valor) / soma; });
-      else partes[String(c.fornecedor || '').trim() || 'Sem fabricante'] = 1;
+      const compras = {};
+      if (itens.length && (soma > 0 || somaCompra > 0)) {
+        itens.forEach((i) => {
+          const f = String(i.fornecedor).trim();
+          partes[f] = (partes[f] || 0) + (soma > 0 ? num(i.valor) / soma : compraItem(i) / somaCompra);
+          compras[f] = (compras[f] || 0) + compraItem(i);
+        });
+      } else partes[String(c.fornecedor || '').trim() || 'Sem fabricante'] = 1;
+      const aliqCompra = num(c.compra && c.compra.aliquotaCompra) / 100;
       for (const f of Object.keys(partes)) {
         const m = (mapa[f] = mapa[f] || { fabricante: f, n: 0, venda: 0, lucro: 0 });
         m.n++;
         m.venda += s.venda * partes[f];
-        m.lucro += s.lucro * partes[f];
+        m.lucro += porLicenca && somaCompra > 0
+          ? s.venda * partes[f] - compras[f] * (1 + aliqCompra) - s.impostoNF * partes[f]
+          : s.lucro * partes[f];
       }
     }
     return Object.values(mapa)
@@ -459,7 +473,7 @@
       });
       ((c.compra && c.compra.parcelas) || []).forEach((p, i, todas) => {
         const data = p.pago ? p.dataPagamento || p.vencimento : '';
-        if (dentro(data)) r.pagamentos.push({ contratoId: c.id, data, parcela: (i + 1) + '/' + todas.length, entregue, valor: centavos(num(p.valor)) });
+        if (dentro(data)) r.pagamentos.push({ contratoId: c.id, indice: i, itemId: p.itemId || '', data, parcela: (i + 1) + '/' + todas.length, entregue, valor: centavos(num(p.valor)) });
       });
     }
     for (const g of gastos || []) {

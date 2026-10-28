@@ -191,3 +191,13 @@ test('relatorio junta contratos firmados, recebimentos, pagamentos e gastos do p
   assert.strictEqual(ano.meses[10].recebido, 500); // recebido em novembro
   assert.strictEqual(ano.meses[9].pago, 700);
 });
+
+test('vendasPorFabricante usa a compra de cada licença quando a compra é por licença', () => {
+  const c = { id: 'm', status: 'ativo', venda: { aliquotaNF: 10, parcelas: [{ valor: 3000, vencimento: '2026-10-01' }] },
+    compra: { porLicenca: true, parcelas: [{ valor: 1000, itemId: 'a', vencimento: '2026-10-01', pago: true }, { valor: 400, itemId: 'b', vencimento: '2026-10-01' }, { valor: 400, itemId: 'b', vencimento: '2026-11-01' }] },
+    itens: [{ id: 'a', fornecedor: 'Alfa', valor: 2000, compra: { valorTotal: 1000 } }, { id: 'b', fornecedor: 'Beta', valor: 1000, compra: { valorTotal: 800 } }] };
+  const s = calc.resumoContrato(c, '2026-10-20');
+  assert.deepStrictEqual([s.compra, s.pago, s.aPagar], [1800, 1000, 800]);
+  const f = calc.vendasPorFabricante([c], '2026-10-20');
+  assert.deepStrictEqual(f.map((x) => [x.fabricante, x.venda, x.lucro]), [['Alfa', 2000, 800], ['Beta', 1000, 100]]);
+});

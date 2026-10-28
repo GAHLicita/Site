@@ -848,7 +848,14 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* Contrato: como a compra foi paga */
 .meio-compra { font-size: 0.85rem; font-weight: 600; color: var(--info); margin-top: 4px; }
-[data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden], #ct-entrega-campo[hidden] { display: none !important; }
+[data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden], #ct-entrega-campo[hidden], [data-compra-unica][hidden], #k-nota-licenca[hidden], .item-linha [hidden] { display: none !important; }
+/* compra informada por licença */
+#ct-itens:not(.por-licenca) .item-compra { display: none; }
+.item-compra { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--linha); }
+.item-compra h4 { margin: 0; font-size: 0.85rem; color: var(--tinta-2); }
+.compras-licenca { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+.compras-licenca li { display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 6px; background: var(--fundo); }
+.compras-licenca li span { color: var(--tinta-2); }
 
 /* ---------- Relatório (tela e impressão) ---------- */
 .controles-relatorio { margin: 14px 0 18px; }

@@ -139,7 +139,7 @@
 
   const FORMAS_VENDA = [['integral', 'Integral (pagamento único)'], ['mensal', 'Mensal'], ['parcelado', 'Parcelado']];
   const FORMAS_COMPRA = [['avista', 'À vista'], ['parcelado', 'Parcelado']];
-  const nomeForma = (f) => ({ integral: 'Integral', mensal: 'Mensal', parcelado: 'Parcelado', avista: 'À vista' }[f] || f || '—');
+  const nomeForma = (f) => ({ integral: 'Integral', mensal: 'Mensal', parcelado: 'Parcelado', avista: 'À vista', porLicenca: 'Por licença' }[f] || f || '—');
 
   GAH.u = { esc, moeda, moedaCurta, dataBR, mesBR, pct, MESES, MESES_CURTOS, UFS, opcoes, linkWhats, linkSeguro, soDigitos, aviso, janela, botaoExcluir, lerForm, nomeCliente, ufCliente, seloVigencia, nomeForma, ICONE_DRIVE, LOGO };
 
@@ -248,19 +248,77 @@
     return novas;
   }
 
+  /* Uma licença do contrato. A parte "compra" só aparece quando a compra é informada por licença. */
   function linhaItem(it) {
-    return '<div class="form-grade item-linha">' +
+    const k = it.compra || {};
+    const cartao = k.cartao || {};
+    return '<div class="item-linha" data-item-id="' + esc(it.id || D.novoId()) + '"><div class="form-grade">' +
       '<div class="campo"><label>Licença</label><input data-it="produto" value="' + esc(it.produto) + '" placeholder="Ex.: ChatGPT Plus"></div>' +
       '<div class="campo"><label>Fabricante</label><input data-it="fornecedor" list="lista-fornecedores" value="' + esc(it.fornecedor) + '" placeholder="Ex.: OpenAI"></div>' +
       '<div class="campo"><label>Quantidade</label><input data-it="quantidade" type="number" min="0" value="' + esc(it.quantidade) + '"></div>' +
       '<div class="campo"><label>Valor de venda</label><input data-it="valor" type="number" step="0.01" min="0" value="' + esc(it.valor) + '"></div>' +
-      '<div class="largo"><button type="button" class="link-botao" data-remover-item>Remover licença</button></div>' +
+      '</div>' +
+      '<div class="form-grade item-compra"><h4 class="largo">Compra desta licença</h4>' +
+      '<div class="campo"><label>Forma de pagamento</label><select data-ik="forma">' + opcoes(FORMAS_COMPRA, k.forma || 'avista') + '</select></div>' +
+      '<div class="campo"><label>Valor pago na compra</label><input data-ik="valorTotal" type="number" step="0.01" min="0" value="' + esc(k.valorTotal) + '"></div>' +
+      '<div class="campo" data-ik-parcelas><label>Nº de parcelas</label><input data-ik="qtdParcelas" type="number" min="1" max="120" value="' + esc(k.qtdParcelas || 1) + '"></div>' +
+      '<div class="campo"><label>1º pagamento</label><input data-ik="primeiroVencimento" type="date" value="' + esc(k.primeiroVencimento) + '"></div>' +
+      '<div class="campo"><label>Pago com</label><select data-ik="meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-ik-meio="dolar"><label>Valor em dólar (US$)</label><input data-ik="valorDolar" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
+      '<div class="campo" data-ik-meio="dolar"><label>Cotação usada (R$ por US$)</label><input data-ik="cotacaoDolar" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
+      '<div class="campo" data-ik-meio="cartao"><label>Banco do cartão</label><input data-ik="banco" list="lista-bancos-cartao" value="' + esc(cartao.banco) + '"></div>' +
+      '<div class="campo" data-ik-meio="cartao"><label>Bandeira</label><select data-ik="bandeira">' + opcoes(BANDEIRAS, cartao.bandeira || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-ik-meio="cartao"><label>Final do cartão (4 últimos dígitos)</label><input data-ik="final" inputmode="numeric" maxlength="4" value="' + esc(cartao.final) + '" placeholder="0000"></div>' +
+      '<div class="campo" data-ik-meio="cartao"><label>Parcelas no cartão</label><input data-ik="parcelasCartao" type="number" min="1" max="24" value="' + esc(cartao.parcelas) + '" placeholder="1"></div>' +
+      '</div>' +
+      '<div><button type="button" class="link-botao" data-remover-item>Remover licença</button></div>' +
       '</div>';
   }
+
+  /* Lê as licenças do formulário, com a compra de cada uma ({ forma, valorTotal, qtdParcelas, primeiroVencimento, meio… }). */
+  function lerItens(raiz) {
+    return [...raiz.querySelectorAll('.item-linha')].map((l) => {
+      const o = { id: l.dataset.itemId };
+      l.querySelectorAll('[data-it]').forEach((i) => (o[i.dataset.it] = i.type === 'number' ? (i.value === '' ? '' : Number(i.value)) : i.value.trim()));
+      const v = (k) => { const i = l.querySelector('[data-ik="' + k + '"]'); return i ? i.value.trim() : ''; };
+      const forma = v('forma') || 'avista';
+      const meio = v('meio');
+      o.compra = {
+        forma,
+        valorTotal: v('valorTotal') === '' ? '' : Number(v('valorTotal')),
+        qtdParcelas: forma === 'avista' ? 1 : Math.max(1, Number(v('qtdParcelas')) || 1),
+        primeiroVencimento: v('primeiroVencimento'),
+        meio,
+        valorDolar: meio === 'dolar' && v('valorDolar') !== '' ? Number(v('valorDolar')) : '',
+        cotacaoDolar: meio === 'dolar' && v('cotacaoDolar') !== '' ? Number(v('cotacaoDolar')) : '',
+        cartao: meio === 'cartao' ? { banco: v('banco'), bandeira: v('bandeira'), final: v('final').replace(/\D/g, '').slice(-4), parcelas: v('parcelasCartao') === '' ? '' : Number(v('parcelasCartao')) } : null
+      };
+      return o;
+    }).filter((o) => o.produto || o.fornecedor || o.valor || o.compra.valorTotal);
+  }
+
+  /* Licença do contrato a que pertence uma parcela de compra (compra informada por licença). */
+  GAH.itemDaParcela = function (c, p) {
+    return (p && p.itemId && c.compra && c.compra.porLicenca && (c.itens || []).find((i) => i.id === p.itemId)) || null;
+  };
 
   const MEIOS_COMPRA = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito']];
   const BANDEIRAS = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Diners', 'Outra'];
   const bancosCartao = () => [...new Set(D.lista('contratos').map((x) => x.compra && x.compra.cartao && x.compra.cartao.banco).filter(Boolean))].sort();
+  /* Compra por licença: uma linha por licença com forma, como foi paga, quanto já foi pago e quanto falta. */
+  GAH.comprasPorLicenca = function (c) {
+    if (!c.compra || !c.compra.porLicenca) return [];
+    const parcelas = c.compra.parcelas || [];
+    return (c.itens || []).map((it) => {
+      const ps = parcelas.filter((p) => p.itemId === it.id);
+      const total = calc.centavos(ps.reduce((t, p) => t + calc.num(p.valor), 0));
+      const pago = calc.centavos(ps.filter((p) => p.pago).reduce((t, p) => t + calc.num(p.valor), 0));
+      const k = it.compra || {};
+      return { item: it, total, pago, aPagar: calc.centavos(total - pago), parcelas: ps.length, pagas: ps.filter((p) => p.pago).length,
+        forma: k.forma === 'parcelado' ? 'Parcelado em ' + ps.length + 'x' : 'À vista', meio: GAH.textoMeioCompra(k) };
+    });
+  };
+
   /* Texto curto de como a compra foi paga (usado no quadro do contrato). */
   GAH.textoMeioCompra = function (k) {
     if (!k || !k.meio) return '';
@@ -314,7 +372,8 @@
       '</div></div>' +
 
       '<div class="form-secao"><h3>Licenças do contrato</h3>' +
-      '<p class="ajuda" style="margin:0 0 8px">Preencha quando o contrato tiver licenças de mais de um fabricante: cada uma entra separada em "Vendas por fabricante", na proporção do valor.</p>' +
+      '<p class="ajuda" style="margin:0 0 8px">Preencha quando o contrato tiver licenças de mais de um fabricante: cada uma entra separada em "Vendas por fabricante", na proporção do valor. ' +
+      'Quando cada licença foi comprada de um jeito (uma à vista, outra parcelada), escolha "Cada licença com a sua forma de pagamento" em Compra da licença.</p>' +
       '<div id="ct-itens" data-ignorar>' + (c.itens || []).map(linhaItem).join('') + '</div>' +
       '<button type="button" class="botao secundario pequeno" id="ct-add-item">+ Adicionar licença</button></div>' +
 
@@ -327,19 +386,21 @@
       '</div></div>' +
 
       '<div class="form-secao"><h3>Compra da licença (pagamento ao fornecedor)</h3><div class="form-grade" data-ignorar>' +
-      '<div class="campo"><label for="k-forma">Forma de pagamento</label><select id="k-forma">' + opcoes(FORMAS_COMPRA, k.forma) + '</select></div>' +
-      '<div class="campo"><label for="k-valor">Valor total pago na compra</label><input id="k-valor" type="number" step="0.01" min="0" value="' + esc(k.valorTotal) + '"></div>' +
-      '<div class="campo" id="k-qtd-campo"><label for="k-qtd">Nº de parcelas</label><input id="k-qtd" type="number" min="1" max="120" value="' + esc(qtdK) + '"></div>' +
-      '<div class="campo"><label for="k-venc">1º pagamento</label><input id="k-venc" type="date" value="' + esc(k.primeiroVencimento || (k.parcelas && k.parcelas[0] && k.parcelas[0].vencimento) || '') + '"></div>' +
+      '<div class="campo largo"><label for="k-modo">Como foi a compra</label><select id="k-modo">' + opcoes([['unica', 'Uma compra só, para o contrato todo'], ['licenca', 'Cada licença com a sua forma de pagamento']], k.porLicenca ? 'licenca' : 'unica') + '</select>' +
+      '<span class="ajuda" id="k-nota-licenca">Informe a compra de cada licença (à vista ou parcelada, valor, 1º pagamento e com o que foi paga) em "Licenças do contrato", acima.</span></div>' +
+      '<div class="campo" data-compra-unica><label for="k-forma">Forma de pagamento</label><select id="k-forma">' + opcoes(FORMAS_COMPRA, k.forma) + '</select></div>' +
+      '<div class="campo" data-compra-unica><label for="k-valor">Valor total pago na compra</label><input id="k-valor" type="number" step="0.01" min="0" value="' + esc(k.valorTotal) + '"></div>' +
+      '<div class="campo" id="k-qtd-campo" data-compra-unica><label for="k-qtd">Nº de parcelas</label><input id="k-qtd" type="number" min="1" max="120" value="' + esc(qtdK) + '"></div>' +
+      '<div class="campo" data-compra-unica><label for="k-venc">1º pagamento</label><input id="k-venc" type="date" value="' + esc(k.primeiroVencimento || (k.parcelas && k.parcelas[0] && k.parcelas[0].vencimento) || '') + '"></div>' +
       '<div class="campo"><label for="k-aliq">Imposto na compra (%)</label><input id="k-aliq" type="number" step="0.01" min="0" value="' + esc(k.aliquotaCompra) + '"><span class="ajuda">IOF, câmbio ou outro custo sobre a compra.</span></div>' +
       // como a compra foi paga: dinheiro em real, dinheiro em dólar ou cartão de crédito (banco, bandeira, final)
-      '<div class="campo"><label for="k-meio">Pago com</label><select id="k-meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
-      '<div class="campo" data-meio="dolar"><label for="k-usd">Valor em dólar (US$)</label><input id="k-usd" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
-      '<div class="campo" data-meio="dolar"><label for="k-cot">Cotação usada (R$ por US$)</label><input id="k-cot" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
-      '<div class="campo" data-meio="cartao"><label for="k-banco">Banco do cartão</label><input id="k-banco" list="lista-bancos-cartao" value="' + esc((k.cartao || {}).banco) + '" placeholder="Ex.: Banco do Brasil, Nubank"><datalist id="lista-bancos-cartao">' + bancosCartao().map((b) => '<option value="' + esc(b) + '">').join('') + '</datalist></div>' +
-      '<div class="campo" data-meio="cartao"><label for="k-bandeira">Bandeira</label><select id="k-bandeira">' + opcoes(BANDEIRAS, (k.cartao || {}).bandeira || '', 'Selecione') + '</select></div>' +
-      '<div class="campo" data-meio="cartao"><label for="k-final">Final do cartão (4 últimos dígitos)</label><input id="k-final" inputmode="numeric" maxlength="4" value="' + esc((k.cartao || {}).final) + '" placeholder="0000"><span class="ajuda">Só os 4 últimos números. Nunca o número inteiro.</span></div>' +
-      '<div class="campo" data-meio="cartao"><label for="k-parcartao">Parcelas no cartão</label><input id="k-parcartao" type="number" min="1" max="24" value="' + esc((k.cartao || {}).parcelas) + '" placeholder="1"></div>' +
+      '<div class="campo" data-compra-unica><label for="k-meio">Pago com</label><select id="k-meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-meio="dolar" data-compra-unica><label for="k-usd">Valor em dólar (US$)</label><input id="k-usd" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
+      '<div class="campo" data-meio="dolar" data-compra-unica><label for="k-cot">Cotação usada (R$ por US$)</label><input id="k-cot" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
+      '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-banco">Banco do cartão</label><input id="k-banco" list="lista-bancos-cartao" value="' + esc((k.cartao || {}).banco) + '" placeholder="Ex.: Banco do Brasil, Nubank"><datalist id="lista-bancos-cartao">' + bancosCartao().map((b) => '<option value="' + esc(b) + '">').join('') + '</datalist></div>' +
+      '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-bandeira">Bandeira</label><select id="k-bandeira">' + opcoes(BANDEIRAS, (k.cartao || {}).bandeira || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-final">Final do cartão (4 últimos dígitos)</label><input id="k-final" inputmode="numeric" maxlength="4" value="' + esc((k.cartao || {}).final) + '" placeholder="0000"><span class="ajuda">Só os 4 últimos números. Nunca o número inteiro.</span></div>' +
+      '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-parcartao">Parcelas no cartão</label><input id="k-parcartao" type="number" min="1" max="24" value="' + esc((k.cartao || {}).parcelas) + '" placeholder="1"></div>' +
       '</div></div>' +
       '<div class="previa" id="previa-contrato"></div>' +
       '<div class="campo" style="margin-top:12px"><label for="ct-obs">Observações</label><textarea id="ct-obs" name="observacoes">' + esc(c.observacoes) + '</textarea></div>' +
@@ -356,17 +417,28 @@
       const qV = formaV === 'integral' ? 1 : Math.max(1, Number($('#v-qtd').value) || 1);
       const valorV = Number($('#v-valor').value) || 0;
       const totalV = formaV === 'mensal' ? calc.centavos(valorV * qV) : valorV;
-      const formaK = $('#k-forma').value;
-      const qK = formaK === 'avista' ? 1 : Math.max(1, Number($('#k-qtd').value) || 1);
+      const porLicenca = $('#k-modo').value === 'licenca';
+      let formaK = $('#k-forma').value;
+      let qK = formaK === 'avista' ? 1 : Math.max(1, Number($('#k-qtd').value) || 1);
+      let totalK = Number($('#k-valor').value) || 0;
+      let vencK = $('#k-venc').value;
+      if (porLicenca) {
+        const compras = lerItens($('#ct-itens')).map((i) => i.compra);
+        formaK = 'porLicenca';
+        qK = compras.reduce((t, k) => t + k.qtdParcelas, 0);
+        totalK = calc.centavos(compras.reduce((t, k) => t + calc.num(k.valorTotal), 0));
+        vencK = compras.map((k) => k.primeiroVencimento).filter(Boolean).sort()[0] || '';
+      }
       return {
+        porLicenca,
         formaV, qV, totalV, vencV: $('#v-venc').value, aliqV: Number($('#v-aliq').value) || 0,
-        formaK, qK, totalK: Number($('#k-valor').value) || 0, vencK: $('#k-venc').value, aliqK: Number($('#k-aliq').value) || 0
+        formaK, qK, totalK, vencK, aliqK: Number($('#k-aliq').value) || 0
       };
     }
     function atualizar() {
       const t = termos();
       $('#v-qtd-campo').hidden = t.formaV === 'integral';
-      $('#k-qtd-campo').hidden = t.formaK === 'avista';
+      $('#k-qtd-campo').hidden = t.formaK === 'avista' || t.porLicenca;
       $('#v-valor-rotulo').textContent = t.formaV === 'mensal' ? 'Valor por mês' : 'Valor total de venda';
       $('#v-qtd-rotulo').textContent = t.formaV === 'mensal' ? 'Quantidade de meses' : 'Nº de parcelas';
       const impV = (t.totalV * t.aliqV) / 100;
@@ -374,7 +446,7 @@
       const lucro = t.totalV - t.totalK - impV - impK;
       $('#previa-contrato').innerHTML =
         '<span>Venda total: <b>' + moeda(t.totalV) + '</b>' + (t.qV > 1 ? ' (' + t.qV + '× ' + moeda(t.totalV / t.qV) + ')' : '') + '</span>' +
-        '<span>Compra: <b>' + moeda(t.totalK) + '</b>' + (t.qK > 1 ? ' (' + t.qK + '×)' : '') + '</span>' +
+        '<span>Compra: <b>' + moeda(t.totalK) + '</b>' + (t.porLicenca ? ' (por licença, ' + t.qK + ' pagamento(s))' : t.qK > 1 ? ' (' + t.qK + '×)' : '') + '</span>' +
         '<span>Impostos: <b>' + moeda(impV + impK) + '</b></span>' +
         '<span>Lucro: <b class="' + (lucro >= 0 ? 'positivo' : 'negativo') + '">' + moeda(lucro) + '</b>' + (t.totalV ? ' (' + pct(lucro / t.totalV) + ')' : '') + '</span>';
     }
@@ -387,14 +459,34 @@
     };
     $('#ct-entregue').addEventListener('change', mostrarEntrega);
     mostrarEntrega();
-    const mostrarMeio = () => j.el.querySelectorAll('[data-meio]').forEach((el) => (el.hidden = el.dataset.meio !== $('#k-meio').value));
-    $('#k-meio').addEventListener('change', mostrarMeio);
-    mostrarMeio();
-    $('#ct-add-item').addEventListener('click', () => {
-      $('#ct-itens').insertAdjacentHTML('beforeend', linhaItem({}));
-      $('#ct-itens').lastElementChild.querySelector('input').focus();
+    // compra única (campos do contrato) ou por licença (campos dentro de cada licença)
+    const mostrarCompra = () => {
+      const porLicenca = $('#k-modo').value === 'licenca';
+      $('#ct-itens').classList.toggle('por-licenca', porLicenca);
+      $('#k-nota-licenca').hidden = !porLicenca;
+      j.el.querySelectorAll('[data-compra-unica]').forEach((el) => (el.hidden = porLicenca || (el.dataset.meio ? el.dataset.meio !== $('#k-meio').value : false)));
+      if (!porLicenca) $('#k-qtd-campo').hidden = $('#k-forma').value === 'avista';
+      j.el.querySelectorAll('.item-linha').forEach((l) => {
+        const meio = l.querySelector('[data-ik="meio"]').value;
+        l.querySelectorAll('[data-ik-meio]').forEach((el) => (el.hidden = el.dataset.ikMeio !== meio));
+        l.querySelector('[data-ik-parcelas]').hidden = l.querySelector('[data-ik="forma"]').value === 'avista';
+      });
+    };
+    $('#k-modo').addEventListener('change', () => {
+      if ($('#k-modo').value === 'licenca' && !$('#ct-itens').children.length) $('#ct-add-item').click();
+      mostrarCompra();
+      atualizar();
     });
-    $('#ct-itens').addEventListener('click', (e) => { if (e.target.closest('[data-remover-item]')) e.target.closest('.item-linha').remove(); });
+    $('#k-meio').addEventListener('change', mostrarCompra);
+    $('#k-forma').addEventListener('change', mostrarCompra);
+    $('#ct-itens').addEventListener('change', mostrarCompra);
+    mostrarCompra();
+    $('#ct-add-item').addEventListener('click', () => {
+      $('#ct-itens').insertAdjacentHTML('beforeend', linhaItem({ compra: { forma: 'avista', primeiroVencimento: $('#k-venc').value || hoje } }));
+      $('#ct-itens').lastElementChild.querySelector('input').focus();
+      mostrarCompra();
+    });
+    $('#ct-itens').addEventListener('click', (e) => { if (e.target.closest('[data-remover-item]')) { e.target.closest('.item-linha').remove(); atualizar(); } });
 
     botaoExcluir(j.el, '#excluir-contrato', 'Excluir este contrato e todas as parcelas?', async () => {
       await D.excluir('contratos', c.id);
@@ -412,7 +504,7 @@
       const vAnt = c.venda || {};
       const kAnt = c.compra || {};
       const mudouV = !vAnt.parcelas || !vAnt.parcelas.length || vAnt.forma !== t.formaV || calc.num(vAnt.valorTotal) !== t.totalV || (vAnt.qtdParcelas || vAnt.parcelas.length) !== t.qV || (vAnt.primeiroVencimento || '') !== t.vencV;
-      const mudouK = !kAnt.parcelas || !kAnt.parcelas.length || kAnt.forma !== t.formaK || calc.num(kAnt.valorTotal) !== t.totalK || (kAnt.qtdParcelas || kAnt.parcelas.length) !== t.qK || (kAnt.primeiroVencimento || '') !== t.vencK;
+      let mudouK = !kAnt.parcelas || !kAnt.parcelas.length || kAnt.forma !== t.formaK || calc.num(kAnt.valorTotal) !== t.totalK || (kAnt.qtdParcelas || kAnt.parcelas.length) !== t.qK || (kAnt.primeiroVencimento || '') !== t.vencK;
       const venda = Object.assign({}, vAnt, { forma: t.formaV, valorTotal: t.totalV, qtdParcelas: t.qV, primeiroVencimento: t.vencV, aliquotaNF: t.aliqV });
       const compra = Object.assign({}, kAnt, { forma: t.formaK, valorTotal: t.totalK, qtdParcelas: t.qK, primeiroVencimento: t.vencK, aliquotaCompra: t.aliqK });
       const meio = $('#k-meio').value;
@@ -422,13 +514,32 @@
       const finalCartao = $('#k-final').value.replace(/\D/g, '').slice(-4);
       compra.cartao = meio === 'cartao' ? { banco: $('#k-banco').value.trim(), bandeira: $('#k-bandeira').value, final: finalCartao, parcelas: $('#k-parcartao').value === '' ? '' : Number($('#k-parcartao').value) } : null;
       if (mudouV) venda.parcelas = refazerParcelas(vAnt.parcelas, t.totalV, t.qV, t.vencV || dados.dataEntrega || hoje);
-      if (mudouK) compra.parcelas = refazerParcelas(kAnt.parcelas, t.totalK, t.qK, t.vencK || dados.dataEntrega || hoje);
+      dados.itens = lerItens($('#ct-itens'));
+      compra.porLicenca = t.porLicenca;
+      if (t.porLicenca) {
+        if (!dados.itens.length) { aviso('Adicione as licenças do contrato e a compra de cada uma.', true); return; }
+        // parcelas de cada licença; as que não mudaram ficam como estão (com o que já foi pago)
+        const antigas = kAnt.porLicenca ? kAnt.parcelas || [] : [];
+        const parcelas = [];
+        for (const it of dados.itens) {
+          const kc = it.compra;
+          const velha = (kAnt.porLicenca && (c.itens || []).find((x) => x.id === it.id) || {}).compra || {};
+          const doItem = antigas.filter((p) => p.itemId === it.id);
+          const igual = doItem.length && velha.forma === kc.forma && calc.num(velha.valorTotal) === calc.num(kc.valorTotal) &&
+            (velha.qtdParcelas || doItem.length) === kc.qtdParcelas && (velha.primeiroVencimento || '') === kc.primeiroVencimento;
+          const ps = igual ? doItem : refazerParcelas(doItem, calc.num(kc.valorTotal), kc.qtdParcelas, kc.primeiroVencimento || dados.dataEntrega || hoje);
+          ps.forEach((p) => (p.itemId = it.id));
+          parcelas.push(...ps);
+        }
+        compra.parcelas = parcelas.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+        compra.meio = '';
+        compra.valorDolar = '';
+        compra.cotacaoDolar = '';
+        compra.cartao = null;
+        mudouK = false;
+      }
+      if (mudouK) compra.parcelas = refazerParcelas(kAnt.porLicenca ? [] : kAnt.parcelas, t.totalK, t.qK, t.vencK || dados.dataEntrega || hoje);
       try {
-        dados.itens = [...$('#ct-itens').querySelectorAll('.item-linha')].map((l) => {
-        const o = {};
-        l.querySelectorAll('[data-it]').forEach((i) => (o[i.dataset.it] = i.type === 'number' ? (i.value === '' ? '' : Number(i.value)) : i.value.trim()));
-        return o;
-      }).filter((o) => o.produto || o.fornecedor || o.valor);
       const salvo = await D.salvar('contratos', Object.assign({}, c, dados, { venda, compra }));
         j.fechar();
         aviso('Contrato salvo');
@@ -459,12 +570,12 @@
       fornecedor: anterior.fornecedor || '',
       quantidade: anterior.quantidade || '',
       modalidade: anterior.modalidade || '',
-      itens: JSON.parse(JSON.stringify(anterior.itens || [])),
+      itens: JSON.parse(JSON.stringify(anterior.itens || [])).map((i) => (i.compra ? Object.assign(i, { compra: Object.assign(i.compra, { primeiroVencimento: inicio }) }) : i)),
       vigenciaInicio: inicio,
       vigenciaFim: calc.addDias(inicio, duracao),
       dataEntrega: '',
       venda: { forma: v.forma || 'integral', qtdParcelas: qtdV, aliquotaNF: v.aliquotaNF, valorTotal: v.valorTotal || somaV, primeiroVencimento: calc.addDias(inicio, 30) },
-      compra: { forma: k.forma || 'avista', qtdParcelas: qtdK, aliquotaCompra: k.aliquotaCompra, valorTotal: k.valorTotal || somaK, primeiroVencimento: inicio }
+      compra: { forma: k.forma || 'avista', porLicenca: !!k.porLicenca, qtdParcelas: qtdK, aliquotaCompra: k.aliquotaCompra, valorTotal: k.valorTotal || somaK, primeiroVencimento: inicio }
     };
     GAH.formContrato(novo, {
       titulo: 'Renovar contrato — confira datas e valores',
@@ -476,9 +587,12 @@
   GAH.formParcelas = function (contrato, lado) {
     const ehVenda = lado === 'venda';
     const parcelas = JSON.parse(JSON.stringify((contrato[lado] && contrato[lado].parcelas) || []));
+    const porLicenca = !ehVenda && contrato.compra && contrato.compra.porLicenca;
+    const licencas = (contrato.itens || []).map((it) => [it.id, [it.produto, it.fornecedor].filter(Boolean).join(' · ') || 'Licença']);
     const linha = (p, i) =>
       '<tr data-i="' + i + '">' +
       '<td>' + (i + 1) + '</td>' +
+      (porLicenca ? '<td><select class="mini" data-k="itemId" aria-label="Licença">' + opcoes(licencas, p.itemId || (licencas[0] || [])[0]) + '</select></td>' : '') +
       '<td><input class="mini" data-k="valor" type="number" step="0.01" value="' + esc(p.valor) + '" aria-label="Valor"></td>' +
       '<td><input class="mini" data-k="vencimento" type="date" value="' + esc(p.vencimento) + '" aria-label="Vencimento"></td>' +
       (ehVenda
@@ -489,7 +603,7 @@
       '<td><button type="button" class="link-botao" data-remover>remover</button></td></tr>';
     const corpo =
       '<p class="texto-suave" style="margin:0">' + esc(nomeCliente(contrato.clienteId)) + ' · ' + esc(contrato.produto) + '</p>' +
-      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>#</th><th>Valor</th><th>Vencimento</th>' +
+      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>#</th>' + (porLicenca ? '<th>Licença</th>' : '') + '<th>Valor</th><th>Vencimento</th>' +
       (ehVenda ? '<th>Emissão NF</th><th>Nº NF</th>' : '') +
       '<th>' + (ehVenda ? 'Recebido' : 'Pago') + '</th><th>Data</th><th></th></tr></thead><tbody id="corpo-parcelas">' +
       parcelas.map(linha).join('') +
@@ -532,7 +646,7 @@
     j.el.querySelector('#add-parcela').addEventListener('click', () => {
       const ps = ler();
       const ultima = ps[ps.length - 1];
-      tbody.insertAdjacentHTML('beforeend', linha({ valor: ultima ? ultima.valor : 0, vencimento: ultima ? calc.addMeses(ultima.vencimento, 1) : calc.hoje() }, ps.length));
+      tbody.insertAdjacentHTML('beforeend', linha({ valor: ultima ? ultima.valor : 0, vencimento: ultima ? calc.addMeses(ultima.vencimento, 1) : calc.hoje(), itemId: ultima && ultima.itemId }, ps.length));
       somar();
     });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
@@ -544,7 +658,21 @@
         qtdParcelas: ps.length,
         primeiroVencimento: ps[0] ? ps[0].vencimento : ''
       });
-      await D.salvar('contratos', Object.assign({}, contrato, { [lado]: ladoNovo }));
+      const mudancas = { [lado]: ladoNovo };
+      // compra por licença: a compra de cada licença passa a refletir as parcelas dela
+      if (porLicenca) {
+        mudancas.itens = (contrato.itens || []).map((it) => {
+          const doItem = ps.filter((p) => p.itemId === it.id);
+          const k = Object.assign({}, it.compra || {}, {
+            valorTotal: calc.centavos(doItem.reduce((s, p) => s + p.valor, 0)),
+            qtdParcelas: Math.max(1, doItem.length),
+            forma: doItem.length > 1 ? 'parcelado' : 'avista',
+            primeiroVencimento: doItem.map((p) => p.vencimento).filter(Boolean).sort()[0] || ''
+          });
+          return Object.assign({}, it, { compra: k });
+        });
+      }
+      await D.salvar('contratos', Object.assign({}, contrato, mudancas));
       j.fechar();
       aviso('Parcelas salvas');
     });
@@ -566,6 +694,7 @@
   function tabelaParcelas(c, lado) {
     const ehVenda = lado === 'venda';
     const parcelas = (c[lado] && c[lado].parcelas) || [];
+    const porLicenca = !ehVenda && c.compra && c.compra.porLicenca;
     if (!parcelas.length) return '<p class="texto-suave" style="margin:0">Sem parcelas.</p>';
     const hoje = calc.hoje();
     return (
@@ -574,7 +703,8 @@
         .map((p, i) => {
           const atrasada = !p.pago && p.vencimento && p.vencimento < hoje;
           return (
-            '<tr><td>' + (i + 1) + '</td><td>' + dataBR(p.vencimento) + (atrasada ? ' <span class="selo critico">atrasada</span>' : '') + '</td>' +
+            '<tr><td>' + (i + 1) + '</td><td>' + dataBR(p.vencimento) + (atrasada ? ' <span class="selo critico">atrasada</span>' : '') +
+            (porLicenca ? '<div class="texto-suave" style="font-size:.78rem">' + esc((GAH.itemDaParcela(c, p) || {}).produto || '') + '</div>' : '') + '</td>' +
             (ehVenda ? '<td>' + esc(p.nf || '—') + '</td>' : '') +
             '<td class="valor">' + moeda(p.valor) + '</td>' +
             '<td><label class="parcela-check"><input type="checkbox" data-parcela="' + esc(c.id) + '|' + lado + '|' + i + '"' + (p.pago ? ' checked' : '') + '> ' + (p.pago ? (p.dataPagamento ? dataBR(p.dataPagamento).slice(0, 6) + p.dataPagamento.slice(2, 4) : 'sim') : 'aberta') + '</label></td></tr>'
@@ -619,6 +749,12 @@
       '<div class="progresso" title="' + Math.round(percPag) + '% pago"><i style="width:' + percPag + '%;background:var(--navy-suave)"></i></div>' +
       '<div class="texto-suave" style="font-size:.85rem">' + s.parcelasPagas + ' de ' + s.totalParcelasCompra + ' parcela(s) paga(s)' + (s.parcelasPagar ? ' · faltam ' + s.parcelasPagar : '') + '</div>' +
       (GAH.textoMeioCompra(c.compra) ? '<div class="meio-compra">' + esc(GAH.textoMeioCompra(c.compra)) + '</div>' : '') +
+      (c.compra && c.compra.porLicenca
+        ? '<ul class="compras-licenca">' + GAH.comprasPorLicenca(c).map((x) =>
+            '<li><b>' + esc([x.item.produto, x.item.fornecedor].filter(Boolean).join(' · ') || 'Licença') + '</b>' +
+            '<span>' + esc([x.forma, x.meio].filter(Boolean).join(' · ')) + '</span>' +
+            '<span>Compra ' + moeda(x.total) + ' · pago ' + moeda(x.pago) + ' · <span class="' + (x.aPagar > 0 ? 'negativo' : 'positivo') + '">falta ' + moeda(x.aPagar) + '</span></span></li>').join('') + '</ul>'
+        : '') +
       '<details data-chave="' + esc(c.id) + '-compra"><summary>Ver parcelas</summary>' + tabelaParcelas(c, 'compra') + '<p style="margin:8px 0 0"><button type="button" class="link-botao" data-editar-parcelas="' + esc(c.id) + '|compra">Editar valores e datas</button></p></details>' +
       '</section></div>' +
       '<div class="resultado"><span>Imposto NF (' + (calc.num(c.venda && c.venda.aliquotaNF)).toLocaleString('pt-BR') + '%): <b>' + moeda(s.impostoNF) + '</b></span>' +
@@ -707,7 +843,7 @@
       const obsAdiado = c.adiadoMeses ? ' · adiado (aguardando entrega)' : '';
       // parcelas a receber não entram: o órgão paga antes ou depois do vencimento, então a data não serve de lembrete
       ((c.compra && c.compra.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (c.fornecedor || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
+        if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (((GAH.itemDaParcela(c, p) || {}).fornecedor) || c.fornecedor || ((GAH.itemDaParcela(c, p) || {}).produto) || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
       });
       // já renovado: com as licenças novas entregues não há o que fazer; sem entregar, o aviso vira "entregar licenças"
       const renovacao = ren.porAnterior[c.id] && ren[ren.porAnterior[c.id]];

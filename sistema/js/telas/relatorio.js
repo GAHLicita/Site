@@ -115,7 +115,8 @@
       [{ t: 'Data' }, { t: 'Fabricante / licença' }, { t: 'Órgão' }, { t: 'Parcela' }, { t: 'Pago com' }, { t: 'Entrega' }, { t: 'Valor', valor: 1 }],
       r.pagamentos.map((x) => {
         const c = contrato(x.contratoId);
-        return '<tr><td>' + dataBR(x.data) + '</td><td>' + esc(licenca(c)) + '</td><td>' + esc(nomeCliente(c.clienteId)) + '</td><td>' + x.parcela + '</td><td>' + esc(GAH.textoMeioCompra(c.compra) || '—') +
+        const it = GAH.itemDaParcela(c, x) || null;
+        return '<tr><td>' + dataBR(x.data) + '</td><td>' + esc(licenca(it || c)) + '</td><td>' + esc(nomeCliente(c.clienteId)) + '</td><td>' + x.parcela + '</td><td>' + esc(GAH.textoMeioCompra(it ? it.compra : c.compra) || '—') +
           '</td><td>' + seloEntrega(x.entregue) + '</td><td class="valor">' + moeda(x.valor) + '</td></tr>';
       }),
       '<tr><td colspan="6">Total</td><td class="valor">' + moeda(t.pago) + '</td></tr>',
@@ -151,7 +152,7 @@
     sec('Recebimentos dos órgãos', ['Data', 'Órgão', 'Licença', 'Parcela', 'NF', 'Valor'],
       r.recebimentos.map((x) => { const c = contrato(x.contratoId); return [dataBR(x.data), nomeCliente(c.clienteId), c.produto, x.parcela, x.nf, n(x.valor)]; }));
     sec('Pagamentos das licenças', ['Data', 'Fabricante', 'Licença', 'Órgão', 'Parcela', 'Entrega', 'Valor'],
-      r.pagamentos.map((x) => { const c = contrato(x.contratoId); return [dataBR(x.data), c.fornecedor, c.produto, nomeCliente(c.clienteId), x.parcela, x.entregue ? 'Entregue' : 'Pendente', n(x.valor)]; }));
+      r.pagamentos.map((x) => { const c = contrato(x.contratoId); const it = GAH.itemDaParcela(c, x) || c; return [dataBR(x.data), it.fornecedor, it.produto, nomeCliente(c.clienteId), x.parcela, x.entregue ? 'Entregue' : 'Pendente', n(x.valor)]; }));
     sec('Impostos', ['Vencimento', 'Guia', 'Competência', 'Pago', 'Data do pagamento', 'Valor'],
       r.impostos.map((x) => [dataBR(x.data), x.descricao, x.competencia ? mesBR(x.competencia) : '', x.pago ? 'Sim' : 'Não', x.dataPagamento ? dataBR(x.dataPagamento) : '', n(x.valor)]));
     sec('Despesas e custos', ['Vencimento', 'Descrição', 'Categoria', 'Pago', 'Data do pagamento', 'Valor'],

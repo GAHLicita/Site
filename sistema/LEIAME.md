@@ -107,6 +107,12 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- **Compra por licença**: em "Compra da licença", escolha "Cada licença com a sua forma de pagamento" quando
+  o contrato tiver licenças compradas de jeitos diferentes (uma à vista, outra parcelada). Cada licença, em
+  "Licenças do contrato", ganha a sua compra: forma, valor, nº de parcelas, 1º pagamento e com o que foi paga.
+  As parcelas de todas as licenças formam a compra do contrato (pago e falta pagar), e o quadro do contrato
+  mostra o pago e o que falta de cada licença. O lucro de cada fabricante usa a compra real das licenças dele.
+
 - **Entrega das licenças**: contrato novo fica "Pendente de entrega". Quando entregar, clique em
   **Licenças entregues** (na lista de Contratos ou no contrato, na ficha do órgão) ou escolha "Entregue" no
   formulário. Pendente ou entregue, o contrato já conta em todo o Início na visão "Total".
