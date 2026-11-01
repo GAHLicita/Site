@@ -46,11 +46,12 @@
       '<select class="filtro" id="cli-sit" aria-label="Situação">' + opcoes([['ativos', 'Com contrato vigente'], ['receber', 'Com valor a receber'], ['atraso', 'Com pagamento atrasado'], ['pagar', 'Com compra a pagar']], filtro.situacao, 'Todas as situações') + '</select>' +
       '</div></div>' +
       (linhas.length
-        ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-clientes"><thead><tr><th>Órgão</th><th>Contato principal</th><th class="valor">Contratos</th><th>Próximo fim de vigência</th><th class="valor">A receber</th><th class="valor">A pagar</th><th>Drive</th></tr></thead><tbody>' +
-          linhas.map(({ c, r }) => {
+        ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-clientes"><thead><tr><th class="num-ordem">Nº</th><th>Órgão</th><th>Contato principal</th><th class="valor">Contratos</th><th>Próximo fim de vigência</th><th class="valor">A receber</th><th class="valor">A pagar</th><th>Drive</th></tr></thead><tbody>' +
+          // número só de ordem (alfabética, na lista mostrada): muda quando entra um órgão novo ou ao filtrar
+          linhas.map(({ c, r }, i) => {
             const ct = (c.contatos || [])[0] || {};
             const drive = linkSeguro(c.linkDrive);
-            return '<tr class="clicavel" data-id="' + esc(c.id) + '"><td><span class="nome">' + esc(c.nome) + '</span><span class="sub">' + esc([c.cidade, c.uf].filter(Boolean).join(' / ')) + '</span></td>' +
+            return '<tr class="clicavel" data-id="' + esc(c.id) + '"><td class="num-ordem">' + (i + 1) + '</td><td><span class="nome">' + esc(c.nome) + '</span><span class="sub">' + esc([c.cidade, c.uf].filter(Boolean).join(' / ')) + '</span></td>' +
               '<td>' + (ct.nome ? esc(ct.nome) + '<span class="sub">' + esc(ct.telefone || ct.email || '') + '</span>' : '<span class="texto-suave">—</span>') + '</td>' +
               '<td class="valor">' + r.ativos + ' / ' + r.contratos + '</td>' +
               '<td>' + (r.proximoFim ? dataBR(r.proximoFim) : '<span class="texto-suave">—</span>') + '</td>' +

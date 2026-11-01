@@ -899,3 +899,6 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .tabela-relatorio tr { break-inside: avoid; }
   .secao-relatorio .painel-cab { break-after: avoid; }
 }
+
+/* Clientes: número de ordem antes do nome */
+.tabela-clientes .num-ordem { width: 1%; white-space: nowrap; text-align: right; color: var(--tinta-2); font-variant-numeric: tabular-nums; padding-right: 4px; }
