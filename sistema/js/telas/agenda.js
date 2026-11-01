@@ -1,4 +1,4 @@
-/* Tela Agenda: calendário do mês com compromissos, disputas e fins de vigência. */
+/* Tela Agenda: calendário do mês com compromissos, disputas, despesas a pagar e fins de vigência. */
 (function () {
   const { esc, dataBR, opcoes, janela, lerForm, aviso, botaoExcluir, MESES, MESES_CURTOS } = GAH.u;
   const calc = GAH.calc;
@@ -61,7 +61,7 @@
     }
     const pend = D.lista('agenda').concat(D.lista('licitacoes')).filter((x) => x.googlePendente).length;
     return '<div class="faixa-google conectado"><span class="g-logo" aria-hidden="true">G</span><span><b>Google Agenda sincronizado.</b> ' +
-      (estado.google.erro ? '<span class="negativo">' + esc(estado.google.erro) + '</span>' : 'Compromissos, disputas e fins de vigência vão para o Google, e os eventos do Google aparecem aqui.') +
+      (estado.google.erro ? '<span class="negativo">' + esc(estado.google.erro) + '</span>' : 'Compromissos, disputas, despesas a pagar e fins de vigência vão para o Google, e os eventos do Google aparecem aqui.') +
       (pend ? ' ' + pend + ' pendente(s).' : '') + '</span>' +
       '<button type="button" class="botao secundario pequeno" id="g-sincronizar">Sincronizar agora</button><button type="button" class="link-botao" id="g-desconectar">Desconectar</button></div>';
   }
@@ -104,16 +104,16 @@
     }
 
     main.innerHTML =
-      '<div class="cabecalho-tela"><div><h1>Agenda</h1><p>Disputas, reuniões e prazos. Fins de vigência e disputas das licitações entram sozinhos.</p></div>' +
+      '<div class="cabecalho-tela"><div><h1>Agenda</h1><p>Disputas, reuniões e prazos. Despesas a pagar, fins de vigência e disputas das licitações entram sozinhos.</p></div>' +
       '<div class="acoes"><button class="botao" id="novo-ag">+ Novo compromisso</button></div></div>' +
       faixaGoogle() +
       '<div class="grade grade-lateral">' +
       '<section class="painel"><div class="painel-cab"><div class="acoes"><button class="botao secundario pequeno" id="mes-ant" aria-label="Mês anterior">‹</button>' +
       '<h2 style="min-width:170px;text-align:center">' + MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1) + ' ' + ano + '</h2>' +
       '<button class="botao secundario pequeno" id="mes-prox" aria-label="Próximo mês">›</button><button class="botao secundario pequeno" id="mes-hoje">Hoje</button></div>' +
-      '<label class="parcela-check"><input type="checkbox" id="ag-auto"' + (estado.automaticos ? ' checked' : '') + '> Mostrar fins de vigência e disputas</label></div>' +
+      '<label class="parcela-check"><input type="checkbox" id="ag-auto"' + (estado.automaticos ? ' checked' : '') + '> Mostrar lançamentos automáticos</label></div>' +
       '<div class="tabela-rolagem"><div class="calendario">' + grade + '</div></div>' +
-      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
+      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
       '</section>' +
       '<section class="painel painel-proximos"><div class="proximos-dentro"><div class="painel-cab"><h2>Próximos 30 dias</h2>' + (proximos.length ? '<span class="sub">' + proximos.length + ' item(ns)</span>' : '') + '</div>' +
       (proximos.length

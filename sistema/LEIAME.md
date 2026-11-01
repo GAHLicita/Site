@@ -78,9 +78,10 @@ link para criar uma senha nova.
   do contrato atual até você clicar em **Licenças entregues**; daí passa a mostrar a nova vigência.
   Para lançar uma renovação, abra o contrato atual e clique em **Renovar**: o formulário já vem com o
   mesmo órgão, licença, fabricante e valores, e a vigência começando no dia seguinte ao fim do atual.
-- **Agenda**: calendário com disputas, reuniões e prazos. Fins de vigência e datas de disputa das
-  licitações entram sozinhos. Parcelas a receber e pagamentos a fazer (compras, custos fixos, contador) não
-  entram: recebimentos e pagamentos são marcados no contrato, em Despesas e em Contabilidade.
+- **Agenda**: calendário com disputas, reuniões e prazos. Entram sozinhos: fins de vigência, datas de
+  disputa das licitações e as despesas ainda não pagas no dia do vencimento (despesas avulsas, custos fixos,
+  mensalidade do contador e guias da Contabilidade), que somem quando marcadas como pagas. Parcelas a receber
+  e parcelas da compra das licenças não entram.
 - **Licitações**: editais em análise, propostas, disputas, ganhas e perdidas. Uma licitação
   ganha vira contrato com um clique.
 - **Despesas**: todos os gastos da empresa num lugar só. Mostra o que foi gasto em cada mês (custos
@@ -151,8 +152,8 @@ node --test sistema/testes/calculos.test.js
 O que o sistema faz depois de ligado:
 - Compromissos da Agenda e datas de disputa das Licitações vão para o Google Agenda da conta
   contato@gahlicita.com.br (disputas em azul). Alterar ou excluir no sistema altera ou exclui no Google.
-- Os fins de vigência também vão, do dia de hoje em diante (vermelho). Parcelas a receber e pagamentos a
-  fazer não vão.
+- Os fins de vigência (vermelho) e as despesas a pagar (laranja) também vão, do dia de hoje em diante.
+  Parcelas a receber e parcelas da compra das licenças não vão.
 - **Alarmes**: só as disputas (licitações e compromissos do tipo Disputa com horário) avisam no celular,
   15 minutos antes. Fins de vigência, pagamentos e os demais compromissos ficam no Google sem alarme. Quando uma parcela é
   paga ou uma data muda no sistema, o Google é atualizado sozinho em alguns segundos. Esses eventos

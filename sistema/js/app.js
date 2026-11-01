@@ -839,13 +839,39 @@
     for (const c of D.lista('contratos')) {
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
-      // parcelas a receber e pagamentos a fazer não entram: a Agenda fica com fins de vigência, disputas e compromissos
+      // parcelas a receber e parcelas da compra das licenças não entram na Agenda
       // já renovado: com as licenças novas entregues não há o que fazer; sem entregar, o aviso vira "entregar licenças"
       const renovacao = ren.porAnterior[c.id] && ren[ren.porAnterior[c.id]];
       if (c.vigenciaFim && c.status !== 'encerrado' && !(renovacao && !renovacao.pendente)) {
         ev.push(renovacao
           ? { chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Entregar licenças da renovação — ' + orgao, detalhe: c.produto + ' · renovação já contratada, entregar até o fim da vigência atual', link: '#/contratos' }
           : { chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
+      }
+    }
+    // despesas a pagar: avulsas, custos fixos, mensalidade do contador e guias da Contabilidade ainda não pagas,
+    // no dia do vencimento (para não esquecer de pagar)
+    const ateProximoMes = calc.mesDe(calc.addMeses(calc.mesDe(calc.hoje()) + '-01', 1));
+    for (const k of calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateProximoMes)) {
+      if (!k.pago) ev.push({ chave: k.origem === 'custos' ? 'custo:' + k.custoId + ':' + k.mes : 'contador:' + k.mes, data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: k.categoria, link: '#/despesas', valor: k.valor });
+    }
+    // mensalidade do contador ainda não lançada (mês atual e próximo): vem do honorário e do dia de vencimento do escritório
+    const escritorio = D.obter('contabilidade', 'escritorio') || {};
+    if (calc.num(escritorio.honorario) > 0) {
+      [calc.mesDe(calc.hoje()), ateProximoMes].forEach((mes) => {
+        const ms = (D.obter('contabilidade', mes) || {}).mensalidade || {};
+        if (ms.pago || ev.some((e) => e.chave === 'contador:' + mes)) return;
+        const dia = String(Math.min(Number(escritorio.diaVencimento) || 10, 28)).padStart(2, '0');
+        ev.push({ chave: 'contador:' + mes, data: mes + '-' + dia, tipo: 'pagar', titulo: 'Pagar ' + moeda(escritorio.honorario) + ' — Mensalidade do contador', detalhe: 'Contabilidade', link: '#/contabilidade', valor: escritorio.honorario });
+      });
+    }
+    for (const d of GAH.despesasLancadas()) {
+      // a guia lançada nas Despesas já entra abaixo, pela Contabilidade
+      if (!d.pago && d.data && !String(d.id || '').startsWith('guia-')) ev.push({ chave: 'despesa:' + d.id, data: d.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(d.valor) + ' — ' + (d.descricao || 'Despesa'), detalhe: d.categoria || '', link: '#/despesas', valor: d.valor });
+    }
+    for (const m of D.lista('contabilidade')) {
+      if (!/^\d{4}-\d{2}$/.test(m.id)) continue;
+      for (const g of m.documentos || []) {
+        if (!g.pago && g.vencimento && calc.num(g.valor) > 0) ev.push({ chave: 'guia:' + g.id, data: g.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(g.valor) + ' — ' + (g.tipo || 'Guia') + (g.descricao ? ' (' + g.descricao + ')' : ''), detalhe: 'Contabilidade · ' + mesBR(m.id), link: '#/contabilidade', valor: g.valor });
       }
     }
     for (const l of D.lista('licitacoes')) {
