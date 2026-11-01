@@ -78,9 +78,9 @@ link para criar uma senha nova.
   do contrato atual até você clicar em **Licenças entregues**; daí passa a mostrar a nova vigência.
   Para lançar uma renovação, abra o contrato atual e clique em **Renovar**: o formulário já vem com o
   mesmo órgão, licença, fabricante e valores, e a vigência começando no dia seguinte ao fim do atual.
-- **Agenda**: calendário com disputas, reuniões e prazos. Pagamentos a fazer (compras, custos fixos,
-  contador), fins de vigência e datas de disputa das licitações entram sozinhos. Parcelas a receber não
-  entram: o órgão paga antes ou depois do vencimento, e o recebimento é marcado no contrato.
+- **Agenda**: calendário com disputas, reuniões e prazos. Fins de vigência e datas de disputa das
+  licitações entram sozinhos. Parcelas a receber e pagamentos a fazer (compras, custos fixos, contador) não
+  entram: recebimentos e pagamentos são marcados no contrato, em Despesas e em Contabilidade.
 - **Licitações**: editais em análise, propostas, disputas, ganhas e perdidas. Uma licitação
   ganha vira contrato com um clique.
 - **Despesas**: todos os gastos da empresa num lugar só. Mostra o que foi gasto em cada mês (custos
@@ -151,8 +151,8 @@ node --test sistema/testes/calculos.test.js
 O que o sistema faz depois de ligado:
 - Compromissos da Agenda e datas de disputa das Licitações vão para o Google Agenda da conta
   contato@gahlicita.com.br (disputas em azul). Alterar ou excluir no sistema altera ou exclui no Google.
-- Os lançamentos automáticos também vão, do dia de hoje em diante: parcelas e custos a pagar,
-  mensalidade do contador (laranja) e fins de vigência (vermelho). Parcelas a receber não vão.
+- Os fins de vigência também vão, do dia de hoje em diante (vermelho). Parcelas a receber e pagamentos a
+  fazer não vão.
 - **Alarmes**: só as disputas (licitações e compromissos do tipo Disputa com horário) avisam no celular,
   15 minutos antes. Fins de vigência, pagamentos e os demais compromissos ficam no Google sem alarme. Quando uma parcela é
   paga ou uma data muda no sistema, o Google é atualizado sozinho em alguns segundos. Esses eventos

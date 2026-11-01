@@ -836,15 +836,10 @@
   GAH.eventosAutomaticos = function () {
     const ev = [];
     const ren = calc.renovacoes(D.lista('contratos'), calc.hoje());
-    // contratos fechados e não entregues: vencimentos acompanham o adiamento (mesma regra do Início)
-    for (const c of calc.adiarNaoEntregues(D.lista('contratos'), calc.hoje())) {
+    for (const c of D.lista('contratos')) {
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
-      const obsAdiado = c.adiadoMeses ? ' · adiado (aguardando entrega)' : '';
-      // parcelas a receber não entram: o órgão paga antes ou depois do vencimento, então a data não serve de lembrete
-      ((c.compra && c.compra.parcelas) || []).forEach((p, i) => {
-        if (!p.pago && p.vencimento) ev.push({ chave: 'pagar:' + c.id + ':' + i, data: p.vencimento, tipo: 'pagar', titulo: 'Pagar ' + moeda(p.valor) + ' — ' + (((GAH.itemDaParcela(c, p) || {}).fornecedor) || c.fornecedor || ((GAH.itemDaParcela(c, p) || {}).produto) || c.produto), detalhe: orgao + ' · parcela ' + (i + 1) + '/' + c.compra.parcelas.length + obsAdiado, link: '#/clientes/' + c.clienteId, valor: p.valor });
-      });
+      // parcelas a receber e pagamentos a fazer não entram: a Agenda fica com fins de vigência, disputas e compromissos
       // já renovado: com as licenças novas entregues não há o que fazer; sem entregar, o aviso vira "entregar licenças"
       const renovacao = ren.porAnterior[c.id] && ren[ren.porAnterior[c.id]];
       if (c.vigenciaFim && c.status !== 'encerrado' && !(renovacao && !renovacao.pendente)) {
@@ -852,10 +847,6 @@
           ? { chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Entregar licenças da renovação — ' + orgao, detalhe: c.produto + ' · renovação já contratada, entregar até o fim da vigência atual', link: '#/contratos' }
           : { chave: 'vigencia:' + c.id, data: c.vigenciaFim, tipo: 'renovacao', titulo: 'Fim da vigência — ' + orgao, detalhe: c.produto + ' · hora de negociar a renovação', link: '#/clientes/' + c.clienteId });
       }
-    }
-    const ateProximoMes = calc.mesDe(calc.addMeses(calc.mesDe(calc.hoje()) + '-01', 1));
-    for (const k of calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateProximoMes)) {
-      if (!k.pago) ev.push({ chave: k.origem === 'custos' ? 'custo:' + k.custoId + ':' + k.mes : 'contador:' + k.mes, data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: k.categoria, link: '#/despesas', valor: k.valor });
     }
     for (const l of D.lista('licitacoes')) {
       if (l.dataDisputa && ['analise', 'proposta', 'disputa'].includes(l.status)) ev.push({ chave: 'disputa:' + l.id, data: l.dataDisputa, hora: l.horaDisputa, tipo: 'disputa', titulo: 'Disputa — ' + (l.orgao || 'licitação'), detalhe: [l.numeroEdital, l.portal].filter(Boolean).join(' · '), link: '#/licitacoes' });

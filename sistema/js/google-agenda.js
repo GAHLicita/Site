@@ -1,8 +1,7 @@
 /* Sincronização com o Google Agenda (conta contato@gahlicita.com.br), nos dois sentidos.
    - Sistema → Google: compromissos da Agenda e datas de disputa das Licitações viram eventos no Google.
-     Os lançamentos automáticos (parcelas a pagar, fins de vigência, custos e mensalidade do contador) também
-     vão, do dia de hoje em diante, sem alarme, e somem do Google quando forem pagos ou mudarem. Parcelas a
-     receber não vão. Disputas avisam 15 minutos antes do horário.
+     Os fins de vigência também vão, do dia de hoje em diante, sem alarme. Parcelas a receber e pagamentos a
+     fazer (compras, custos fixos, contador) não vão; os que já estavam no Google saem na próxima sincronização. Disputas avisam 15 minutos antes do horário.
    - Google → Sistema: os eventos do Google aparecem no calendário do sistema; se um evento criado pelo
      sistema for alterado ou apagado no Google, o compromisso do sistema acompanha.
    Usa o login do Google no navegador (Google Identity Services) e a Google Calendar API.
@@ -159,8 +158,8 @@
   }
 
   /* ---------- lançamentos automáticos: vencimentos, fins de vigência e custos ---------- */
-  const COR_AUTO = { pagar: '6', renovacao: '11' };
-  const ROTULO_AUTO = { pagar: 'A pagar', renovacao: 'Fim de vigência' };
+  const COR_AUTO = { renovacao: '11' };
+  const ROTULO_AUTO = { renovacao: 'Fim de vigência' };
   // Id fixo por lançamento (o Google aceita letras de a a v e números): o mesmo vencimento nunca vira dois eventos.
   function idAuto(chave) {
     return 'gah' + Array.from(new TextEncoder().encode(chave), (b) => b.toString(16).padStart(2, '0')).join('');
