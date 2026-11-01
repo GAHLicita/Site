@@ -259,10 +259,10 @@
       '<div class="campo"><label>Valor de venda</label><input data-it="valor" type="number" step="0.01" min="0" value="' + esc(it.valor) + '"></div>' +
       '</div>' +
       '<div class="form-grade item-compra"><h4 class="largo">Compra desta licença</h4>' +
-      '<div class="campo"><label>Forma de pagamento</label><select data-ik="forma">' + opcoes(FORMAS_COMPRA, k.forma || 'avista') + '</select></div>' +
+      '<div class="campo" data-ik-sem-cartao><label>Forma de pagamento</label><select data-ik="forma">' + opcoes(FORMAS_COMPRA, k.forma || 'avista') + '</select></div>' +
       '<div class="campo"><label>Valor pago na compra</label><input data-ik="valorTotal" type="number" step="0.01" min="0" value="' + esc(k.valorTotal) + '"></div>' +
       '<div class="campo" data-ik-parcelas><label>Nº de parcelas</label><input data-ik="qtdParcelas" type="number" min="1" max="120" value="' + esc(k.qtdParcelas || 1) + '"></div>' +
-      '<div class="campo"><label>1º pagamento</label><input data-ik="primeiroVencimento" type="date" value="' + esc(k.primeiroVencimento) + '"></div>' +
+      '<div class="campo" data-ik-sem-cartao><label>1º pagamento</label><input data-ik="primeiroVencimento" type="date" value="' + esc(k.primeiroVencimento) + '"></div>' +
       '<div class="campo"><label>Pago com</label><select data-ik="meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-ik-meio="dolar"><label>Valor em dólar (US$)</label><input data-ik="valorDolar" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
       '<div class="campo" data-ik-meio="dolar"><label>Cotação usada (R$ por US$)</label><input data-ik="cotacaoDolar" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
@@ -270,6 +270,7 @@
       '<div class="campo" data-ik-meio="cartao"><label>Bandeira</label><select data-ik="bandeira">' + opcoes(BANDEIRAS, cartao.bandeira || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-ik-meio="cartao"><label>Final do cartão (4 últimos dígitos)</label><input data-ik="final" inputmode="numeric" maxlength="4" value="' + esc(cartao.final) + '" placeholder="0000"></div>' +
       '<div class="campo" data-ik-meio="cartao"><label>Parcelas no cartão</label><input data-ik="parcelasCartao" type="number" min="1" max="24" value="' + esc(cartao.parcelas) + '" placeholder="1"></div>' +
+      '<div class="campo" data-ik-meio="cartao"><label>Vencimento da fatura</label><input data-ik="vencimentoFatura" type="date" value="' + esc(cartao.vencimentoFatura) + '"><span class="ajuda">Fica a pagar até você marcar como paga, quando pagar a fatura.</span></div>' +
       '</div>' +
       '<div><button type="button" class="link-botao" data-remover-item>Remover licença</button></div>' +
       '</div>';
@@ -281,17 +282,25 @@
       const o = { id: l.dataset.itemId };
       l.querySelectorAll('[data-it]').forEach((i) => (o[i.dataset.it] = i.type === 'number' ? (i.value === '' ? '' : Number(i.value)) : i.value.trim()));
       const v = (k) => { const i = l.querySelector('[data-ik="' + k + '"]'); return i ? i.value.trim() : ''; };
-      const forma = v('forma') || 'avista';
+      let forma = v('forma') || 'avista';
       const meio = v('meio');
+      let qtd = forma === 'avista' ? 1 : Math.max(1, Number(v('qtdParcelas')) || 1);
+      let primeiro = v('primeiroVencimento');
+      // cartão com vencimento da fatura: uma parcela por fatura (parcelas no cartão), a 1ª no vencimento informado
+      if (meio === 'cartao' && v('vencimentoFatura')) {
+        qtd = Math.max(1, Number(v('parcelasCartao')) || 1);
+        forma = qtd > 1 ? 'parcelado' : 'avista';
+        primeiro = v('vencimentoFatura');
+      }
       o.compra = {
         forma,
         valorTotal: v('valorTotal') === '' ? '' : Number(v('valorTotal')),
-        qtdParcelas: forma === 'avista' ? 1 : Math.max(1, Number(v('qtdParcelas')) || 1),
-        primeiroVencimento: v('primeiroVencimento'),
+        qtdParcelas: qtd,
+        primeiroVencimento: primeiro,
         meio,
         valorDolar: meio === 'dolar' && v('valorDolar') !== '' ? Number(v('valorDolar')) : '',
         cotacaoDolar: meio === 'dolar' && v('cotacaoDolar') !== '' ? Number(v('cotacaoDolar')) : '',
-        cartao: meio === 'cartao' ? { banco: v('banco'), bandeira: v('bandeira'), final: v('final').replace(/\D/g, '').slice(-4), parcelas: v('parcelasCartao') === '' ? '' : Number(v('parcelasCartao')) } : null
+        cartao: meio === 'cartao' ? { banco: v('banco'), bandeira: v('bandeira'), final: v('final').replace(/\D/g, '').slice(-4), parcelas: v('parcelasCartao') === '' ? '' : Number(v('parcelasCartao')), vencimentoFatura: v('vencimentoFatura') } : null
       };
       return o;
     }).filter((o) => o.produto || o.fornecedor || o.valor || o.compra.valorTotal);
@@ -325,7 +334,7 @@
     if (k.meio === 'real') return 'Pago em real';
     if (k.meio === 'dolar') return 'Pago em dólar' + (k.valorDolar ? ': US$ ' + Number(k.valorDolar).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '') + (k.cotacaoDolar ? ' (cotação R$ ' + Number(k.cotacaoDolar).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ')' : '');
     const c = k.cartao || {};
-    return 'Cartão de crédito' + [c.banco, c.bandeira, c.final ? 'final ' + c.final : '', c.parcelas > 1 ? c.parcelas + 'x' : ''].filter(Boolean).map((x) => ' · ' + x).join('');
+    return 'Cartão de crédito' + [c.banco, c.bandeira, c.final ? 'final ' + c.final : '', c.parcelas > 1 ? c.parcelas + 'x' : '', c.vencimentoFatura ? 'fatura vence ' + dataBR(c.vencimentoFatura) : ''].filter(Boolean).map((x) => ' · ' + x).join('');
   };
 
   GAH.formContrato = function (contrato, opcoesForm) {
@@ -388,10 +397,10 @@
       '<div class="form-secao"><h3>Compra da licença (pagamento ao fornecedor)</h3><div class="form-grade" data-ignorar>' +
       '<div class="campo largo"><label for="k-modo">Como foi a compra</label><select id="k-modo">' + opcoes([['unica', 'Uma compra só, para o contrato todo'], ['licenca', 'Cada licença com a sua forma de pagamento']], k.porLicenca ? 'licenca' : 'unica') + '</select>' +
       '<span class="ajuda" id="k-nota-licenca">Informe a compra de cada licença (à vista ou parcelada, valor, 1º pagamento e com o que foi paga) em "Licenças do contrato", acima.</span></div>' +
-      '<div class="campo" data-compra-unica><label for="k-forma">Forma de pagamento</label><select id="k-forma">' + opcoes(FORMAS_COMPRA, k.forma) + '</select></div>' +
+      '<div class="campo" data-compra-unica data-sem-cartao><label for="k-forma">Forma de pagamento</label><select id="k-forma">' + opcoes(FORMAS_COMPRA, k.forma) + '</select></div>' +
       '<div class="campo" data-compra-unica><label for="k-valor">Valor total pago na compra</label><input id="k-valor" type="number" step="0.01" min="0" value="' + esc(k.valorTotal) + '"></div>' +
-      '<div class="campo" id="k-qtd-campo" data-compra-unica><label for="k-qtd">Nº de parcelas</label><input id="k-qtd" type="number" min="1" max="120" value="' + esc(qtdK) + '"></div>' +
-      '<div class="campo" data-compra-unica><label for="k-venc">1º pagamento</label><input id="k-venc" type="date" value="' + esc(k.primeiroVencimento || (k.parcelas && k.parcelas[0] && k.parcelas[0].vencimento) || '') + '"></div>' +
+      '<div class="campo" id="k-qtd-campo" data-compra-unica data-sem-cartao><label for="k-qtd">Nº de parcelas</label><input id="k-qtd" type="number" min="1" max="120" value="' + esc(qtdK) + '"></div>' +
+      '<div class="campo" data-compra-unica data-sem-cartao><label for="k-venc">1º pagamento</label><input id="k-venc" type="date" value="' + esc(k.primeiroVencimento || (k.parcelas && k.parcelas[0] && k.parcelas[0].vencimento) || '') + '"></div>' +
       '<div class="campo"><label for="k-aliq">Imposto na compra (%)</label><input id="k-aliq" type="number" step="0.01" min="0" value="' + esc(k.aliquotaCompra) + '"><span class="ajuda">IOF, câmbio ou outro custo sobre a compra.</span></div>' +
       // como a compra foi paga: dinheiro em real, dinheiro em dólar ou cartão de crédito (banco, bandeira, final)
       '<div class="campo" data-compra-unica><label for="k-meio">Pago com</label><select id="k-meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
@@ -401,6 +410,7 @@
       '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-bandeira">Bandeira</label><select id="k-bandeira">' + opcoes(BANDEIRAS, (k.cartao || {}).bandeira || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-final">Final do cartão (4 últimos dígitos)</label><input id="k-final" inputmode="numeric" maxlength="4" value="' + esc((k.cartao || {}).final) + '" placeholder="0000"><span class="ajuda">Só os 4 últimos números. Nunca o número inteiro.</span></div>' +
       '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-parcartao">Parcelas no cartão</label><input id="k-parcartao" type="number" min="1" max="24" value="' + esc((k.cartao || {}).parcelas) + '" placeholder="1"></div>' +
+      '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-fatura">Vencimento da fatura</label><input id="k-fatura" type="date" value="' + esc((k.cartao || {}).vencimentoFatura) + '"><span class="ajuda">A compra fica em "a pagar" até você marcar como paga, quando pagar a fatura. Parcelado no cartão: as demais vencem nas faturas dos meses seguintes.</span></div>' +
       '</div></div>' +
       '<div class="previa" id="previa-contrato"></div>' +
       '<div class="campo" style="margin-top:12px"><label for="ct-obs">Observações</label><textarea id="ct-obs" name="observacoes">' + esc(c.observacoes) + '</textarea></div>' +
@@ -422,6 +432,12 @@
       let qK = formaK === 'avista' ? 1 : Math.max(1, Number($('#k-qtd').value) || 1);
       let totalK = Number($('#k-valor').value) || 0;
       let vencK = $('#k-venc').value;
+      // cartão com vencimento da fatura: uma parcela por fatura, a 1ª no vencimento informado
+      if (!porLicenca && $('#k-meio').value === 'cartao' && $('#k-fatura').value) {
+        qK = Math.max(1, Number($('#k-parcartao').value) || 1);
+        formaK = qK > 1 ? 'parcelado' : 'avista';
+        vencK = $('#k-fatura').value;
+      }
       if (porLicenca) {
         const compras = lerItens($('#ct-itens')).map((i) => i.compra);
         formaK = 'porLicenca';
@@ -438,7 +454,7 @@
     function atualizar() {
       const t = termos();
       $('#v-qtd-campo').hidden = t.formaV === 'integral';
-      $('#k-qtd-campo').hidden = t.formaK === 'avista' || t.porLicenca;
+      $('#k-qtd-campo').hidden = t.formaK === 'avista' || t.porLicenca || $('#k-meio').value === 'cartao';
       $('#v-valor-rotulo').textContent = t.formaV === 'mensal' ? 'Valor por mês' : 'Valor total de venda';
       $('#v-qtd-rotulo').textContent = t.formaV === 'mensal' ? 'Quantidade de meses' : 'Nº de parcelas';
       const impV = (t.totalV * t.aliqV) / 100;
@@ -466,10 +482,13 @@
       $('#k-nota-licenca').hidden = !porLicenca;
       j.el.querySelectorAll('[data-compra-unica]').forEach((el) => (el.hidden = porLicenca || (el.dataset.meio ? el.dataset.meio !== $('#k-meio').value : false)));
       if (!porLicenca) $('#k-qtd-campo').hidden = $('#k-forma').value === 'avista';
+      // no cartão, forma, parcelas e 1º pagamento vêm das parcelas no cartão e do vencimento da fatura
+      if (!porLicenca && $('#k-meio').value === 'cartao') j.el.querySelectorAll('[data-sem-cartao]').forEach((el) => (el.hidden = true));
       j.el.querySelectorAll('.item-linha').forEach((l) => {
         const meio = l.querySelector('[data-ik="meio"]').value;
         l.querySelectorAll('[data-ik-meio]').forEach((el) => (el.hidden = el.dataset.ikMeio !== meio));
-        l.querySelector('[data-ik-parcelas]').hidden = l.querySelector('[data-ik="forma"]').value === 'avista';
+        l.querySelectorAll('[data-ik-sem-cartao]').forEach((el) => (el.hidden = meio === 'cartao'));
+        l.querySelector('[data-ik-parcelas]').hidden = meio === 'cartao' || l.querySelector('[data-ik="forma"]').value === 'avista';
       });
     };
     $('#k-modo').addEventListener('change', () => {
@@ -512,7 +531,7 @@
       compra.valorDolar = meio === 'dolar' && $('#k-usd').value !== '' ? Number($('#k-usd').value) : '';
       compra.cotacaoDolar = meio === 'dolar' && $('#k-cot').value !== '' ? Number($('#k-cot').value) : '';
       const finalCartao = $('#k-final').value.replace(/\D/g, '').slice(-4);
-      compra.cartao = meio === 'cartao' ? { banco: $('#k-banco').value.trim(), bandeira: $('#k-bandeira').value, final: finalCartao, parcelas: $('#k-parcartao').value === '' ? '' : Number($('#k-parcartao').value) } : null;
+      compra.cartao = meio === 'cartao' ? { banco: $('#k-banco').value.trim(), bandeira: $('#k-bandeira').value, final: finalCartao, parcelas: $('#k-parcartao').value === '' ? '' : Number($('#k-parcartao').value), vencimentoFatura: $('#k-fatura').value } : null;
       if (mudouV) venda.parcelas = refazerParcelas(vAnt.parcelas, t.totalV, t.qV, t.vencV || dados.dataEntrega || hoje);
       dados.itens = lerItens($('#ct-itens'));
       compra.porLicenca = t.porLicenca;

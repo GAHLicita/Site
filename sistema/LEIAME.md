@@ -108,6 +108,9 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- **Compra no cartão de crédito**: em "Pago com", escolha Cartão de crédito e informe as parcelas no cartão e o
+  **vencimento da fatura**. A compra vira uma parcela por fatura (a 1ª no vencimento informado, as demais nos meses
+  seguintes) e fica em "a pagar" até você marcar como paga, quando pagar a fatura. Vale também na compra por licença.
 - **Compra por licença**: em "Compra da licença", escolha "Cada licença com a sua forma de pagamento" quando
   o contrato tiver licenças compradas de jeitos diferentes (uma à vista, outra parcelada). Cada licença, em
   "Licenças do contrato", ganha a sua compra: forma, valor, nº de parcelas, 1º pagamento e com o que foi paga.
