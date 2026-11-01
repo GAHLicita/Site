@@ -117,8 +117,8 @@
       '<input class="filtro busca" id="ct-busca" type="search" placeholder="Buscar órgão, licença, fabricante ou nº" value="' + esc(filtro.busca) + '" aria-label="Buscar">' +
       '<select class="filtro" id="ct-vig" aria-label="Situação">' + opcoes([['vigente', 'Vigentes'], ['vencendo', 'Vencendo em breve'], ['encerrada', 'Encerrados'], ['receber', 'Com valor a receber'], ['atraso', 'Com parcela atrasada'], ['pagar', 'Com compra a pagar'], ['cancelado', 'Cancelados']], filtro.vigencia, 'Todas as situações') + '</select>' +
       '<select class="filtro" id="ct-forma" aria-label="Forma de recebimento">' + opcoes([['integral', 'Integral'], ['mensal', 'Mensal'], ['parcelado', 'Parcelado']], filtro.forma, 'Toda forma de recebimento') + '</select>' +
-      '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
       '<select class="filtro" id="ct-compra" aria-label="Forma da compra">' + opcoes([['avista', 'Compra à vista'], ['parcelado', 'Compra parcelada']], filtro.compra, 'Toda forma de compra') + '</select>' +
+      '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
       '<select class="filtro" id="ct-meio" aria-label="Forma de pagamento da compra">' + opcoes(MEIOS, filtro.meio, 'Toda forma de pagamento') + '</select>' +
       (filtro.meio === 'cartao' && opcoesCartao.length ? '<select class="filtro" id="ct-cartao" aria-label="Cartão da compra">' + opcoes(opcoesCartao, filtro.cartao, 'Todos os cartões') + '</select>' : '') +
       '</div></div>' +
