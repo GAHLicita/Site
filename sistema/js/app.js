@@ -307,10 +307,21 @@
     }).filter((o) => o.produto || o.fornecedor || o.valor || o.compra.valorTotal);
   }
 
-  /* Licença do contrato a que pertence uma parcela de compra (compra informada por licença). */
-  GAH.itemDaParcela = function (c, p) {
-    return (p && p.itemId && c.compra && c.compra.porLicenca && (c.itens || []).find((i) => i.id === p.itemId)) || null;
+  /* Compra por licença: uma parcela pode juntar várias licenças pagas no mesmo cartão e na mesma fatura.
+     'partes' guarda quanto de cada licença está na parcela ([{ itemId, valor }]); parcela antiga só tem itemId. */
+  GAH.partesDaParcela = function (p) {
+    return (p && p.partes) || (p && p.itemId ? [{ itemId: p.itemId, valor: p.valor }] : []);
   };
+  GAH.itensDaParcela = function (c, p) {
+    if (!c.compra || !c.compra.porLicenca) return [];
+    return GAH.partesDaParcela(p).map((x) => (c.itens || []).find((i) => i.id === x.itemId)).filter(Boolean);
+  };
+  /* Licença da parcela (a primeira, quando a parcela junta mais de uma). */
+  GAH.itemDaParcela = function (c, p) {
+    return GAH.itensDaParcela(c, p)[0] || null;
+  };
+  const nomesLicencas = (itens) => itens.map((i) => i.produto || i.fornecedor || 'Licença').join(' + ');
+  GAH.nomesLicencasDaParcela = (c, p) => nomesLicencas(GAH.itensDaParcela(c, p));
 
   const MEIOS_COMPRA = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito']];
   const BANDEIRAS = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Diners', 'Outra'];
@@ -367,7 +378,9 @@
     if (!c.compra || !c.compra.porLicenca) return [];
     const parcelas = c.compra.parcelas || [];
     return (c.itens || []).map((it) => {
-      const ps = parcelas.filter((p) => p.itemId === it.id);
+      // parte desta licença em cada parcela (a parcela pode juntar licenças do mesmo cartão)
+      const ps = [];
+      parcelas.forEach((p) => GAH.partesDaParcela(p).forEach((x) => { if (x.itemId === it.id) ps.push({ valor: x.valor, pago: p.pago }); }));
       const total = calc.centavos(ps.reduce((t, p) => t + calc.num(p.valor), 0));
       const pago = calc.centavos(ps.filter((p) => p.pago).reduce((t, p) => t + calc.num(p.valor), 0));
       const k = it.compra || {};
@@ -594,18 +607,53 @@
         if (!dados.itens.length) { aviso('Adicione as licenças do contrato e a compra de cada uma.', true); return; }
         // parcelas de cada licença; as que não mudaram ficam como estão (com o que já foi pago)
         const antigas = kAnt.porLicenca ? kAnt.parcelas || [] : [];
+        // parcelas antigas de uma licença (as que estavam juntas na mesma fatura são separadas de volta)
+        const antigasDoItem = (id) => {
+          const lista = [];
+          antigas.forEach((p) => GAH.partesDaParcela(p).forEach((x) => {
+            if (x.itemId === id) lista.push({ valor: calc.num(x.valor), vencimento: p.vencimento, pago: !!p.pago, dataPagamento: p.dataPagamento || '' });
+          }));
+          return lista.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+        };
         const parcelas = [];
         for (const it of dados.itens) {
           const kc = it.compra;
           const velha = (kAnt.porLicenca && (c.itens || []).find((x) => x.id === it.id) || {}).compra || {};
-          const doItem = antigas.filter((p) => p.itemId === it.id);
+          const doItem = antigasDoItem(it.id);
           const igual = doItem.length && velha.forma === kc.forma && calc.num(velha.valorTotal) === calc.num(kc.valorTotal) &&
             (velha.qtdParcelas || doItem.length) === kc.qtdParcelas && (velha.primeiroVencimento || '') === kc.primeiroVencimento;
           const ps = igual ? doItem : refazerParcelas(doItem, calc.num(kc.valorTotal), kc.qtdParcelas, kc.primeiroVencimento || dados.dataEntrega || hoje);
           ps.forEach((p) => (p.itemId = it.id));
           parcelas.push(...ps);
         }
-        compra.parcelas = parcelas.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+        // licenças pagas no mesmo cartão com o mesmo vencimento viram uma parcela só (a fatura soma as licenças)
+        const cartaoDe = (id) => {
+          const k = (dados.itens.find((x) => x.id === id) || {}).compra || {};
+          return k.meio === 'cartao' ? [String((k.cartao || {}).banco || '').trim().toLowerCase(), (k.cartao || {}).final || ''].join('|') : '';
+        };
+        const juntas = [];
+        const porFatura = {};
+        parcelas.sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || '')).forEach((p) => {
+          const parte = { itemId: p.itemId, valor: calc.num(p.valor) };
+          const chave = cartaoDe(p.itemId) && cartaoDe(p.itemId) + '|' + p.vencimento;
+          const g = chave && porFatura[chave];
+          if (g) {
+            g.valor = calc.centavos(g.valor + parte.valor);
+            g.partes.push(parte);
+            g.pago = g.pago && !!p.pago;
+            g.dataPagamento = g.dataPagamento || p.dataPagamento || '';
+            return;
+          }
+          const nova = { valor: parte.valor, vencimento: p.vencimento, pago: !!p.pago, dataPagamento: p.dataPagamento || '', partes: [parte] };
+          if (chave) porFatura[chave] = nova;
+          juntas.push(nova);
+        });
+        juntas.forEach((p, i) => {
+          p.num = i + 1;
+          if (!p.pago) p.dataPagamento = '';
+          if (p.partes.length === 1) p.itemId = p.partes[0].itemId;
+        });
+        compra.parcelas = juntas;
         compra.meio = '';
         compra.valorDolar = '';
         compra.cotacaoDolar = '';
@@ -666,7 +714,11 @@
     const linha = (p, i) =>
       '<tr data-i="' + i + '">' +
       '<td>' + (i + 1) + '</td>' +
-      (porLicenca ? '<td><select class="mini" data-k="itemId" aria-label="Licença">' + opcoes(licencas, p.itemId || (licencas[0] || [])[0]) + '</select></td>' : '') +
+      (porLicenca
+        ? (GAH.partesDaParcela(p).length > 1
+          ? '<td>' + esc(GAH.nomesLicencasDaParcela(contrato, p)) + '<input type="hidden" data-k="partesJson" value="' + esc(JSON.stringify(GAH.partesDaParcela(p))) + '"></td>'
+          : '<td><select class="mini" data-k="itemId" aria-label="Licença">' + opcoes(licencas, p.itemId || (licencas[0] || [])[0]) + '</select></td>')
+        : '') +
       '<td><input class="mini" data-k="valor" type="number" step="0.01" value="' + esc(p.valor) + '" aria-label="Valor"></td>' +
       '<td><input class="mini" data-k="vencimento" type="date" value="' + esc(p.vencimento) + '" aria-label="Vencimento"></td>' +
       (ehVenda
@@ -720,12 +772,28 @@
     j.el.querySelector('#add-parcela').addEventListener('click', () => {
       const ps = ler();
       const ultima = ps[ps.length - 1];
-      tbody.insertAdjacentHTML('beforeend', linha({ valor: ultima ? ultima.valor : 0, vencimento: ultima ? calc.addMeses(ultima.vencimento, 1) : calc.hoje(), itemId: ultima && ultima.itemId }, ps.length));
+      tbody.insertAdjacentHTML('beforeend', linha({ valor: ultima ? ultima.valor : 0, vencimento: ultima ? calc.addMeses(ultima.vencimento, 1) : calc.hoje(), itemId: ultima && ultima.itemId, partes: ultima && ultima.partesJson ? JSON.parse(ultima.partesJson) : undefined }, ps.length));
       somar();
     });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
     j.el.querySelector('#salvar-parcelas').addEventListener('click', async () => {
       const ps = ler();
+      // compra por licença: cada parcela guarda a parte de cada licença; se o valor mudou, as partes acompanham na proporção
+      if (porLicenca) ps.forEach((p) => {
+        let partes = p.partesJson ? JSON.parse(p.partesJson) : [{ itemId: p.itemId, valor: p.valor }];
+        delete p.partesJson;
+        const soma = partes.reduce((s, x) => s + calc.num(x.valor), 0);
+        if (partes.length > 1 && Math.abs(soma - p.valor) > 0.004) {
+          let resto = p.valor;
+          partes = partes.map((x, i) => {
+            const v = i === partes.length - 1 ? calc.centavos(resto) : calc.centavos(soma ? (calc.num(x.valor) * p.valor) / soma : p.valor / partes.length);
+            resto -= v;
+            return { itemId: x.itemId, valor: v };
+          });
+        } else if (partes.length === 1) partes[0].valor = p.valor;
+        p.partes = partes;
+        if (partes.length === 1) p.itemId = partes[0].itemId; else delete p.itemId;
+      });
       const ladoNovo = Object.assign({}, contrato[lado], {
         parcelas: ps,
         valorTotal: calc.centavos(ps.reduce((s, p) => s + p.valor, 0)),
@@ -736,7 +804,8 @@
       // compra por licença: a compra de cada licença passa a refletir as parcelas dela
       if (porLicenca) {
         mudancas.itens = (contrato.itens || []).map((it) => {
-          const doItem = ps.filter((p) => p.itemId === it.id);
+          const doItem = [];
+          ps.forEach((p) => p.partes.forEach((x) => { if (x.itemId === it.id) doItem.push({ valor: calc.num(x.valor), vencimento: p.vencimento }); }));
           const k = Object.assign({}, it.compra || {}, {
             valorTotal: calc.centavos(doItem.reduce((s, p) => s + p.valor, 0)),
             qtdParcelas: Math.max(1, doItem.length),
@@ -778,7 +847,7 @@
           const atrasada = !p.pago && p.vencimento && p.vencimento < hoje;
           return (
             '<tr><td>' + (i + 1) + '</td><td>' + dataBR(p.vencimento) + (atrasada ? ' <span class="selo critico">atrasada</span>' : '') +
-            (porLicenca ? '<div class="texto-suave" style="font-size:.78rem">' + esc((GAH.itemDaParcela(c, p) || {}).produto || '') + '</div>' : '') + '</td>' +
+            (porLicenca ? '<div class="texto-suave" style="font-size:.78rem">' + esc(GAH.nomesLicencasDaParcela(c, p)) + '</div>' : '') + '</td>' +
             (ehVenda ? '<td>' + esc(p.nf || '—') + '</td>' : '') +
             '<td class="valor">' + moeda(p.valor) + '</td>' +
             '<td><label class="parcela-check"><input type="checkbox" data-parcela="' + esc(c.id) + '|' + lado + '|' + i + '"' + (p.pago ? ' checked' : '') + '> ' + (p.pago ? (p.dataPagamento ? dataBR(p.dataPagamento).slice(0, 6) + p.dataPagamento.slice(2, 4) : 'sim') : 'aberta') + '</label></td></tr>'

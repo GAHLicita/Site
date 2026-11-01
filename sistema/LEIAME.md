@@ -119,6 +119,9 @@ link para criar uma senha nova.
   "Licenças do contrato", ganha a sua compra: forma, valor, nº de parcelas, 1º pagamento e com o que foi paga.
   As parcelas de todas as licenças formam a compra do contrato (pago e falta pagar), e o quadro do contrato
   mostra o pago e o que falta de cada licença. O lucro de cada fabricante usa a compra real das licenças dele.
+  Licenças pagas no **mesmo cartão** (mesmo banco e final) com o mesmo vencimento de fatura viram **uma parcela só**,
+  com o valor somado (ex.: 2 licenças em 12x no mesmo cartão = 12 parcelas); o pago e o que falta de cada licença
+  continuam separados no quadro do contrato.
 
 - **Entrega das licenças**: contrato novo fica "Pendente de entrega". Quando entregar, clique em
   **Licenças entregues** (na lista de Contratos ou no contrato, na ficha do órgão) ou escolha "Entregue" no

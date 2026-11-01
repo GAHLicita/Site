@@ -485,7 +485,7 @@
       });
       ((c.compra && c.compra.parcelas) || []).forEach((p, i, todas) => {
         const data = p.pago ? p.dataPagamento || p.vencimento : '';
-        if (dentro(data)) r.pagamentos.push({ contratoId: c.id, indice: i, itemId: p.itemId || '', data, parcela: (i + 1) + '/' + todas.length, entregue, valor: centavos(num(p.valor)) });
+        if (dentro(data)) r.pagamentos.push({ contratoId: c.id, indice: i, itemId: p.itemId || '', partes: p.partes || null, data, parcela: (i + 1) + '/' + todas.length, entregue, valor: centavos(num(p.valor)) });
       });
     }
     for (const g of gastos || []) {
