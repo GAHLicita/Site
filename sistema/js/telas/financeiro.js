@@ -191,7 +191,7 @@
       '<div class="grafico" id="fin-grafico">' + grafico(meses) + '<div class="dica" id="fin-dica" hidden></div></div></div></section></section>' +
 
       '<section class="secao-inicio"><div class="grade grade-2">' +
-      '<section class="painel"><div class="painel-cab"><div><h2>Previsão de caixa</h2><span class="sub">Próximos 12 meses: no mês atual entra também o que já foi pago e recebido; atrasadas contam no mês atual</span></div>' +
+      '<section class="painel"><div class="painel-cab"><div><h2>Previsão de caixa</h2><span class="sub">Próximos 12 meses. O 1º pagamento do órgão é previsto no mês da entrega das licenças; o que não for pago passa para o mês atual. No mês atual entra também o que já foi pago e recebido</span></div>' +
       '<div class="visao-financeira" role="group" aria-label="Quais contratos entram neste quadro">' +
       '<button type="button" data-visao-quadro="previsao" data-valor="total" aria-pressed="' + (visaoPrev === 'total') + '">Total</button>' +
       '<button type="button" data-visao-quadro="previsao" data-valor="entregues" aria-pressed="' + (visaoPrev === 'entregues') + '">Só entregues</button></div></div>' +

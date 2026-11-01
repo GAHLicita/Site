@@ -125,6 +125,10 @@ link para criar uma senha nova.
 - Na tabela **Valores mês a mês** e na **Previsão de caixa**, clique no mês para ver de quais contratos
   (e de quais despesas) vem cada valor; clique no contrato para abri-lo.
 
+- **Previsão de caixa — recebimento do órgão**: a 1ª parcela da venda é prevista no mês da entrega das
+  licenças (data da entrega; se ainda não entregue, o início da vigência ou o mês atual). Se não for paga, passa
+  para o mês atual a cada virada de mês, marcada como atrasada. As demais parcelas seguem o vencimento.
+
 - **Total × Só licenças entregues** (Início e Contratos): "Total" conta todos os contratos, inclusive
   renovações já fechadas mas com licenças ainda não entregues (situação futura). "Só licenças entregues"
   conta apenas os contratos já entregues (situação atual), com as parcelas a receber e a pagar em aberto

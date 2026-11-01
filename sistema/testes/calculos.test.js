@@ -201,3 +201,20 @@ test('vendasPorFabricante usa a compra de cada licença quando a compra é por l
   const f = calc.vendasPorFabricante([c], '2026-10-20');
   assert.deepStrictEqual(f.map((x) => [x.fabricante, x.venda, x.lucro]), [['Alfa', 2000, 800], ['Beta', 1000, 100]]);
 });
+
+test('previsaoCaixa: 1ª parcela da venda entra no mês da entrega e anda para o mês atual se não for paga', () => {
+  // entregue em 25/10, vencimento em 24/11: a entrada é prevista para outubro (mês da entrega)
+  const entregue = { id: 'e', clienteId: 'o', licencasEntregues: true, dataEntrega: '2026-10-25', vigenciaInicio: '2026-10-25', vigenciaFim: '2027-10-24',
+    venda: { parcelas: [{ valor: 1000, vencimento: '2026-11-24' }, { valor: 1000, vencimento: '2026-12-24' }] }, compra: { parcelas: [] } };
+  const out = calc.previsaoCaixa([entregue], [], '2026-10-28', 3);
+  assert.deepStrictEqual(out.map((m) => m.entra), [1000, 0, 1000]); // a 2ª parcela segue o vencimento
+  // virou o mês sem pagar: vai para novembro, marcada como atrasada
+  const nov = calc.previsaoCaixa([entregue], [], '2026-11-02', 2);
+  assert.deepStrictEqual(nov.map((m) => m.entra), [1000, 1000]);
+  assert.strictEqual(nov[0].contratos[0].atrasado, true);
+  // ainda não entregue, vigência começa em janeiro: a entrada fica para janeiro (mês previsto da entrega)
+  const futuro = { id: 'f', clienteId: 'x', vigenciaInicio: '2027-01-10', vigenciaFim: '2028-01-09',
+    venda: { parcelas: [{ valor: 500, vencimento: '2027-02-09' }] }, compra: { parcelas: [] } };
+  const p = calc.previsaoCaixa([futuro], [], '2026-11-02', 4);
+  assert.deepStrictEqual(p.map((m) => [m.mes, m.entra]), [['2026-11', 0], ['2026-12', 0], ['2027-01', 500], ['2027-02', 0]]);
+});

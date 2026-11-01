@@ -341,25 +341,35 @@
     // realizadas: assim o mês atual mostra o que já saiu e entrou, mais o que ainda falta.
     const doContrato = (m, c) => (m.porContrato[c.id] = m.porContrato[c.id] || { contratoId: c.id, entra: 0, sai: 0, recebido: 0, pago: 0, atrasado: false });
     const realizado = (p) => pos[C.mesDe(p.dataPagamento || p.vencimento || '')];
+    // A 1ª parcela da venda entra no mês da entrega das licenças (o órgão pode pagar logo depois de receber):
+    // entregue = data da entrega; ainda não entregue = início da vigência (ou hoje, se já começou). Se não for paga,
+    // passa para o mês atual como atrasada, e assim vai andando mês a mês. As demais parcelas seguem o vencimento.
+    const ren = C.renovacoes(contratos, hoje);
+    const ancoraDaEntrega = (c) => {
+      if (C.licencasEntregues(c, hoje, ren)) return c.dataEntrega || '';
+      return c.vigenciaInicio ? (c.vigenciaInicio > hoje ? c.vigenciaInicio : hoje) : '';
+    };
     for (const c of contratos.filter(valido)) {
-      for (const p of (c.venda && c.venda.parcelas) || []) {
+      const ancora = ancoraDaEntrega(c);
+      ((c.venda && c.venda.parcelas) || []).forEach((p, n) => {
         if (p.pago) {
           const i = realizado(p);
-          if (i === undefined) continue;
+          if (i === undefined) return;
           lista[i].entra += num(p.valor);
           const k = doContrato(lista[i], c);
           k.entra += num(p.valor);
           k.recebido += num(p.valor);
-          continue;
+          return;
         }
-        if (!p.vencimento) continue;
-        const i = pos[mesAlvo(p.vencimento)];
-        if (i === undefined) continue;
+        const esperado = n === 0 && ancora ? ancora : p.vencimento;
+        if (!esperado) return;
+        const i = pos[mesAlvo(esperado)];
+        if (i === undefined) return;
         lista[i].entra += num(p.valor);
         const k = doContrato(lista[i], c);
         k.entra += num(p.valor);
-        if (C.mesDe(p.vencimento) < inicio || p.vencimento < hoje) k.atrasado = true;
-      }
+        if (C.mesDe(esperado) < inicio || (esperado === p.vencimento && p.vencimento < hoje)) k.atrasado = true;
+      });
       for (const p of (c.compra && c.compra.parcelas) || []) {
         if (p.pago) {
           const i = realizado(p);
