@@ -320,6 +320,33 @@
   GAH.itemDaParcela = function (c, p) {
     return GAH.itensDaParcela(c, p)[0] || null;
   };
+  /* Cartão como chave (banco + final), para juntar e filtrar. */
+  GAH.chaveCartao = (c) => (c && (c.banco || c.final) ? [String(c.banco || '').trim().toLowerCase(), c.final || ''].join('|') : '');
+  /* Parcelas de compra de um contrato com o cartão de cada uma: [{ indice, chave, cartao, vencimento, valor, pago, dataPagamento, licencas }].
+     Compra por licença: a parte de cada licença vai para o cartão dela. Parcela sem cartão fica com chave vazia. */
+  GAH.parcelasDeCompraComCartao = function (c) {
+    const k = c.compra || {};
+    const lista = [];
+    (k.parcelas || []).forEach((p, indice) => {
+      if (k.porLicenca) {
+        const porCartao = {};
+        GAH.partesDaParcela(p).forEach((x) => {
+          const it = (c.itens || []).find((i) => i.id === x.itemId) || {};
+          const kc = it.compra || {};
+          const cartao = kc.meio === 'cartao' ? kc.cartao : null;
+          const chave = GAH.chaveCartao(cartao);
+          const g = (porCartao[chave] = porCartao[chave] || { indice, chave, cartao, vencimento: p.vencimento, valor: 0, pago: !!p.pago, dataPagamento: p.dataPagamento || '', licencas: [] });
+          g.valor = calc.centavos(g.valor + calc.num(x.valor));
+          g.licencas.push(it.produto || it.fornecedor || 'Licença');
+        });
+        Object.values(porCartao).forEach((g) => lista.push(g));
+      } else {
+        const cartao = k.meio === 'cartao' ? k.cartao : null;
+        lista.push({ indice, chave: GAH.chaveCartao(cartao), cartao, vencimento: p.vencimento, valor: calc.num(p.valor), pago: !!p.pago, dataPagamento: p.dataPagamento || '', licencas: [c.produto || 'Licença'] });
+      }
+    });
+    return lista;
+  };
   const nomesLicencas = (itens) => itens.map((i) => i.produto || i.fornecedor || 'Licença').join(' + ');
   GAH.nomesLicencasDaParcela = (c, p) => nomesLicencas(GAH.itensDaParcela(c, p));
 

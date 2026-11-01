@@ -108,6 +108,9 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- **Filtro por cartão (Contratos)**: os filtros "Forma da compra" (à vista / parcelada) e "Cartão da compra" se
+  combinam com os demais (ex.: recebimento integral + compra parcelada + cartão X). Com um cartão escolhido, aparece
+  o quadro "Parcelas no cartão", fatura a fatura, com órgão, licença, parcela, valor e situação de cada uma.
 - **Qual cartão**: em custos fixos e despesas avulsas, escolha a forma de pagamento; com "Cartão de crédito",
   informe banco, bandeira e os 4 últimos dígitos (ou escolha em "Cartão já usado"). O cartão aparece na grade
   de custos fixos, nos gastos do mês, na Agenda e no Relatório. A compra das licenças também tem "Cartão já usado".
