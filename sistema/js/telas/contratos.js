@@ -104,7 +104,11 @@
 
     main.innerHTML =
       '<div class="cabecalho-tela"><div><h1>Contratos</h1><p>Todas as licenças vendidas, com recebimentos, compras e lucro de cada uma.</p></div>' +
-      '<div class="acoes"><button class="botao" id="novo-contrato">+ Novo contrato</button></div></div>' +
+      '<div class="acoes">' +
+      '<div class="visao-financeira" role="group" aria-label="Quais contratos mostrar">' +
+      '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total</button>' +
+      '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues' + (naoEntregues ? ' (' + naoEntregues + ' fora)' : '') + '</button></div>' +
+      '<button class="botao" id="novo-contrato">+ Novo contrato</button></div></div>' +
       '<section class="painel"><div class="painel-cab"><div class="filtros" style="flex:1">' +
       '<input class="filtro busca" id="ct-busca" type="search" placeholder="Buscar órgão, licença, fabricante ou nº" value="' + esc(filtro.busca) + '" aria-label="Buscar">' +
       '<select class="filtro" id="ct-vig" aria-label="Situação">' + opcoes([['vigente', 'Vigentes'], ['vencendo', 'Vencendo em breve'], ['encerrada', 'Encerrados'], ['receber', 'Com valor a receber'], ['atraso', 'Com parcela atrasada'], ['pagar', 'Com compra a pagar'], ['cancelado', 'Cancelados']], filtro.vigencia, 'Todas as situações') + '</select>' +
@@ -112,9 +116,6 @@
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
       '<select class="filtro" id="ct-compra" aria-label="Forma da compra">' + opcoes([['avista', 'Compra à vista'], ['parcelado', 'Compra parcelada']], filtro.compra, 'Toda forma de compra') + '</select>' +
       (opcoesCartao.length ? '<select class="filtro" id="ct-cartao" aria-label="Cartão da compra">' + opcoes(opcoesCartao, filtro.cartao, 'Todos os cartões') + '</select>' : '') +
-      '<div class="visao-financeira" role="group" aria-label="Quais contratos mostrar">' +
-      '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total</button>' +
-      '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues' + (naoEntregues ? ' (' + naoEntregues + ' fora)' : '') + '</button></div>' +
       '</div></div>' +
       (linhas.length
         ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
