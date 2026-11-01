@@ -266,6 +266,7 @@
       '<div class="campo"><label>Pago com</label><select data-ik="meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-ik-meio="dolar"><label>Valor em dólar (US$)</label><input data-ik="valorDolar" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
       '<div class="campo" data-ik-meio="dolar"><label>Cotação usada (R$ por US$)</label><input data-ik="cotacaoDolar" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
+      (GAH.cartoesUsados().length ? '<div class="campo" data-ik-meio="cartao"><label>Cartão já usado</label><select data-ik="usado">' + GAH.opcoesCartoesUsados() + '</select></div>' : '') +
       '<div class="campo" data-ik-meio="cartao"><label>Banco do cartão</label><input data-ik="banco" list="lista-bancos-cartao" value="' + esc(cartao.banco) + '"></div>' +
       '<div class="campo" data-ik-meio="cartao"><label>Bandeira</label><select data-ik="bandeira">' + opcoes(BANDEIRAS, cartao.bandeira || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-ik-meio="cartao"><label>Final do cartão (4 últimos dígitos)</label><input data-ik="final" inputmode="numeric" maxlength="4" value="' + esc(cartao.final) + '" placeholder="0000"></div>' +
@@ -313,7 +314,54 @@
 
   const MEIOS_COMPRA = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito']];
   const BANDEIRAS = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Diners', 'Outra'];
-  const bancosCartao = () => [...new Set(D.lista('contratos').map((x) => x.compra && x.compra.cartao && x.compra.cartao.banco).filter(Boolean))].sort();
+  /* Cartões de crédito já usados em compras de licenças, custos fixos e despesas (banco, bandeira, final). */
+  GAH.cartoesUsados = function () {
+    const lista = [];
+    const add = (c) => { if (c && (c.banco || c.final)) lista.push({ banco: c.banco || '', bandeira: c.bandeira || '', final: c.final || '' }); };
+    D.lista('contratos').forEach((x) => { add(x.compra && x.compra.cartao); (x.itens || []).forEach((i) => add(i.compra && i.compra.cartao)); });
+    D.lista('custos').forEach((x) => add(x.cartao));
+    D.lista('despesas').forEach((x) => add(x.cartao));
+    const unicos = {};
+    lista.forEach((c) => (unicos[[c.banco.toLowerCase(), c.bandeira, c.final].join('|')] = c));
+    return Object.values(unicos).sort((a, b) => GAH.textoCartao(a).localeCompare(GAH.textoCartao(b)));
+  };
+  const bancosCartao = () => [...new Set(GAH.cartoesUsados().map((c) => c.banco).filter(Boolean))].sort();
+  /* "Cartão Nubank · Visa · final 1234" */
+  GAH.textoCartao = function (c) {
+    if (!c || !(c.banco || c.bandeira || c.final)) return '';
+    return 'Cartão ' + [c.banco, c.bandeira, c.final ? 'final ' + c.final : ''].filter(Boolean).join(' · ');
+  };
+  /* Lista "Cartão já usado": escolher um preenche banco, bandeira e final nos campos indicados. */
+  GAH.opcoesCartoesUsados = function () {
+    const usados = GAH.cartoesUsados();
+    return '<option value="">Escolha para preencher</option>' + usados.map((c, i) => '<option value="' + i + '">' + esc(GAH.textoCartao(c)) + '</option>').join('');
+  };
+  GAH.preencherCartao = function (indice, campos) {
+    const c = GAH.cartoesUsados()[Number(indice)];
+    if (!c || indice === '') return;
+    if (campos.banco) campos.banco.value = c.banco;
+    if (campos.bandeira) campos.bandeira.value = c.bandeira;
+    if (campos.final) campos.final.value = c.final;
+  };
+  /* Campos de cartão para custos fixos e despesas (prefixo dos ids), visíveis só com "Cartão de crédito". */
+  GAH.camposCartao = function (prefixo, cartao) {
+    cartao = cartao || {};
+    const usados = GAH.cartoesUsados();
+    return (usados.length ? '<div class="campo" data-so-cartao><label for="' + prefixo + '-usado">Cartão já usado</label><select id="' + prefixo + '-usado" data-ignorar>' + GAH.opcoesCartoesUsados() + '</select></div>' : '') +
+      '<div class="campo" data-so-cartao><label for="' + prefixo + '-banco">Banco do cartão</label><input id="' + prefixo + '-banco" data-ignorar list="' + prefixo + '-bancos" value="' + esc(cartao.banco) + '" placeholder="Ex.: Banco do Brasil, Nubank"><datalist id="' + prefixo + '-bancos">' + bancosCartao().map((b) => '<option value="' + esc(b) + '">').join('') + '</datalist></div>' +
+      '<div class="campo" data-so-cartao><label for="' + prefixo + '-bandeira">Bandeira</label><select id="' + prefixo + '-bandeira" data-ignorar>' + opcoes(BANDEIRAS, cartao.bandeira || '', 'Selecione') + '</select></div>' +
+      '<div class="campo" data-so-cartao><label for="' + prefixo + '-final">Final do cartão (4 últimos dígitos)</label><input id="' + prefixo + '-final" data-ignorar inputmode="numeric" maxlength="4" value="' + esc(cartao.final) + '" placeholder="0000"><span class="ajuda">Só os 4 últimos números.</span></div>';
+  };
+  /* Liga os campos de cartão ao select de forma de pagamento; devolve uma função que lê o cartão (ou null). */
+  GAH.ligarCartao = function (raiz, prefixo, selectForma) {
+    const $p = (id) => raiz.querySelector('#' + prefixo + '-' + id);
+    const ehCartao = () => /cart[aã]o/i.test(selectForma.value);
+    const mostrar = () => raiz.querySelectorAll('[data-so-cartao]').forEach((el) => (el.hidden = !ehCartao()));
+    selectForma.addEventListener('change', mostrar);
+    mostrar();
+    if ($p('usado')) $p('usado').addEventListener('change', (e) => GAH.preencherCartao(e.target.value, { banco: $p('banco'), bandeira: $p('bandeira'), final: $p('final') }));
+    return () => (ehCartao() ? { banco: $p('banco').value.trim(), bandeira: $p('bandeira').value, final: $p('final').value.replace(/\D/g, '').slice(-4) } : null);
+  };
   /* Compra por licença: uma linha por licença com forma, como foi paga, quanto já foi pago e quanto falta. */
   GAH.comprasPorLicenca = function (c) {
     if (!c.compra || !c.compra.porLicenca) return [];
@@ -406,6 +454,7 @@
       '<div class="campo" data-compra-unica><label for="k-meio">Pago com</label><select id="k-meio">' + opcoes(MEIOS_COMPRA, k.meio || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-meio="dolar" data-compra-unica><label for="k-usd">Valor em dólar (US$)</label><input id="k-usd" type="number" step="0.01" min="0" value="' + esc(k.valorDolar) + '"></div>' +
       '<div class="campo" data-meio="dolar" data-compra-unica><label for="k-cot">Cotação usada (R$ por US$)</label><input id="k-cot" type="number" step="0.0001" min="0" value="' + esc(k.cotacaoDolar) + '"></div>' +
+      (GAH.cartoesUsados().length ? '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-usado">Cartão já usado</label><select id="k-usado">' + GAH.opcoesCartoesUsados() + '</select></div>' : '') +
       '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-banco">Banco do cartão</label><input id="k-banco" list="lista-bancos-cartao" value="' + esc((k.cartao || {}).banco) + '" placeholder="Ex.: Banco do Brasil, Nubank"><datalist id="lista-bancos-cartao">' + bancosCartao().map((b) => '<option value="' + esc(b) + '">').join('') + '</datalist></div>' +
       '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-bandeira">Bandeira</label><select id="k-bandeira">' + opcoes(BANDEIRAS, (k.cartao || {}).bandeira || '', 'Selecione') + '</select></div>' +
       '<div class="campo" data-meio="cartao" data-compra-unica><label for="k-final">Final do cartão (4 últimos dígitos)</label><input id="k-final" inputmode="numeric" maxlength="4" value="' + esc((k.cartao || {}).final) + '" placeholder="0000"><span class="ajuda">Só os 4 últimos números. Nunca o número inteiro.</span></div>' +
@@ -497,6 +546,12 @@
       atualizar();
     });
     $('#k-meio').addEventListener('change', mostrarCompra);
+    if ($('#k-usado')) $('#k-usado').addEventListener('change', (e) => GAH.preencherCartao(e.target.value, { banco: $('#k-banco'), bandeira: $('#k-bandeira'), final: $('#k-final') }));
+    $('#ct-itens').addEventListener('change', (e) => {
+      if (!e.target.matches('[data-ik="usado"]')) return;
+      const l = e.target.closest('.item-linha');
+      GAH.preencherCartao(e.target.value, { banco: l.querySelector('[data-ik="banco"]'), bandeira: l.querySelector('[data-ik="bandeira"]'), final: l.querySelector('[data-ik="final"]') });
+    });
     $('#k-forma').addEventListener('change', mostrarCompra);
     $('#ct-itens').addEventListener('change', mostrarCompra);
     mostrarCompra();
@@ -871,7 +926,7 @@
     // no dia do vencimento (para não esquecer de pagar)
     const ateProximoMes = calc.mesDe(calc.addMeses(calc.mesDe(calc.hoje()) + '-01', 1));
     for (const k of calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ateProximoMes)) {
-      if (!k.pago) ev.push({ chave: k.origem === 'custos' ? 'custo:' + k.custoId + ':' + k.mes : 'contador:' + k.mes, data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: k.categoria, link: '#/despesas', valor: k.valor });
+      if (!k.pago) ev.push({ chave: k.origem === 'custos' ? 'custo:' + k.custoId + ':' + k.mes : 'contador:' + k.mes, data: k.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(k.valor) + ' — ' + k.descricao, detalhe: [k.categoria, GAH.textoCartao(k.cartao) || k.formaPagamento].filter(Boolean).join(' · '), link: '#/despesas', valor: k.valor });
     }
     // mensalidade do contador ainda não lançada (mês atual e próximo): vem do honorário e do dia de vencimento do escritório
     const escritorio = D.obter('contabilidade', 'escritorio') || {};
@@ -885,7 +940,7 @@
     }
     for (const d of GAH.despesasLancadas()) {
       // a guia lançada nas Despesas já entra abaixo, pela Contabilidade
-      if (!d.pago && d.data && !String(d.id || '').startsWith('guia-')) ev.push({ chave: 'despesa:' + d.id, data: d.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(d.valor) + ' — ' + (d.descricao || 'Despesa'), detalhe: d.categoria || '', link: '#/despesas', valor: d.valor });
+      if (!d.pago && d.data && !String(d.id || '').startsWith('guia-')) ev.push({ chave: 'despesa:' + d.id, data: d.data, tipo: 'pagar', titulo: 'Pagar ' + moeda(d.valor) + ' — ' + (d.descricao || 'Despesa'), detalhe: [d.categoria, GAH.textoCartao(d.cartao) || d.formaPagamento].filter(Boolean).join(' · '), link: '#/despesas', valor: d.valor });
     }
     for (const m of D.lista('contabilidade')) {
       if (!/^\d{4}-\d{2}$/.test(m.id)) continue;

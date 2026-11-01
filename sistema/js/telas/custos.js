@@ -19,6 +19,7 @@
       '<div class="campo"><label for="cu-per">Cobrança</label><select id="cu-per" name="periodicidade">' + opcoes([['mensal', 'Todo mês'], ['anual', 'Uma vez por ano']], c.periodicidade) + '</select></div>' +
       '<div class="campo"><label for="cu-dia">Dia do vencimento</label><input id="cu-dia" name="diaVencimento" type="number" min="1" max="31" value="' + esc(c.diaVencimento) + '"></div>' +
       '<div class="campo"><label for="cu-forma">Forma de pagamento</label><select id="cu-forma" name="formaPagamento">' + opcoes(FORMAS, c.formaPagamento, 'Selecione') + '</select></div>' +
+      GAH.camposCartao('cu', c.cartao) +
       '<div class="campo"><label for="cu-ini">Começou em (mês)</label><input id="cu-ini" name="inicio" type="month" required value="' + esc(c.inicio) + '"></div>' +
       '<div class="campo"><label for="cu-fim">Terminou em (mês)</label><input id="cu-fim" name="fim" type="month" value="' + esc(c.fim) + '"><span class="ajuda">Deixe vazio enquanto o serviço estiver ativo.</span></div>' +
       '<div class="campo largo"><label for="cu-link">Link para acessar ou pagar</label><input id="cu-link" name="link" type="url" value="' + esc(c.link) + '" placeholder="Ex.: painel da hospedagem"></div>' +
@@ -28,6 +29,7 @@
       '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-custo" class="botao">Salvar</button></div>';
     const j = janela({ titulo: c.id ? 'Editar serviço' : 'Novo custo fixo', corpo, rodape });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
+    const lerCartao = GAH.ligarCartao(j.el, 'cu', j.el.querySelector('#cu-forma'));
     botaoExcluir(j.el, '#excluir-custo', 'Excluir este serviço e todo o histórico de pagamentos?', async () => {
       await D.excluir('custos', c.id);
       j.fechar();
@@ -36,6 +38,7 @@
     j.el.querySelector('#form-custo').addEventListener('submit', async (e) => {
       e.preventDefault();
       const dados = lerForm(e.target);
+      dados.cartao = lerCartao();
       if (dados.fim && dados.fim < dados.inicio) {
         aviso('O mês de término não pode ser antes do início.', true);
         return;
@@ -125,7 +128,7 @@
             const total = lanc.filter((l) => l.custoId === c.id).reduce((s, l) => s + l.valor, 0);
             const link = linkSeguro(c.link);
             return '<tr><td><button type="button" class="link-botao nome-servico" data-editar-custo="' + esc(c.id) + '" title="Editar ou excluir este serviço">' + esc(c.nome) + ' <span aria-hidden="true">✎</span></button>' +
-              '<span class="sub">' + esc([c.fornecedor, c.categoria, c.periodicidade === 'anual' ? 'anual' : 'mensal', moeda(c.valor), c.formaPagamento].filter(Boolean).join(' · ')) + (link ? ' · <a href="' + esc(link) + '" target="_blank" rel="noopener">acessar</a>' : '') + (c.fim && c.fim < mesAtual ? ' · <b>encerrado</b>' : '') + '</span></td>' +
+              '<span class="sub">' + esc([c.fornecedor, c.categoria, c.periodicidade === 'anual' ? 'anual' : 'mensal', moeda(c.valor), GAH.textoCartao(c.cartao) || c.formaPagamento].filter(Boolean).join(' · ')) + (link ? ' · <a href="' + esc(link) + '" target="_blank" rel="noopener">acessar</a>' : '') + (c.fim && c.fim < mesAtual ? ' · <b>encerrado</b>' : '') + '</span></td>' +
               meses.map((m) => celula(c, m)).join('') + '<td class="valor"><b>' + moeda(total) + '</b></td></tr>';
           }).join('') +
           '</tbody><tfoot><tr><td>Total do mês</td>' + totalMes.map((t) => '<td class="valor">' + (t ? esc(moeda(t).replace('R$', '').trim()) : '—') + '</td>').join('') + '<td class="valor">' + moeda(totalAno) + '</td></tr></tfoot></table></div>'

@@ -447,6 +447,8 @@
           descricao: c.nome,
           origem: 'custos',
           custoId: c.id,
+          formaPagamento: c.formaPagamento || '',
+          cartao: c.cartao || null,
           mes
         });
       }
@@ -488,7 +490,7 @@
     }
     for (const g of gastos || []) {
       const mes = g.mes || C.mesDe(g.data);
-      if (mes >= de && mes <= ate) r.gastos.push({ mes, data: g.data, descricao: g.descricao || 'Despesa', categoria: g.categoria || '', valor: centavos(num(g.valor)), pago: !!g.pago, dataPagamento: g.dataPagamento || '' });
+      if (mes >= de && mes <= ate) r.gastos.push({ mes, data: g.data, descricao: g.descricao || 'Despesa', categoria: g.categoria || '', valor: centavos(num(g.valor)), pago: !!g.pago, dataPagamento: g.dataPagamento || '', formaPagamento: g.formaPagamento || '', cartao: g.cartao || null });
     }
     for (const g of impostos || []) {
       if (dentro(g.data)) r.impostos.push({ data: g.data, competencia: g.mes || '', descricao: g.descricao || 'Guia', categoria: g.categoria || '', valor: centavos(num(g.valor)), pago: !!g.pago, dataPagamento: g.dataPagamento || '' });

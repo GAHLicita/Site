@@ -132,7 +132,7 @@
 
     const gastos = secao('Despesas e custos', 'Custos fixos, contador e despesas avulsas do mês a que se referem' + (r.gastosAte ? ', até ' + mesBR(r.gastosAte) : ''), tabela(
       [{ t: 'Vencimento' }, { t: 'Descrição' }, { t: 'Categoria' }, { t: 'Situação' }, { t: 'Valor', valor: 1 }],
-      r.gastos.map((x) => '<tr><td>' + dataBR(x.data) + '</td><td>' + esc(x.descricao) + '</td><td>' + esc(x.categoria) + '</td><td>' +
+      r.gastos.map((x) => '<tr><td>' + dataBR(x.data) + '</td><td>' + esc(x.descricao) + ((GAH.textoCartao(x.cartao) || x.formaPagamento) ? '<span class="sub">' + esc(GAH.textoCartao(x.cartao) || x.formaPagamento) + '</span>' : '') + '</td><td>' + esc(x.categoria) + '</td><td>' +
         (x.pago ? '<span class="selo ok">Pago' + (x.dataPagamento ? ' em ' + dataBR(x.dataPagamento) : '') + '</span>' : '<span class="selo alerta">Em aberto</span>') +
         '</td><td class="valor">' + moeda(x.valor) + '</td></tr>'),
       '<tr><td colspan="4">Total</td><td class="valor">' + moeda(t.gastos) + '</td></tr>',
@@ -155,8 +155,8 @@
       r.pagamentos.map((x) => { const c = contrato(x.contratoId); const it = GAH.itemDaParcela(c, x) || c; return [dataBR(x.data), it.fornecedor, it.produto, nomeCliente(c.clienteId), x.parcela, x.entregue ? 'Entregue' : 'Pendente', n(x.valor)]; }));
     sec('Impostos', ['Vencimento', 'Guia', 'Competência', 'Pago', 'Data do pagamento', 'Valor'],
       r.impostos.map((x) => [dataBR(x.data), x.descricao, x.competencia ? mesBR(x.competencia) : '', x.pago ? 'Sim' : 'Não', x.dataPagamento ? dataBR(x.dataPagamento) : '', n(x.valor)]));
-    sec('Despesas e custos', ['Vencimento', 'Descrição', 'Categoria', 'Pago', 'Data do pagamento', 'Valor'],
-      r.gastos.map((x) => [dataBR(x.data), x.descricao, x.categoria, x.pago ? 'Sim' : 'Não', x.dataPagamento ? dataBR(x.dataPagamento) : '', n(x.valor)]));
+    sec('Despesas e custos', ['Vencimento', 'Descrição', 'Categoria', 'Forma de pagamento', 'Pago', 'Data do pagamento', 'Valor'],
+      r.gastos.map((x) => [dataBR(x.data), x.descricao, x.categoria, GAH.textoCartao(x.cartao) || x.formaPagamento || '', x.pago ? 'Sim' : 'Não', x.dataPagamento ? dataBR(x.dataPagamento) : '', n(x.valor)]));
     const t = r.totais;
     sec('Balancete', ['Contratos novos', 'Renovações', 'Valor dos contratos', 'Receitas', 'Compra das licenças', 'Impostos', 'Despesas e custos', 'Resultado'],
       [[t.novos, t.renovacoes, n(t.valorContratos), n(t.recebido), n(t.pago), n(t.impostos), n(t.gastos), n(t.saldo)]]);

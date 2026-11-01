@@ -108,6 +108,9 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
+- **Qual cartão**: em custos fixos e despesas avulsas, escolha a forma de pagamento; com "Cartão de crédito",
+  informe banco, bandeira e os 4 últimos dígitos (ou escolha em "Cartão já usado"). O cartão aparece na grade
+  de custos fixos, nos gastos do mês, na Agenda e no Relatório. A compra das licenças também tem "Cartão já usado".
 - **Compra no cartão de crédito**: em "Pago com", escolha Cartão de crédito e informe as parcelas no cartão e o
   **vencimento da fatura**. A compra vira uma parcela por fatura (a 1ª no vencimento informado, as demais nos meses
   seguintes) e fica em "a pagar" até você marcar como paga, quando pagar a fatura. Vale também na compra por licença.

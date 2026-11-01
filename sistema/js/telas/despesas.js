@@ -4,6 +4,7 @@
   const { esc, moeda, dataBR, mesBR, opcoes, janela, lerForm, aviso, botaoExcluir, MESES } = GAH.u;
   const calc = GAH.calc;
   const D = GAH.dados;
+  const FORMAS_PAGAMENTO = ['Cartão de crédito', 'Boleto', 'Pix', 'Débito automático', 'Transferência', 'Dinheiro'];
   const CATEGORIAS = ['Contabilidade', 'DAS / impostos da empresa', 'Certificado digital', 'Portais de licitação', 'Ferramentas e software', 'Marketing', 'Outros'];
   const estado = { ano: null, mes: null };
 
@@ -16,12 +17,15 @@
       '<div class="campo"><label for="dp-valor">Valor *</label><input id="dp-valor" name="valor" type="number" step="0.01" min="0" required value="' + esc(d.valor) + '"></div>' +
       '<div class="campo"><label for="dp-data">Data / vencimento *</label><input id="dp-data" name="data" type="date" required value="' + esc(d.data) + '"></div>' +
       (d.id ? '' : '<div class="campo"><label for="dp-rep">Repetir por quantos meses</label><input id="dp-rep" type="number" min="1" max="60" value="1" data-ignorar><span class="ajuda">Para gasto que se repete todo mês, prefira "+ Custo fixo".</span></div>') +
+      '<div class="campo"><label for="dp-forma">Forma de pagamento</label><select id="dp-forma" name="formaPagamento">' + opcoes(FORMAS_PAGAMENTO, d.formaPagamento, 'Selecione') + '</select></div>' +
+      GAH.camposCartao('dp', d.cartao) +
       '<label class="parcela-check largo"><input type="checkbox" name="pago"' + (d.pago ? ' checked' : '') + '> Já foi paga</label>' +
       '</form>';
     const rodape = (d.id ? '<button type="button" class="botao perigo" id="excluir-desp">Excluir</button>' : '') +
       '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-desp" class="botao">Salvar</button></div>';
     const j = janela({ titulo: d.id ? 'Editar despesa' : 'Nova despesa avulsa', corpo, rodape, estreita: true });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
+    const lerCartao = GAH.ligarCartao(j.el, 'dp', j.el.querySelector('#dp-forma'));
     botaoExcluir(j.el, '#excluir-desp', 'Excluir esta despesa?', async () => {
       await D.excluir('despesas', d.id);
       j.fechar();
@@ -30,6 +34,7 @@
     j.el.querySelector('#form-desp').addEventListener('submit', async (e) => {
       e.preventDefault();
       const dados = lerForm(e.target);
+      dados.cartao = lerCartao();
       const rep = d.id ? 1 : Math.max(1, Number(j.el.querySelector('#dp-rep').value) || 1);
       for (let i = 0; i < rep; i++) {
         await D.salvar('despesas', Object.assign({}, d, dados, { data: calc.addMeses(dados.data, i), pago: i === 0 ? dados.pago : false }));
@@ -43,7 +48,7 @@
   function gastosDoAno(ano) {
     const avulsas = GAH.despesasLancadas()
       .filter((d) => (d.data || '').startsWith(String(ano)))
-      .map((d) => ({ origem: 'despesas', id: d.id, mes: d.data.slice(0, 7), data: d.data, descricao: d.descricao, categoria: d.categoria || 'Outros', valor: calc.num(d.valor), pago: !!d.pago }));
+      .map((d) => ({ origem: 'despesas', id: d.id, mes: d.data.slice(0, 7), data: d.data, descricao: d.descricao, categoria: d.categoria || 'Outros', valor: calc.num(d.valor), pago: !!d.pago, formaPagamento: d.formaPagamento, cartao: d.cartao }));
     const automaticas = calc.custosNoPeriodo(D.lista('custos'), D.lista('contabilidade'), ano + '-12')
       .filter((k) => k.mes.startsWith(String(ano)))
       .map((k) => Object.assign({}, k, { valor: calc.num(k.valor) }));
@@ -102,7 +107,7 @@
       '<span class="sub">Total do mês: <b>' + moeda(totalMes) + '</b></span></div>' +
       (doMes.length || faltaContador
         ? '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th class="valor">Valor</th><th>Situação</th><th></th></tr></thead><tbody>' +
-          doMes.map((x) => '<tr class="clicavel" data-abrir="' + esc(chave(x)) + '"><td>' + dataBR(x.data) + '</td><td class="nome">' + esc(x.descricao) + '<span class="sub">' + esc(x.categoria || '') + '</span></td><td>' + NOME_ORIGEM[x.origem] + '</td>' +
+          doMes.map((x) => '<tr class="clicavel" data-abrir="' + esc(chave(x)) + '"><td>' + dataBR(x.data) + '</td><td class="nome">' + esc(x.descricao) + '<span class="sub">' + esc([x.categoria, GAH.textoCartao(x.cartao) || x.formaPagamento].filter(Boolean).join(' · ')) + '</span></td><td>' + NOME_ORIGEM[x.origem] + '</td>' +
             '<td class="valor">' + moeda(x.valor) + '</td><td>' + situacao(x) + '</td>' +
             '<td><button type="button" class="link-botao" data-pagar="' + esc(chave(x)) + '">' + (x.pago ? 'Desmarcar' : 'Paguei') + '</button></td></tr>').join('') +
           (faltaContador ? '<tr class="clicavel linha-apagada" data-abrir="contabilidade|' + estado.mes + '"><td>—</td><td class="nome">Mensalidade do contador<span class="sub">ainda não lançada neste mês</span></td><td>Contador</td><td class="valor">' + moeda(escritorio.honorario) + '</td><td><span class="selo alerta">Lançar</span></td><td></td></tr>' : '') +
