@@ -3,7 +3,8 @@
   const { esc, moeda, dataBR, mesBR, opcoes, seloVigencia, nomeCliente, ufCliente, nomeForma, janela } = GAH.u;
   const calc = GAH.calc;
   const D = GAH.dados;
-  const filtro = { busca: '', vigencia: '', forma: '', ano: '', cartao: '', compra: '' };
+  const filtro = { busca: '', vigencia: '', forma: '', ano: '', cartao: '', compra: '', meio: '' };
+  const MEIOS = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito'], ['sem', 'Forma não informada']];
 
   function abrirContrato(id) {
     const c = D.obter('contratos', id);
@@ -70,7 +71,7 @@
     const cartoes = {};
     todos.forEach((x) => x.compraCartao.forEach((p) => { if (p.chave) cartoes[p.chave] = p.cartao; }));
     const opcoesCartao = Object.entries(cartoes).map(([k, c]) => [k, GAH.textoCartao(c)]).sort((a, b) => a[1].localeCompare(b[1]));
-    if (filtro.cartao && !cartoes[filtro.cartao]) filtro.cartao = '';
+    if (filtro.meio !== 'cartao' || (filtro.cartao && !cartoes[filtro.cartao])) filtro.cartao = '';
     const visao = GAH.visaoFinanceira();
     todos.forEach((x) => (x.entregue = calc.licencasEntregues(x.c, hoje, ren)));
     const naoEntregues = todos.filter((x) => !x.entregue && x.c.status !== 'cancelado').length;
@@ -86,8 +87,11 @@
       })
       .filter((x) => {
         // cartão: o contrato tem parcela de compra nesse cartão; forma da compra: à vista (1 parcela) ou parcelada
-        const doCartao = filtro.cartao ? x.compraCartao.filter((p) => p.chave === filtro.cartao) : x.compraCartao;
-        if (filtro.cartao && !doCartao.length) return false;
+        // forma de pagamento da compra (e, no cartão, qual cartão)
+        let doCartao = x.compraCartao;
+        if (filtro.meio) doCartao = doCartao.filter((p) => (filtro.meio === 'sem' ? !p.meio : p.meio === filtro.meio));
+        if (filtro.cartao) doCartao = doCartao.filter((p) => p.chave === filtro.cartao);
+        if ((filtro.meio || filtro.cartao) && !doCartao.length) return false;
         if (filtro.compra === 'avista' && doCartao.length !== 1) return false;
         if (filtro.compra === 'parcelado' && doCartao.length < 2) return false;
         return true;
@@ -115,7 +119,8 @@
       '<select class="filtro" id="ct-forma" aria-label="Forma de recebimento">' + opcoes([['integral', 'Integral'], ['mensal', 'Mensal'], ['parcelado', 'Parcelado']], filtro.forma, 'Toda forma de recebimento') + '</select>' +
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
       '<select class="filtro" id="ct-compra" aria-label="Forma da compra">' + opcoes([['avista', 'Compra à vista'], ['parcelado', 'Compra parcelada']], filtro.compra, 'Toda forma de compra') + '</select>' +
-      (opcoesCartao.length ? '<select class="filtro" id="ct-cartao" aria-label="Cartão da compra">' + opcoes(opcoesCartao, filtro.cartao, 'Todos os cartões') + '</select>' : '') +
+      '<select class="filtro" id="ct-meio" aria-label="Forma de pagamento da compra">' + opcoes(MEIOS, filtro.meio, 'Toda forma de pagamento') + '</select>' +
+      (filtro.meio === 'cartao' && opcoesCartao.length ? '<select class="filtro" id="ct-cartao" aria-label="Cartão da compra">' + opcoes(opcoesCartao, filtro.cartao, 'Todos os cartões') + '</select>' : '') +
       '</div></div>' +
       (linhas.length
         ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
@@ -154,6 +159,7 @@
       filtro.forma = main.querySelector('#ct-forma').value;
       filtro.ano = main.querySelector('#ct-ano').value;
       filtro.compra = main.querySelector('#ct-compra').value;
+      filtro.meio = main.querySelector('#ct-meio').value;
       filtro.cartao = main.querySelector('#ct-cartao') ? main.querySelector('#ct-cartao').value : '';
       const pos = main.querySelector('#ct-busca').selectionStart;
       GAH.telas.contratos(main);
@@ -162,7 +168,7 @@
     };
     main.querySelector('#ct-busca').addEventListener('input', reler);
     main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => { GAH.visaoFinanceira(bt.dataset.visao); GAH.telas.contratos(main); }));
-    ['#ct-vig', '#ct-forma', '#ct-ano', '#ct-compra', '#ct-cartao'].forEach((s) => { if (main.querySelector(s)) main.querySelector(s).addEventListener('change', reler); });
+    ['#ct-vig', '#ct-forma', '#ct-ano', '#ct-compra', '#ct-meio', '#ct-cartao'].forEach((s) => { if (main.querySelector(s)) main.querySelector(s).addEventListener('change', reler); });
     main.querySelectorAll('tr[data-abrir-contrato]').forEach((tr) => tr.addEventListener('click', () => abrirContrato(tr.dataset.abrirContrato)));
     main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', (e) => { if (!e.target.closest('[data-entregue]')) abrirContrato(tr.dataset.id); }));
     // Ok de entrega das licenças (renovação: a partir daí passa a mostrar a nova vigência).

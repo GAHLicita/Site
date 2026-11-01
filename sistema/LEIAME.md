@@ -108,7 +108,8 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
-- **Filtro por cartão (Contratos)**: os filtros "Forma da compra" (à vista / parcelada) e "Cartão da compra" se
+- **Filtro por cartão (Contratos)**: os filtros "Forma da compra" (à vista / parcelada), "Forma de pagamento"
+  (real, dólar, cartão de crédito, não informada) e "Cartão da compra" (só aparece com Cartão de crédito) se
   combinam com os demais (ex.: recebimento integral + compra parcelada + cartão X). Com um cartão escolhido, aparece
   o quadro "Parcelas no cartão", fatura a fatura, com órgão, licença, parcela, valor e situação de cada uma.
 - **Qual cartão**: em custos fixos e despesas avulsas, escolha a forma de pagamento; com "Cartão de crédito",
