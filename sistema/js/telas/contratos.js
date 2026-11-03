@@ -3,7 +3,7 @@
   const { esc, moeda, dataBR, mesBR, opcoes, seloVigencia, nomeCliente, ufCliente, nomeForma, janela } = GAH.u;
   const calc = GAH.calc;
   const D = GAH.dados;
-  const FILTRO_INICIAL = { busca: '', vigencia: '', forma: '', ano: '', cartao: '', compra: '', meio: '' };
+  const FILTRO_INICIAL = { busca: '', vigencia: '', entrega: '', forma: '', ano: '', cartao: '', compra: '', meio: '' };
   const filtro = Object.assign({}, FILTRO_INICIAL);
   const MEIOS = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito'], ['sem', 'Forma não informada']];
 
@@ -82,6 +82,9 @@
         const t = filtro.busca.toLowerCase();
         if (t && ![orgao, c.produto, c.fornecedor, c.numeroContrato, c.numeroEmpenho].join(' ').toLowerCase().includes(t)) return false;
         if (filtro.vigencia === 'receber' ? s.aReceber <= 0 : filtro.vigencia === 'pagar' ? s.aPagar <= 0 : filtro.vigencia === 'atraso' ? s.parcelasAtrasadas === 0 : filtro.vigencia && s.vigencia !== filtro.vigencia) return false;
+        // entrega: contrato novo ou renovação ainda sem as licenças entregues (cancelados ficam de fora)
+        if (filtro.entrega === 'pendente' && (entregue || c.status === 'cancelado')) return false;
+        if (filtro.entrega === 'entregue' && !entregue) return false;
         if (filtro.forma && (c.venda && c.venda.forma) !== filtro.forma) return false;
         if (filtro.ano && (c.vigenciaInicio || c.dataEntrega || '').slice(0, 4) !== filtro.ano) return false;
         return true;
@@ -117,6 +120,7 @@
       '<section class="painel"><div class="painel-cab"><div class="filtros" style="flex:1">' +
       '<input class="filtro busca" id="ct-busca" type="search" placeholder="Buscar órgão, licença, fabricante ou nº" value="' + esc(filtro.busca) + '" aria-label="Buscar">' +
       '<select class="filtro" id="ct-vig" aria-label="Situação">' + opcoes([['vigente', 'Vigentes'], ['vencendo', 'Vencendo em breve'], ['encerrada', 'Encerrados'], ['receber', 'Com valor a receber'], ['atraso', 'Com parcela atrasada'], ['pagar', 'Com compra a pagar'], ['cancelado', 'Cancelados']], filtro.vigencia, 'Todas as situações') + '</select>' +
+      '<select class="filtro" id="ct-entrega" aria-label="Entrega das licenças">' + opcoes([['pendente', 'Licenças não entregues'], ['entregue', 'Licenças entregues']], filtro.entrega, 'Toda situação de entrega') + '</select>' +
       '<select class="filtro" id="ct-forma" aria-label="Forma de recebimento">' + opcoes([['integral', 'Integral'], ['mensal', 'Mensal'], ['parcelado', 'Parcelado']], filtro.forma, 'Toda forma de recebimento') + '</select>' +
       '<select class="filtro" id="ct-compra" aria-label="Forma da compra">' + opcoes([['avista', 'Compra à vista'], ['parcelado', 'Compra parcelada']], filtro.compra, 'Toda forma de compra') + '</select>' +
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
@@ -158,6 +162,7 @@
     const reler = () => {
       filtro.busca = main.querySelector('#ct-busca').value;
       filtro.vigencia = main.querySelector('#ct-vig').value;
+      filtro.entrega = main.querySelector('#ct-entrega').value;
       filtro.forma = main.querySelector('#ct-forma').value;
       filtro.ano = main.querySelector('#ct-ano').value;
       filtro.compra = main.querySelector('#ct-compra').value;
@@ -176,7 +181,7 @@
       GAH.telas.contratos(main);
     });
     main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => { GAH.visaoFinanceira(bt.dataset.visao); GAH.telas.contratos(main); }));
-    ['#ct-vig', '#ct-forma', '#ct-ano', '#ct-compra', '#ct-meio', '#ct-cartao'].forEach((s) => { if (main.querySelector(s)) main.querySelector(s).addEventListener('change', reler); });
+    ['#ct-vig', '#ct-entrega', '#ct-forma', '#ct-ano', '#ct-compra', '#ct-meio', '#ct-cartao'].forEach((s) => { if (main.querySelector(s)) main.querySelector(s).addEventListener('change', reler); });
     main.querySelectorAll('tr[data-abrir-contrato]').forEach((tr) => tr.addEventListener('click', () => abrirContrato(tr.dataset.abrirContrato)));
     main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', (e) => { if (!e.target.closest('[data-entregue]')) abrirContrato(tr.dataset.id); }));
     // Ok de entrega das licenças (renovação: a partir daí passa a mostrar a nova vigência).
