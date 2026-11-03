@@ -985,17 +985,25 @@
   };
 
   /* Visão financeira escolhida pelo usuário: 'total' (todos os contratos, inclusive renovações ainda não
-     entregues) ou 'entregues' (só contratos com as licenças já entregues). Vale para o Início e Contratos. */
+     entregues) ou 'entregues' (só contratos com as licenças já entregues). Vale para o Início e Contratos.
+     A escolha dura só até sair do sistema: cada acesso começa sempre em "Total" (veja GAH.visaoInicial). */
+  const VISOES = ['gah-visao-financeira', 'gah-visao-previsao', 'gah-visao-fabricantes'];
+  GAH.visaoInicial = function () {
+    VISOES.forEach((k) => {
+      try { sessionStorage.removeItem(k); } catch (e) { /* ignora */ }
+      try { localStorage.removeItem(k); } catch (e) { /* ignora: escolha guardada por versões antigas */ }
+    });
+  };
   GAH.visaoFinanceira = function (nova) {
-    if (nova) { try { localStorage.setItem('gah-visao-financeira', nova); } catch (e) { /* ignora */ } return nova; }
-    try { return localStorage.getItem('gah-visao-financeira') === 'entregues' ? 'entregues' : 'total'; } catch (e) { return 'total'; }
+    if (nova) { try { sessionStorage.setItem('gah-visao-financeira', nova); } catch (e) { /* ignora */ } return nova; }
+    try { return sessionStorage.getItem('gah-visao-financeira') === 'entregues' ? 'entregues' : 'total'; } catch (e) { return 'total'; }
   };
   /* Escolha própria de um quadro (ex.: 'previsao', 'fabricantes'). Enquanto o quadro não tiver escolha
      própria, segue a escolha geral acima. */
   GAH.visaoDoQuadro = function (quadro, nova) {
     const chave = 'gah-visao-' + quadro;
-    if (nova) { try { localStorage.setItem(chave, nova); } catch (e) { /* ignora */ } return nova; }
-    try { const v = localStorage.getItem(chave); if (v === 'entregues' || v === 'total') return v; } catch (e) { /* ignora */ }
+    if (nova) { try { sessionStorage.setItem(chave, nova); } catch (e) { /* ignora */ } return nova; }
+    try { const v = sessionStorage.getItem(chave); if (v === 'entregues' || v === 'total') return v; } catch (e) { /* ignora */ }
     return GAH.visaoFinanceira();
   };
   GAH.contratosDaVisao = function (contratos, visao, hoje) {
@@ -1078,6 +1086,8 @@
 
   function telaLogin() {
     const app = document.getElementById('app');
+    // novo acesso: Início, Contratos e quadros voltam a mostrar "Total"
+    GAH.visaoInicial();
     // Tira a última tela do endereço: depois do login o sistema sempre abre no Início.
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
     telaAtual = '';
