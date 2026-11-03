@@ -3,7 +3,8 @@
   const { esc, moeda, dataBR, mesBR, opcoes, seloVigencia, nomeCliente, ufCliente, nomeForma, janela } = GAH.u;
   const calc = GAH.calc;
   const D = GAH.dados;
-  const filtro = { busca: '', vigencia: '', forma: '', ano: '', cartao: '', compra: '', meio: '' };
+  const FILTRO_INICIAL = { busca: '', vigencia: '', forma: '', ano: '', cartao: '', compra: '', meio: '' };
+  const filtro = Object.assign({}, FILTRO_INICIAL);
   const MEIOS = [['real', 'Dinheiro em real (Pix, transferência, boleto)'], ['dolar', 'Dinheiro em dólar'], ['cartao', 'Cartão de crédito'], ['sem', 'Forma não informada']];
 
   function abrirContrato(id) {
@@ -121,6 +122,7 @@
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
       '<select class="filtro" id="ct-meio" aria-label="Forma de pagamento da compra">' + opcoes(MEIOS, filtro.meio, 'Toda forma de pagamento') + '</select>' +
       (filtro.meio === 'cartao' && opcoesCartao.length ? '<select class="filtro" id="ct-cartao" aria-label="Cartão da compra">' + opcoes(opcoesCartao, filtro.cartao, 'Todos os cartões') + '</select>' : '') +
+      '<button type="button" class="botao secundario" id="ct-limpar"' + (visao !== 'total' || Object.keys(FILTRO_INICIAL).some((k) => filtro[k] !== FILTRO_INICIAL[k]) ? '' : ' disabled') + '>Limpar filtros</button>' +
       '</div></div>' +
       (linhas.length
         ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
@@ -167,6 +169,12 @@
       if (document.activeElement === document.body) { b.focus(); b.setSelectionRange(pos, pos); }
     };
     main.querySelector('#ct-busca').addEventListener('input', reler);
+    main.querySelector('#ct-limpar').addEventListener('click', () => {
+      // volta tudo ao início: filtros vazios e a chave em "Total", para aparecerem todos os contratos
+      Object.assign(filtro, FILTRO_INICIAL);
+      GAH.visaoFinanceira('total');
+      GAH.telas.contratos(main);
+    });
     main.querySelectorAll('[data-visao]').forEach((bt) => bt.addEventListener('click', () => { GAH.visaoFinanceira(bt.dataset.visao); GAH.telas.contratos(main); }));
     ['#ct-vig', '#ct-forma', '#ct-ano', '#ct-compra', '#ct-meio', '#ct-cartao'].forEach((s) => { if (main.querySelector(s)) main.querySelector(s).addEventListener('change', reler); });
     main.querySelectorAll('tr[data-abrir-contrato]').forEach((tr) => tr.addEventListener('click', () => abrirContrato(tr.dataset.abrirContrato)));
