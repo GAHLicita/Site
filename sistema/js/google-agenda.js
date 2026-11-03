@@ -159,8 +159,8 @@
   }
 
   /* ---------- lançamentos automáticos: vencimentos, fins de vigência e custos ---------- */
-  const COR_AUTO = { pagar: '6', renovacao: '11' };
-  const ROTULO_AUTO = { pagar: 'A pagar', renovacao: 'Fim de vigência' };
+  const COR_AUTO = { pagar: '6', renovacao: '11', faturar: '2' };
+  const ROTULO_AUTO = { pagar: 'A pagar', renovacao: 'Fim de vigência', faturar: 'Emitir NF' };
   // Id fixo por lançamento (o Google aceita letras de a a v e números): o mesmo vencimento nunca vira dois eventos.
   function idAuto(chave) {
     return 'gah' + Array.from(new TextEncoder().encode(chave), (b) => b.toString(16).padStart(2, '0')).join('');

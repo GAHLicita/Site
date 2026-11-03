@@ -241,7 +241,7 @@
     const novas = calc.gerarParcelas(total, n, primeiro);
     (antigas || []).forEach((a, i) => {
       if (!novas[i]) return;
-      ['pago', 'dataPagamento', 'nf', 'emissao'].forEach((k) => {
+      ['pago', 'dataPagamento', 'nf', 'emissao', 'nfEnviada'].forEach((k) => {
         if (a[k] !== undefined) novas[i][k] = a[k];
       });
     });
@@ -476,12 +476,16 @@
       '<div id="ct-itens" data-ignorar>' + (c.itens || []).map(linhaItem).join('') + '</div>' +
       '<button type="button" class="botao secundario pequeno" id="ct-add-item">+ Adicionar licença</button></div>' +
 
-      '<div class="form-secao"><h3>Venda ao órgão (recebimento)</h3><div class="form-grade" data-ignorar>' +
-      '<div class="campo"><label for="v-forma">Forma de recebimento</label><select id="v-forma">' + opcoes(FORMAS_VENDA, v.forma) + '</select></div>' +
+      '<div class="form-secao"><h3>Venda ao órgão (recebimento e faturamento da NF)</h3><div class="form-grade" data-ignorar>' +
+      '<div class="campo"><label for="v-forma">Forma de recebimento e faturamento</label><select id="v-forma">' + opcoes(FORMAS_VENDA, v.forma) + '</select></div>' +
       '<div class="campo"><label for="v-valor" id="v-valor-rotulo">Valor de venda</label><input id="v-valor" type="number" step="0.01" min="0" value="' + esc(valorVendaCampo) + '"></div>' +
       '<div class="campo" id="v-qtd-campo"><label for="v-qtd" id="v-qtd-rotulo">Nº de parcelas</label><input id="v-qtd" type="number" min="1" max="120" value="' + esc(qtdV) + '"></div>' +
       '<div class="campo"><label for="v-venc">1º vencimento</label><input id="v-venc" type="date" value="' + esc(v.primeiroVencimento || (v.parcelas && v.parcelas[0] && v.parcelas[0].vencimento) || '') + '"></div>' +
       '<div class="campo"><label for="v-aliq">Imposto da NF (%)</label><input id="v-aliq" type="number" step="0.01" min="0" value="' + esc(v.aliquotaNF) + '"></div>' +
+      // faturamento da NF: uma NF por parcela (integral = uma NF; mensal = uma NF por mês), com lembrete na Agenda
+      '<div class="campo"><label for="v-fat" id="v-fat-rotulo">Data do faturamento (emitir a NF)</label><input id="v-fat" type="date" value="' + esc(v.primeiroFaturamento || ((v.parcelas || [])[0] || {}).faturamento || '') + '"><span class="ajuda" id="v-fat-ajuda"></span></div>' +
+      '<div class="campo" id="v-nf-campo"><label for="v-nf-num">Nº da NF</label><input id="v-nf-num" value="' + esc(((v.parcelas || [])[0] || {}).nf) + '"></div>' +
+      '<label class="parcela-check largo" id="v-nf-enviada-campo"><input type="checkbox" id="v-nf-enviada"' + (((v.parcelas || [])[0] || {}).nfEnviada ? ' checked' : '') + '> NF já emitida e enviada ao órgão</label>' +
       '</div></div>' +
 
       '<div class="form-secao"><h3>Compra da licença (pagamento ao fornecedor)</h3><div class="form-grade" data-ignorar>' +
@@ -547,6 +551,11 @@
       $('#v-qtd-campo').hidden = t.formaV === 'integral';
       $('#k-qtd-campo').hidden = t.formaK === 'avista' || t.porLicenca || $('#k-meio').value === 'cartao';
       $('#v-valor-rotulo').textContent = t.formaV === 'mensal' ? 'Valor por mês' : 'Valor total de venda';
+      const umaNF = t.formaV === 'integral';
+      $('#v-fat-rotulo').textContent = umaNF ? 'Data do faturamento (emitir a NF)' : '1º faturamento (emitir a 1ª NF)';
+      $('#v-fat-ajuda').textContent = umaNF ? 'Faturamento integral: uma NF. Aparece na Agenda até ser marcada como enviada.' : 'Faturamento ' + (t.formaV === 'mensal' ? 'mensal' : 'por parcela') + ': uma NF por parcela, no mesmo dia dos meses seguintes. Marque cada NF enviada em "Ver parcelas", no contrato.';
+      $('#v-nf-campo').hidden = !umaNF;
+      $('#v-nf-enviada-campo').hidden = !umaNF;
       $('#v-qtd-rotulo').textContent = t.formaV === 'mensal' ? 'Quantidade de meses' : 'Nº de parcelas';
       const impV = (t.totalV * t.aliqV) / 100;
       const impK = (t.totalK * t.aliqK) / 100;
@@ -630,6 +639,19 @@
       const finalCartao = $('#k-final').value.replace(/\D/g, '').slice(-4);
       compra.cartao = meio === 'cartao' ? { banco: $('#k-banco').value.trim(), bandeira: $('#k-bandeira').value, final: finalCartao, parcelas: $('#k-parcartao').value === '' ? '' : Number($('#k-parcartao').value), vencimentoFatura: $('#k-fatura').value } : null;
       if (mudouV) venda.parcelas = refazerParcelas(vAnt.parcelas, t.totalV, t.qV, t.vencV || dados.dataEntrega || hoje);
+      // faturamento: data de emitir a NF de cada parcela (a 1ª na data informada, as demais nos meses seguintes)
+      venda.parcelas = JSON.parse(JSON.stringify(venda.parcelas || []));
+      const fat = $('#v-fat').value;
+      venda.primeiroFaturamento = fat;
+      if (fat && (mudouV || (vAnt.primeiroFaturamento || '') !== fat || venda.parcelas.some((p) => !p.faturamento))) {
+        venda.parcelas.forEach((p, i) => (p.faturamento = calc.addMeses(fat, i)));
+      }
+      if (t.formaV === 'integral' && venda.parcelas[0]) {
+        const p0 = venda.parcelas[0];
+        p0.nf = $('#v-nf-num').value.trim();
+        p0.nfEnviada = $('#v-nf-enviada').checked;
+        if (p0.nfEnviada && !p0.emissao) p0.emissao = fat && fat <= hoje ? fat : hoje;
+      }
       dados.itens = lerItens($('#ct-itens'));
       compra.porLicenca = t.porLicenca;
       if (t.porLicenca) {
@@ -751,7 +773,7 @@
       '<td><input class="mini" data-k="valor" type="number" step="0.01" value="' + esc(p.valor) + '" aria-label="Valor"></td>' +
       '<td><input class="mini" data-k="vencimento" type="date" value="' + esc(p.vencimento) + '" aria-label="Vencimento"></td>' +
       (ehVenda
-        ? '<td><input class="mini" data-k="emissao" type="date" value="' + esc(p.emissao) + '" aria-label="Emissão da NF"></td><td><input class="mini" data-k="nf" value="' + esc(p.nf) + '" style="min-width:60px" aria-label="Nº NF"></td>'
+        ? '<td><input class="mini" data-k="faturamento" type="date" value="' + esc(p.faturamento) + '" aria-label="Data do faturamento"></td><td><input class="mini" data-k="emissao" type="date" value="' + esc(p.emissao) + '" aria-label="Emissão da NF"></td><td><input class="mini" data-k="nf" value="' + esc(p.nf) + '" style="min-width:60px" aria-label="Nº NF"></td><td><input data-k="nfEnviada" type="checkbox"' + (p.nfEnviada ? ' checked' : '') + ' aria-label="NF enviada"></td>'
         : '') +
       '<td><input data-k="pago" type="checkbox"' + (p.pago ? ' checked' : '') + ' aria-label="Pago"></td>' +
       '<td><input class="mini" data-k="dataPagamento" type="date" value="' + esc(p.dataPagamento) + '" aria-label="Data do pagamento"></td>' +
@@ -759,7 +781,7 @@
     const corpo =
       '<p class="texto-suave" style="margin:0">' + esc(nomeCliente(contrato.clienteId)) + ' · ' + esc(contrato.produto) + '</p>' +
       '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>#</th>' + (porLicenca ? '<th>Licença</th>' : '') + '<th>Valor</th><th>Vencimento</th>' +
-      (ehVenda ? '<th>Emissão NF</th><th>Nº NF</th>' : '') +
+      (ehVenda ? '<th>Faturamento</th><th>Emissão NF</th><th>Nº NF</th><th>NF enviada</th>' : '') +
       '<th>' + (ehVenda ? 'Recebido' : 'Pago') + '</th><th>Data</th><th></th></tr></thead><tbody id="corpo-parcelas">' +
       parcelas.map(linha).join('') +
       '</tbody></table></div>' +
@@ -862,6 +884,18 @@
     aviso(pago ? (lado === 'venda' ? 'Parcela marcada como recebida' : 'Parcela marcada como paga') : 'Parcela reaberta');
   };
 
+  /* Marca/desmarca a NF de uma parcela de venda como emitida e enviada ao órgão. */
+  GAH.alternarNF = async function (contratoId, indice, enviada) {
+    const c = D.obter('contratos', contratoId);
+    if (!c) return;
+    const copia = JSON.parse(JSON.stringify(c));
+    const p = copia.venda.parcelas[indice];
+    p.nfEnviada = enviada;
+    if (enviada && !p.emissao) p.emissao = calc.hoje();
+    await D.salvar('contratos', copia);
+    aviso(enviada ? 'NF marcada como enviada' : 'NF marcada como não enviada');
+  };
+
   /* ---------- bloco de contrato (usado em Clientes e Contratos) ---------- */
   function tabelaParcelas(c, lado) {
     const ehVenda = lado === 'venda';
@@ -870,14 +904,17 @@
     if (!parcelas.length) return '<p class="texto-suave" style="margin:0">Sem parcelas.</p>';
     const hoje = calc.hoje();
     return (
-      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>#</th><th>Vencimento</th>' + (ehVenda ? '<th>NF</th>' : '') + '<th class="valor">Valor</th><th>' + (ehVenda ? 'Recebida' : 'Paga') + '</th></tr></thead><tbody>' +
+      '<div class="tabela-rolagem"><table class="tabela"><thead><tr><th>#</th><th>Vencimento</th>' + (ehVenda ? '<th title="NF emitida e enviada ao órgão">NF</th>' : '') + '<th class="valor">Valor</th><th>' + (ehVenda ? 'Recebida' : 'Paga') + '</th></tr></thead><tbody>' +
       parcelas
         .map((p, i) => {
           const atrasada = !p.pago && p.vencimento && p.vencimento < hoje;
           return (
             '<tr><td>' + (i + 1) + '</td><td>' + dataBR(p.vencimento) + (atrasada ? ' <span class="selo critico">atrasada</span>' : '') +
-            (porLicenca ? '<div class="texto-suave" style="font-size:.78rem">' + esc(GAH.nomesLicencasDaParcela(c, p)) + '</div>' : '') + '</td>' +
-            (ehVenda ? '<td>' + esc(p.nf || '—') + '</td>' : '') +
+            (porLicenca ? '<div class="texto-suave" style="font-size:.78rem">' + esc(GAH.nomesLicencasDaParcela(c, p)) + '</div>' : '') +
+            (ehVenda && !p.nfEnviada && p.faturamento ? '<div class="texto-suave" style="font-size:.78rem">faturar em ' + dataBR(p.faturamento).slice(0, 5) + '</div>' : '') + '</td>' +
+            (ehVenda
+              ? '<td><label class="parcela-check" title="NF emitida e enviada ao órgão"><input type="checkbox" data-nf-enviada="' + esc(c.id) + '|' + i + '"' + (p.nfEnviada ? ' checked' : '') + ' aria-label="NF enviada">' + (p.nf ? ' ' + esc(p.nf) : '') + '</label></td>'
+              : '') +
             '<td class="valor">' + moeda(p.valor) + '</td>' +
             '<td><label class="parcela-check"><input type="checkbox" data-parcela="' + esc(c.id) + '|' + lado + '|' + i + '"' + (p.pago ? ' checked' : '') + '> ' + (p.pago ? (p.dataPagamento ? dataBR(p.dataPagamento).slice(0, 6) + p.dataPagamento.slice(2, 4) : 'sim') : 'aberta') + '</label></td></tr>'
           );
@@ -968,6 +1005,11 @@
         const [id, lado, i] = p.dataset.parcela.split('|');
         GAH.alternarParcela(id, lado, Number(i), p.checked);
       }
+      const nf = e.target.closest('[data-nf-enviada]');
+      if (nf) {
+        const [id, i] = nf.dataset.nfEnviada.split('|');
+        GAH.alternarNF(id, Number(i), nf.checked);
+      }
     });
   };
 
@@ -1019,6 +1061,10 @@
     for (const c of D.lista('contratos')) {
       if (c.status === 'cancelado') continue;
       const orgao = nomeCliente(c.clienteId);
+      // NF a emitir: no dia do faturamento de cada parcela de venda, até marcar a NF como enviada
+      ((c.venda && c.venda.parcelas) || []).forEach((p, i, todas) => {
+        if (p.faturamento && !p.nfEnviada && !p.pago) ev.push({ chave: 'faturar:' + c.id + ':' + i, data: p.faturamento, tipo: 'faturar', titulo: 'Emitir NF — ' + orgao, detalhe: [c.produto, todas.length > 1 ? 'parcela ' + (i + 1) + '/' + todas.length : '', moeda(p.valor)].filter(Boolean).join(' · '), link: '#/clientes/' + c.clienteId, valor: p.valor });
+      });
       // parcelas a receber e parcelas da compra das licenças não entram na Agenda
       // já renovado: com as licenças novas entregues não há o que fazer; sem entregar, o aviso vira "entregar licenças"
       const renovacao = ren.porAnterior[c.id] && ren[ren.porAnterior[c.id]];

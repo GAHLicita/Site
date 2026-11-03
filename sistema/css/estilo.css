@@ -537,6 +537,7 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .evento.disputa { background: var(--navy); color: var(--creme); }
 .evento.receber { background: var(--ok-fundo); color: var(--ok); }
 .evento.pagar { background: var(--alerta-fundo); color: var(--alerta); }
+.evento.faturar { background: var(--ok-fundo); color: var(--ok); }
 .evento.renovacao { background: var(--critico-fundo); color: var(--critico); }
 .evento.feito { text-decoration: line-through; opacity: 0.6; }
 .mais-eventos { font-size: 0.72rem; color: var(--tinta-2); }
@@ -851,7 +852,7 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* Contrato: como a compra foi paga */
 .meio-compra { font-size: 0.85rem; font-weight: 600; color: var(--info); margin-top: 4px; }
-[data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden], #ct-entrega-campo[hidden], [data-compra-unica][hidden], #k-nota-licenca[hidden], .item-linha [hidden], [data-so-cartao][hidden] { display: none !important; }
+[data-meio][hidden], #v-qtd-campo[hidden], #k-qtd-campo[hidden], #v-nf-campo[hidden], #v-nf-enviada-campo[hidden], #ct-entrega-campo[hidden], [data-compra-unica][hidden], #k-nota-licenca[hidden], .item-linha [hidden], [data-so-cartao][hidden] { display: none !important; }
 /* compra informada por licença */
 #ct-itens:not(.por-licenca) .item-compra { display: none; }
 .item-compra { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--linha); }

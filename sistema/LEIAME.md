@@ -129,6 +129,10 @@ link para criar uma senha nova.
   com o valor somado (ex.: 2 licenças em 12x no mesmo cartão = 12 parcelas); o pago e o que falta de cada licença
   continuam separados no quadro do contrato.
 
+- **Faturamento da NF**: cada parcela de venda é uma NF (integral = uma NF; mensal = uma NF por mês). No contrato,
+  informe a data do faturamento (no mensal, a 1ª; as demais seguem o mesmo dia dos meses seguintes). A Agenda (e o
+  Google Agenda, sem alarme) mostra "Emitir NF" nesse dia até a NF ser marcada como enviada: na coluna NF de
+  "Ver parcelas" ou, no integral, em "NF já emitida e enviada ao órgão".
 - **Entrega das licenças**: contrato novo fica "Pendente de entrega". Quando entregar, clique em
   **Licenças entregues** (na lista de Contratos ou no contrato, na ficha do órgão) ou escolha "Entregue" no
   formulário. Pendente ou entregue, o contrato já conta em todo o Início na visão "Total".

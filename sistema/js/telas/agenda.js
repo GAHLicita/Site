@@ -113,14 +113,14 @@
       '<button class="botao secundario pequeno" id="mes-prox" aria-label="Próximo mês">›</button><button class="botao secundario pequeno" id="mes-hoje">Hoje</button></div>' +
       '<label class="parcela-check"><input type="checkbox" id="ag-auto"' + (estado.automaticos ? ' checked' : '') + '> Mostrar lançamentos automáticos</label></div>' +
       '<div class="tabela-rolagem"><div class="calendario">' + grade + '</div></div>' +
-      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
+      '<div class="painel-corpo legenda" style="margin:0"><span><i style="background:var(--navy)"></i>Disputa</span><span><i style="background:var(--info-fundo);border:1px solid var(--info)"></i>Compromisso</span><span><i style="background:var(--alerta-fundo);border:1px solid var(--alerta)"></i>A pagar</span><span><i style="background:var(--ok-fundo);border:1px solid var(--ok)"></i>Emitir NF</span><span><i style="background:var(--critico-fundo);border:1px solid var(--critico)"></i>Fim de vigência</span>' + (GAH.google && GAH.google.conectado() ? '<span><i class="leg-google"></i>Google Agenda</span>' : '') + '</div>' +
       '</section>' +
       '<section class="painel painel-proximos"><div class="proximos-dentro"><div class="painel-cab"><h2>Próximos 30 dias</h2>' + (proximos.length ? '<span class="sub">' + proximos.length + ' item(ns)</span>' : '') + '</div>' +
       (proximos.length
         ? '<ul class="avisos">' + proximos.map((e) =>
             '<li><div class="data-bloco"><b>' + e.data.slice(8, 10) + '</b><span>' + MESES_CURTOS[Number(e.data.slice(5, 7)) - 1] + '</span></div><div class="titulo">' +
             (e.id ? '<button type="button" class="link-botao" style="text-decoration:none;color:var(--tinta);font-weight:600;text-align:left" data-ag="' + esc(e.id) + '">' + esc(e.titulo) + '</button>' : '<a href="' + esc(e.link || '#/agenda') + '"' + (/^https?:/.test(e.link || '') ? ' target="_blank" rel="noopener"' : '') + '>' + esc(e.titulo) + '</a>') +
-            '<span class="detalhe">' + esc((e.hora ? e.hora + ' · ' : '') + (e.detalhe || '')) + '</span></div><span class="evento ' + e.tipo + '" style="width:auto">' + ({ disputa: 'disputa', receber: 'receber', pagar: 'pagar', renovacao: 'vigência', manual: 'agenda', google: 'Google' }[e.tipo] || '') + '</span></li>'
+            '<span class="detalhe">' + esc((e.hora ? e.hora + ' · ' : '') + (e.detalhe || '')) + '</span></div><span class="evento ' + e.tipo + '" style="width:auto">' + ({ faturar: 'NF', disputa: 'disputa', receber: 'receber', pagar: 'pagar', renovacao: 'vigência', manual: 'agenda', google: 'Google' }[e.tipo] || '') + '</span></li>'
           ).join('') + '</ul>'
         : '<div class="vazio"><strong>Nada nos próximos 30 dias</strong>Clique em um dia do calendário para marcar um compromisso.</div>') +
       '</div></section></div>';
