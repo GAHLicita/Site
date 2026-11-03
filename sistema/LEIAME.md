@@ -108,8 +108,8 @@ link para criar uma senha nova.
 
 ## Como o sistema calcula
 
-- **Filtro de entrega (Contratos)**: "Licenças não entregues" mostra contratos novos e renovações cujas licenças
-  ainda não foram entregues (cancelados ficam de fora); "Licenças entregues" mostra só os já entregues.
+- **Licenças não entregues (Contratos)**: opção do filtro de situação; mostra contratos novos e renovações cujas
+  licenças ainda não foram entregues (cancelados ficam de fora).
 - **Filtro por cartão (Contratos)**: os filtros "Forma da compra" (à vista / parcelada), "Forma de pagamento"
   (real, dólar, cartão de crédito, não informada) e "Cartão da compra" (só aparece com Cartão de crédito) se
   combinam com os demais (ex.: recebimento integral + compra parcelada + cartão X). Com um cartão escolhido, aparece
