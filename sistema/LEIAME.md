@@ -161,9 +161,10 @@ link para criar uma senha nova.
 - Custos fixos e mensalidades entram no mês a que se referem, mesmo que tenham sido pagos depois,
   e aparecem sozinhos na tela Despesas, na Agenda (vencimentos) e na previsão de caixa.
 - **Valores mês a mês** (o que foi vendido e o lucro de cada mês): a venda entra no mês da emissão da NF (ou do
-  vencimento, se não houver emissão) e o custo inteiro da licença (compra e imposto da compra) é abatido no mesmo mês,
-  na proporção de cada parcela de venda, mesmo que a compra seja paga parcelada depois. Assim as parcelas ainda não
-  pagas não aparecem como lucro. Quando o dinheiro sai de fato, mês a mês, fica na previsão de caixa.
+  vencimento, se não houver emissão). Cada parcela de compra (e o imposto da compra) entra no mês do seu vencimento;
+  a que vence depois da última NF do contrato é trazida para o mês dessa última NF. Assim, venda integral com compra
+  parcelada abate o custo inteiro no mês da venda (parcelas ainda não pagas não viram lucro), e venda mensal com
+  compra mensal mostra em cada mês o que foi pago nele. Quando o dinheiro sai de fato fica na previsão de caixa.
 - Contratos **cancelados** não entram em nenhum total.
 
 ## Testes
