@@ -160,8 +160,10 @@ link para criar uma senha nova.
   mensalidades do contador (até o mês atual).
 - Custos fixos e mensalidades entram no mês a que se referem, mesmo que tenham sido pagos depois,
   e aparecem sozinhos na tela Despesas, na Agenda (vencimentos) e na previsão de caixa.
-- **Faturamento mensal**: a venda entra no mês da emissão da NF (ou do vencimento, se não
-  houver emissão); a compra entra no mês do pagamento.
+- **Valores mês a mês** (o que foi vendido e o lucro de cada mês): a venda entra no mês da emissão da NF (ou do
+  vencimento, se não houver emissão) e o custo inteiro da licença (compra e imposto da compra) é abatido no mesmo mês,
+  na proporção de cada parcela de venda, mesmo que a compra seja paga parcelada depois. Assim as parcelas ainda não
+  pagas não aparecem como lucro. Quando o dinheiro sai de fato, mês a mês, fica na previsão de caixa.
 - Contratos **cancelados** não entram em nenhum total.
 
 ## Testes

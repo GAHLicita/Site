@@ -159,9 +159,12 @@
     return r;
   };
 
-  /* Faturamento mês a mês, como a aba "Faturamento" da planilha.
+  /* Faturamento mês a mês, como a aba "Faturamento" da planilha (o que foi vendido e o lucro de cada mês).
      Venda e imposto da NF entram no mês de emissão da nota (ou do vencimento, se não houver emissão).
-     Compra e imposto da compra entram no mês do vencimento da parcela de compra. */
+     Compra e imposto da compra entram junto com a venda: o custo inteiro da licença é abatido no(s) mês(es) da
+     venda, na proporção de cada parcela de venda, mesmo que a compra seja paga parcelada depois (as parcelas
+     ainda não pagas não viram lucro). Contrato sem venda: a compra fica no mês do vencimento da parcela de compra.
+     (Quando o dinheiro sai, mês a mês, está na previsão de caixa.) */
   C.faturamentoMensal = function (contratos, despesas, ano) {
     const meses = [];
     for (let m = 1; m <= 12; m++) {
@@ -176,15 +179,23 @@
     for (const c of contratos.filter(valido)) {
       const aliqNF = num(c.venda && c.venda.aliquotaNF) / 100;
       const aliqCompra = num(c.compra && c.compra.aliquotaCompra) / 100;
-      for (const p of (c.venda && c.venda.parcelas) || []) {
+      const parcelasVenda = (c.venda && c.venda.parcelas) || [];
+      const totalVenda = parcelasVenda.reduce((t, p) => t + num(p.valor), 0);
+      const totalCompra = ((c.compra && c.compra.parcelas) || []).reduce((t, p) => t + num(p.valor), 0);
+      for (const p of parcelasVenda) {
         const i = idx(p.emissao || p.vencimento);
         if (i < 0) continue;
+        // custo da licença na proporção desta parcela de venda
+        const custo = totalVenda > 0 ? (totalCompra * num(p.valor)) / totalVenda : 0;
         meses[i].venda += num(p.valor);
-        meses[i].impostos += num(p.valor) * aliqNF;
+        meses[i].compra += custo;
+        meses[i].impostos += num(p.valor) * aliqNF + custo * aliqCompra;
         const k = doContrato(meses[i], c);
         k.venda += num(p.valor);
-        k.impostos += num(p.valor) * aliqNF;
+        k.compra += custo;
+        k.impostos += num(p.valor) * aliqNF + custo * aliqCompra;
       }
+      if (totalVenda > 0) continue;
       for (const p of (c.compra && c.compra.parcelas) || []) {
         const i = idx(p.vencimento);
         if (i < 0) continue;

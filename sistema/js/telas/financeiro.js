@@ -169,7 +169,7 @@
       '</div></div></div></section>' +
       '</section>' +
 
-      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><div><h2>Valores mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, compra pelo mês do pagamento; despesas, custos fixos e contador abatidos no mês</span></div>' +
+      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><div><h2>Valores mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal, com o custo da licença (compra) abatido no mesmo mês, mesmo se pago parcelado; despesas, custos fixos e contador abatidos no mês</span></div>' +
       '<div class="acoes"><div class="visao-financeira" role="group" aria-label="Quais contratos entram na tabela">' +
       '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total</button>' +
       '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues</button></div>' +

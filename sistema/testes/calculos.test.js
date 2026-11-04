@@ -36,7 +36,7 @@ test('resumoContrato soma recebido, a receber, parcelas e lucro', () => {
   assert.strictEqual(s.vigencia, 'vencendo');
 });
 
-test('faturamentoMensal usa a emissão da NF para venda e o vencimento para compra', () => {
+test('faturamentoMensal usa a emissão da NF para venda e abate a compra no mesmo mês', () => {
   const c = {
     id: 'x',
     venda: { aliquotaNF: 10, parcelas: [{ valor: 1000, emissao: '2026-08-20', vencimento: '2026-09-29', pago: true }] },
@@ -217,4 +217,18 @@ test('previsaoCaixa: 1ª parcela da venda entra no mês da entrega e anda para o
     venda: { parcelas: [{ valor: 500, vencimento: '2027-02-09' }] }, compra: { parcelas: [] } };
   const p = calc.previsaoCaixa([futuro], [], '2026-11-02', 4);
   assert.deepStrictEqual(p.map((m) => [m.mes, m.entra]), [['2026-11', 0], ['2026-12', 0], ['2027-01', 500], ['2027-02', 0]]);
+});
+
+test('faturamentoMensal abate a compra parcelada inteira no mês da venda (não vira lucro)', () => {
+  // venda integral em novembro; compra de 1.200 em 12x no cartão (só a 1ª paga)
+  const compra = { aliquotaCompra: 0, parcelas: Array.from({ length: 12 }, (_, i) => ({ valor: 100, vencimento: calc.addMeses('2026-11-10', i), pago: i === 0 })) };
+  const c = { id: 'i', venda: { aliquotaNF: 10, parcelas: [{ valor: 3000, emissao: '2026-11-05', vencimento: '2026-12-05' }] }, compra };
+  const m = calc.faturamentoMensal([c], [], 2026);
+  assert.deepStrictEqual([m[10].venda, m[10].compra, m[10].impostos, m[10].lucro], [3000, 1200, 300, 1500]);
+  assert.strictEqual(m[11].compra, 0); // dezembro: nada de compra (sai só na previsão de caixa)
+  // venda mensal (3 meses): o custo é dividido junto com cada mês de venda
+  const mensal = { id: 'm', venda: { aliquotaNF: 0, parcelas: ['2026-09-01', '2026-10-01', '2026-11-01'].map((d) => ({ valor: 1000, emissao: d })) },
+    compra: { aliquotaCompra: 0, parcelas: [{ valor: 900, vencimento: '2026-09-01' }] } };
+  const n = calc.faturamentoMensal([mensal], [], 2026);
+  assert.deepStrictEqual([n[8].compra, n[9].compra, n[10].compra], [300, 300, 300]);
 });
