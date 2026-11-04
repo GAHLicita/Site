@@ -226,9 +226,13 @@ test('faturamentoMensal abate a compra parcelada inteira no mês da venda (não 
   const m = calc.faturamentoMensal([c], [], 2026);
   assert.deepStrictEqual([m[10].venda, m[10].compra, m[10].impostos, m[10].lucro], [3000, 1200, 300, 1500]);
   assert.strictEqual(m[11].compra, 0); // dezembro: nada de compra (sai só na previsão de caixa)
-  // venda mensal (3 meses): o custo é dividido junto com cada mês de venda
-  const mensal = { id: 'm', venda: { aliquotaNF: 0, parcelas: ['2026-09-01', '2026-10-01', '2026-11-01'].map((d) => ({ valor: 1000, emissao: d })) },
-    compra: { aliquotaCompra: 0, parcelas: [{ valor: 900, vencimento: '2026-09-01' }] } };
+  // venda mensal com compra mensal (como Jaguariúna): cada mês mostra o que foi pago nele
+  const mensal = { id: 'm', venda: { aliquotaNF: 10.5, parcelas: [4208.33, 708.33, 708.33].map((v, i) => ({ valor: v, emissao: calc.addMeses('2026-07-21', i) })) },
+    compra: { aliquotaCompra: 0, parcelas: [2780.25, 550, 550].map((v, i) => ({ valor: v, vencimento: calc.addMeses('2026-07-21', i) })) } };
   const n = calc.faturamentoMensal([mensal], [], 2026);
-  assert.deepStrictEqual([n[8].compra, n[9].compra, n[10].compra], [300, 300, 300]);
+  assert.deepStrictEqual([n[6].compra, n[7].compra, n[8].compra], [2780.25, 550, 550]);
+  assert.deepStrictEqual([n[6].impostos, n[7].impostos], [441.87, 74.37]);
+  // compra que vence antes da 1ª NF fica no seu mês
+  const antes = { id: 'a', venda: { parcelas: [{ valor: 1000, emissao: '2026-10-01' }] }, compra: { parcelas: [{ valor: 600, vencimento: '2026-09-15' }] } };
+  assert.strictEqual(calc.faturamentoMensal([antes], [], 2026)[8].compra, 600);
 });
