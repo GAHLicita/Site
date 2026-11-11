@@ -55,7 +55,9 @@
 
   GAH.telas.licitacoes = function (main) {
     const hoje = calc.hoje();
-    const lic = D.lista('licitacoes').slice().sort((a, b) => (a.dataDisputa || '9').localeCompare(b.dataDisputa || '9'));
+    // ordem da disputa: data e, no mesmo dia, horário (sem data ou sem hora vão para o fim)
+    const quando = (l) => (l.dataDisputa || '9999-99-99') + 'T' + (l.horaDisputa || '99:99');
+    const lic = D.lista('licitacoes').slice().sort((a, b) => quando(a).localeCompare(quando(b)) || (a.orgao || '').localeCompare(b.orgao || ''));
     const decididas = lic.filter((l) => ['ganha', 'perdida'].includes(l.status));
     const ganhas = lic.filter((l) => l.status === 'ganha');
     const abertas = lic.filter((l) => ['analise', 'proposta', 'disputa'].includes(l.status));
