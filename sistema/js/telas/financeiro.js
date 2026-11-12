@@ -164,6 +164,8 @@
       '<div class="mapa-caixa">' + mapa(g.estados, porUF) + '</div>' +
       '<div class="legenda-mapa"><i></i> Estados com contrato</div><p class="credito">Mapa: <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> (CC BY 4.0)</p></div>' +
       '<div class="mapa-numeros">' +
+      // contratos fechados: todos, menos os cancelados (vigentes, vencidos, renovados e renovações ainda não entregues)
+      '<div class="mapa-numero"><b>' + contratos.filter((c) => c.status !== 'cancelado').length + '</b><span>contratos fechados</span></div>' +
       '<div class="mapa-numero"><b>' + g.orgaosAtendidos + '</b><span>órgãos públicos atendidos</span></div>' +
       '<div class="mapa-numero"><b>' + g.estados.length + '</b><span>estados atendidos</span></div>' +
       '</div></div></div></section>' +
