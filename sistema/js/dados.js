@@ -178,6 +178,16 @@
       return doc;
     },
 
+    /* Números públicos lidos pelo site (sem login): só contagens, nenhum dado de cliente.
+       Fica em publico/numeros no Firestore (as regras deixam qualquer um ler e só a equipe gravar). */
+    async publicarNumeros(numeros) {
+      if (modoDemo()) {
+        try { localStorage.setItem('gah-publico-numeros', JSON.stringify(numeros)); } catch (e) { /* ignora */ }
+        return;
+      }
+      await fb.fs.setDoc(fb.fs.doc(fb.db, 'publico', 'numeros'), limpar(numeros));
+    },
+
     async excluir(colecao, id) {
       cache[colecao] = cache[colecao].filter((x) => x.id !== id);
       if (modoDemo()) gravarLocal();

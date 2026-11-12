@@ -15,6 +15,12 @@ service cloud.firestore {
         ];
     }
 
+    // Números mostrados no site da empresa (só contagens): qualquer um lê; só a equipe grava.
+    match /publico/numeros {
+      allow read: if true;
+      allow write: if autorizado();
+    }
+
     match /{colecao}/{documento} {
       allow read, write: if autorizado()
         && colecao in ['clientes', 'contratos', 'agenda', 'licitacoes', 'despesas', 'contabilidade', 'contas', 'custos', 'config'];

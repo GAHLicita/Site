@@ -1375,7 +1375,7 @@ form.contact-form{
           <p class="map-credit">Mapa: <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps / MapSVG</a> (CC BY 4.0)</p>
         </div>
         <div class="stats-wrap">
-          <div class="stat-card">
+          <div class="stat-card" id="stat-contratos">
             <div class="stat-value">+1M</div>
             <div class="stat-label">em contratos de licenciamento</div>
           </div>
@@ -1610,6 +1610,21 @@ form.contact-form{
     window.addEventListener('scroll', agendar, { passive: true });
     window.addEventListener('resize', agendar);
     atualizar();
+  })();
+</script>
+<script>
+  // Contratos fechados: o mesmo número do Início do sistema, lido do registro público do Firebase
+  // (só a contagem). Se a leitura falhar, o quadro continua como está.
+  (function () {
+    var url = 'https://firestore.googleapis.com/v1/projects/gah-sistema/databases/(default)/documents/publico/numeros?key=AIzaSyB2PB-LTPcoEFtLyHjHlaY558vSLWNx5oc';
+    fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      var campo = d && d.fields && d.fields.contratosFechados;
+      var n = campo && Number(campo.integerValue || campo.doubleValue);
+      var card = document.getElementById('stat-contratos');
+      if (!card || !(n > 0)) return;
+      card.querySelector('.stat-value').textContent = n;
+      card.querySelector('.stat-label').textContent = 'contratos fechados';
+    }).catch(function () {});
   })();
 </script>
 </body>

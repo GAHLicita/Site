@@ -1298,6 +1298,22 @@
   });
   D.aoMudar(redesenharDepois);
 
+  /* Número de contratos fechados (todos, menos os cancelados) para o site da empresa, que mostra
+     a mesma contagem do Início. Só grava quando o número muda. */
+  let publicado = null;
+  let esperaPublicar = null;
+  D.aoMudar(() => {
+    clearTimeout(esperaPublicar);
+    esperaPublicar = setTimeout(() => {
+      if (!usuarioAtual || D.erroBanco || !D.lista('contratos').length) return;
+      const contratosFechados = D.lista('contratos').filter((c) => c.status !== 'cancelado').length;
+      if (contratosFechados === publicado) return;
+      D.publicarNumeros({ contratosFechados, atualizadoEm: new Date().toISOString() })
+        .then(() => (publicado = contratosFechados))
+        .catch((e) => console.warn('Não foi possível publicar o número de contratos no site', e));
+    }, 3000);
+  });
+
   /* tema escolhido em Ajustes */
   try {
     const tema = localStorage.getItem('gah-tema');
