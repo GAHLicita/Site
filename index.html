@@ -1379,11 +1379,11 @@ form.contact-form{
             <div class="stat-value">+1M</div>
             <div class="stat-label">em contratos de licenciamento</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" id="stat-orgaos">
             <div class="stat-value">36</div>
             <div class="stat-label">órgãos públicos atendidos</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" id="stat-estados">
             <div class="stat-value">16</div>
             <div class="stat-label">estados brasileiros atendidos</div>
           </div>
@@ -1613,17 +1613,27 @@ form.contact-form{
   })();
 </script>
 <script>
-  // Contratos fechados: o mesmo número do Início do sistema, lido do registro público do Firebase
-  // (só a contagem). Se a leitura falhar, o quadro continua como está.
+  // Contratos fechados, órgãos e estados atendidos (e o mapa): os mesmos números do Início do sistema, lidos do
+  // registro público do Firebase (só contagens e siglas dos estados). Se a leitura falhar, fica como está.
   (function () {
     var url = 'https://firestore.googleapis.com/v1/projects/gah-sistema/databases/(default)/documents/publico/numeros?key=AIzaSyB2PB-LTPcoEFtLyHjHlaY558vSLWNx5oc';
     fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-      var campo = d && d.fields && d.fields.contratosFechados;
-      var n = campo && Number(campo.integerValue || campo.doubleValue);
-      var card = document.getElementById('stat-contratos');
-      if (!card || !(n > 0)) return;
-      card.querySelector('.stat-value').textContent = n;
-      card.querySelector('.stat-label').textContent = 'contratos fechados';
+      var f = (d && d.fields) || {};
+      var numero = function (campo) { return campo ? Number(campo.integerValue || campo.doubleValue) : 0; };
+      var mostrar = function (id, n, rotulo) {
+        var card = document.getElementById(id);
+        if (!card || !(n > 0)) return;
+        card.querySelector('.stat-value').textContent = n;
+        if (rotulo) card.querySelector('.stat-label').textContent = rotulo;
+      };
+      mostrar('stat-contratos', numero(f.contratosFechados), 'contratos fechados');
+      mostrar('stat-orgaos', numero(f.orgaosAtendidos));
+      var ufs = ((f.estados && f.estados.arrayValue && f.estados.arrayValue.values) || []).map(function (v) { return String(v.stringValue || '').toUpperCase(); }).filter(Boolean);
+      if (!ufs.length) return;
+      mostrar('stat-estados', ufs.length);
+      // mapa: pinta só os estados atendidos
+      document.querySelectorAll('.br-state').forEach(function (p) { p.classList.toggle('active', ufs.indexOf(p.id.replace('uf-', '').toUpperCase()) >= 0); });
+      document.querySelectorAll('.uf-label').forEach(function (t) { t.classList.toggle('active', ufs.indexOf(t.textContent.trim().toUpperCase()) >= 0); });
     }).catch(function () {});
   })();
 </script>

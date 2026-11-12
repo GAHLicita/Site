@@ -1298,18 +1298,20 @@
   });
   D.aoMudar(redesenharDepois);
 
-  /* Número de contratos fechados (todos, menos os cancelados) para o site da empresa, que mostra
-     a mesma contagem do Início. Só grava quando o número muda. */
+  /* Números do site da empresa, os mesmos do mapa do Início: contratos fechados (todos, menos os cancelados),
+     órgãos atendidos e estados atendidos (com contrato não cancelado). Só grava quando algum muda. */
   let publicado = null;
   let esperaPublicar = null;
   D.aoMudar(() => {
     clearTimeout(esperaPublicar);
     esperaPublicar = setTimeout(() => {
       if (!usuarioAtual || D.erroBanco || !D.lista('contratos').length) return;
-      const contratosFechados = D.lista('contratos').filter((c) => c.status !== 'cancelado').length;
-      if (contratosFechados === publicado) return;
-      D.publicarNumeros({ contratosFechados, atualizadoEm: new Date().toISOString() })
-        .then(() => (publicado = contratosFechados))
+      const g = calc.resumoGeral(D.lista('contratos'), [], D.lista('clientes'), calc.hoje());
+      const numeros = { contratosFechados: D.lista('contratos').filter((c) => c.status !== 'cancelado').length, orgaosAtendidos: g.orgaosAtendidos, estados: g.estados };
+      const chave = JSON.stringify(numeros);
+      if (chave === publicado) return;
+      D.publicarNumeros(Object.assign({ atualizadoEm: new Date().toISOString() }, numeros))
+        .then(() => (publicado = chave))
         .catch((e) => console.warn('Não foi possível publicar o número de contratos no site', e));
     }, 3000);
   });
