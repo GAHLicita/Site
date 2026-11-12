@@ -161,6 +161,7 @@
 
   GAH.formCliente = function (cliente, aoSalvar) {
     const c = cliente || { contatos: [{}] };
+    const site = Object.assign({}, GAH.site.doCliente(c));
     const corpo =
       '<form id="form-cliente" class="form-secao" style="border:0;padding:0">' +
       '<div class="form-grade">' +
@@ -181,6 +182,16 @@
       '<div class="campo"><label for="cli-fat-portal">Portal / sistema para enviar a NF</label><input id="cli-fat-portal" name="fatPortal" value="' + esc((c.faturamento || {}).portal) + '" placeholder="Ex.: e-mail, SEI, 1Doc, protocolo"></div>' +
       '<div class="campo largo"><label for="cli-fat-inst">O que precisa constar na NF</label><textarea id="cli-fat-inst" name="fatInstrucoes" placeholder="Ex.: nº do contrato e da nota de empenho, dados bancários">' + esc((c.faturamento || {}).instrucoes) + '</textarea></div>' +
       '</div>' +
+      // como o órgão aparece no site da empresa (seção de clientes)
+      '<h3 style="margin-top:8px">No site da empresa</h3>' +
+      '<div class="form-grade" data-ignorar>' +
+      '<label class="parcela-check largo"><input type="checkbox" id="cli-site-mostrar"' + (site.mostrar !== false ? ' checked' : '') + '> Mostrar no site (aparece quando o órgão tiver contrato)</label>' +
+      '<div class="campo"><label for="cli-site-nome">Nome no site</label><input id="cli-site-nome" value="' + esc(site.nome) + '" placeholder="Ex.: Prefeitura de Lins"></div>' +
+      '<div class="campo"><label for="cli-site-desc">Descrição curta</label><input id="cli-site-desc" value="' + esc(site.descricao) + '" placeholder="Ex.: Município de Lins — SP"></div>' +
+      '<div class="campo"><label for="cli-site-logo">Logo / brasão</label><div class="logo-site"><span class="logo-site-img" id="cli-site-previa"></span>' +
+      '<input id="cli-site-logo" type="file" accept="image/*"><button type="button" class="link-botao" id="cli-site-tirar">remover logo</button></div>' +
+      '<span class="ajuda">Qualquer imagem; o sistema reduz sozinho.</span></div>' +
+      '</div>' +
       '<h3 style="margin-top:8px">Contatos no órgão</h3>' +
       '<div class="contatos" id="lista-contatos">' + (c.contatos && c.contatos.length ? c.contatos : [{}]).map(linhaContato).join('') + '</div>' +
       '<div><button type="button" class="botao secundario pequeno" id="add-contato">+ Adicionar contato</button></div>' +
@@ -192,6 +203,18 @@
     const j = janela({ titulo: c.id ? 'Editar órgão' : 'Novo órgão', corpo, rodape });
     const form = j.el.querySelector('#form-cliente');
     const lista = j.el.querySelector('#lista-contatos');
+    const previa = () => {
+      const caixa = j.el.querySelector('#cli-site-previa');
+      caixa.innerHTML = site.logo ? '<img src="' + esc(GAH.site.srcLogo(site.logo)) + '" alt="">' : '<span class="texto-suave">sem logo</span>';
+      j.el.querySelector('#cli-site-tirar').hidden = !site.logo;
+    };
+    previa();
+    j.el.querySelector('#cli-site-logo').addEventListener('change', async (e) => {
+      const arq = e.target.files && e.target.files[0];
+      if (!arq) return;
+      try { site.logo = await GAH.site.reduzirLogo(arq); previa(); } catch (erro) { aviso(erro.message, true); }
+    });
+    j.el.querySelector('#cli-site-tirar').addEventListener('click', () => { site.logo = ''; j.el.querySelector('#cli-site-logo').value = ''; previa(); });
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
     j.el.querySelector('#add-contato').addEventListener('click', () => {
       lista.insertAdjacentHTML('beforeend', linhaContato({}, lista.children.length));
@@ -213,6 +236,7 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const dados = lerForm(form);
+      dados.site = { mostrar: j.el.querySelector('#cli-site-mostrar').checked, nome: j.el.querySelector('#cli-site-nome').value.trim(), descricao: j.el.querySelector('#cli-site-desc').value.trim(), logo: site.logo || '' };
       dados.faturamento = { email: dados.fatEmail, responsavel: dados.fatResponsavel, telefone: dados.fatTelefone, portal: dados.fatPortal, instrucoes: dados.fatInstrucoes };
       ['fatEmail', 'fatResponsavel', 'fatTelefone', 'fatPortal', 'fatInstrucoes'].forEach((k) => delete dados[k]);
       dados.contatos = [...lista.querySelectorAll('.contato-linha')]
@@ -1299,7 +1323,8 @@
   D.aoMudar(redesenharDepois);
 
   /* Números do site da empresa, os mesmos do mapa do Início: contratos fechados (todos, menos os cancelados),
-     órgãos atendidos e estados atendidos (com contrato não cancelado). Só grava quando algum muda. */
+     órgãos atendidos e estados atendidos (com contrato não cancelado), e a lista de órgãos da seção de clientes
+     (nome, descrição e logo; veja site-clientes.js). Só grava quando algo muda. */
   let publicado = null;
   let esperaPublicar = null;
   D.aoMudar(() => {
@@ -1307,7 +1332,8 @@
     esperaPublicar = setTimeout(() => {
       if (!usuarioAtual || D.erroBanco || !D.lista('contratos').length) return;
       const g = calc.resumoGeral(D.lista('contratos'), [], D.lista('clientes'), calc.hoje());
-      const numeros = { contratosFechados: D.lista('contratos').filter((c) => c.status !== 'cancelado').length, orgaosAtendidos: g.orgaosAtendidos, estados: g.estados };
+      const numeros = { contratosFechados: D.lista('contratos').filter((c) => c.status !== 'cancelado').length, orgaosAtendidos: g.orgaosAtendidos, estados: g.estados,
+        clientes: GAH.site.listaPublica() };
       const chave = JSON.stringify(numeros);
       if (chave === publicado) return;
       D.publicarNumeros(Object.assign({ atualizadoEm: new Date().toISOString() }, numeros))

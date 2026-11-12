@@ -416,6 +416,7 @@
     overflow:hidden;border:1px solid var(--line);
   }
   .client-pill .icon img{width:18px;height:18px;object-fit:contain;}
+  .client-pill .icon-iniciais{font-size:0.62rem;font-weight:700;color:var(--navy);}
   .client-pill .name{font-weight:700;color:var(--navy);font-size:0.84rem;}
   .client-pill .desc{color:var(--slate);font-size:0.76rem;}
   @media (max-width:860px){
@@ -1617,6 +1618,40 @@ form.contact-form{
   // registro público do Firebase (só contagens e siglas dos estados). Se a leitura falhar, fica como está.
   (function () {
     var url = 'https://firestore.googleapis.com/v1/projects/gah-sistema/databases/(default)/documents/publico/numeros?key=AIzaSyB2PB-LTPcoEFtLyHjHlaY558vSLWNx5oc';
+    // seção "Órgãos que confiam na GAH Licita": as 3 faixas são montadas com a lista do sistema
+    function montarClientes(lista) {
+      var faixas = document.querySelectorAll('#clientes .marquee-track');
+      if (!lista.length || !faixas.length) return;
+      var pilula = function (c, dup) {
+        var div = document.createElement('div');
+        div.className = 'client-pill' + (dup ? ' is-dup' : '');
+        if (dup) div.setAttribute('aria-hidden', 'true');
+        var icone = document.createElement('span');
+        icone.className = 'icon';
+        if (/^(data:image\/|logos\/)/.test(c.logo)) {
+          var img = document.createElement('img');
+          img.src = c.logo; img.alt = ''; img.width = 18; img.height = 18; img.loading = 'lazy';
+          icone.appendChild(img);
+        } else {
+          icone.textContent = c.nome.replace(/[^A-Za-zÀ-ú ]/g, '').split(' ').filter(Boolean).slice(0, 2).map(function (p) { return p[0]; }).join('').toUpperCase();
+          icone.className = 'icon icon-iniciais';
+        }
+        var texto = document.createElement('span');
+        var nome = document.createElement('span'); nome.className = 'name'; nome.textContent = c.nome;
+        var desc = document.createElement('span'); desc.className = 'desc'; desc.textContent = c.desc;
+        texto.appendChild(nome); texto.appendChild(document.createElement('br')); texto.appendChild(desc);
+        div.appendChild(icone); div.appendChild(texto);
+        return div;
+      };
+      var porFaixa = Math.ceil(lista.length / faixas.length);
+      faixas.forEach(function (faixa, i) {
+        var parte = lista.slice(i * porFaixa, (i + 1) * porFaixa);
+        if (!parte.length) { faixa.parentNode.style.display = 'none'; return; }
+        faixa.textContent = '';
+        parte.forEach(function (c) { faixa.appendChild(pilula(c, false)); });
+        parte.forEach(function (c) { faixa.appendChild(pilula(c, true)); });
+      });
+    }
     fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
       var f = (d && d.fields) || {};
       var numero = function (campo) { return campo ? Number(campo.integerValue || campo.doubleValue) : 0; };
@@ -1626,6 +1661,11 @@ form.contact-form{
         card.querySelector('.stat-value').textContent = n;
         if (rotulo) card.querySelector('.stat-label').textContent = rotulo;
       };
+      montarClientes(((f.clientes && f.clientes.arrayValue && f.clientes.arrayValue.values) || []).map(function (v) {
+        var m = (v.mapValue && v.mapValue.fields) || {};
+        var t = function (k) { return (m[k] && m[k].stringValue) || ''; };
+        return { nome: t('nome'), desc: t('desc'), logo: t('logo') };
+      }).filter(function (c) { return c.nome; }));
       mostrar('stat-contratos', numero(f.contratosFechados), 'contratos fechados');
       mostrar('stat-orgaos', numero(f.orgaosAtendidos));
       var ufs = ((f.estados && f.estados.arrayValue && f.estados.arrayValue.values) || []).map(function (v) { return String(v.stringValue || '').toUpperCase(); }).filter(Boolean);

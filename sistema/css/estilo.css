@@ -903,3 +903,10 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* Clientes: número de ordem antes do nome */
 .tabela-clientes .num-ordem { width: 1%; white-space: nowrap; text-align: right; color: var(--tinta-2); font-variant-numeric: tabular-nums; padding-right: 4px; }
+
+/* Cadastro do órgão: logo que aparece no site */
+.logo-site { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logo-site-img { width: 40px; height: 40px; border: 1px solid var(--linha); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; font-size: 0.6rem; text-align: center; }
+.logo-site-img img { width: 28px; height: 28px; object-fit: contain; }
+.logo-site input[type="file"] { max-width: 220px; font-size: 0.8rem; }
+#cli-site-tirar[hidden] { display: none; }

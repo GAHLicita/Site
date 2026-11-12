@@ -67,6 +67,11 @@ link para criar uma senha nova.
 - **Financeiro**: valor total em contratos, recebido, a receber, a pagar das compras,
   impostos, lucro bruto e líquido, mapa dos estados atendidos, faturamento mês a mês
   (igual à aba "Faturamento" da planilha), previsão de caixa e vendas por fabricante.
+- **Site da empresa (automático)**: o sistema publica no Firestore (publico/numeros, leitura pública) os números do
+  site (contratos fechados, órgãos e estados atendidos, que também pintam o mapa) e a lista da seção "Órgãos que
+  confiam na GAH Licita": cada órgão com contrato não cancelado e "Mostrar no site" marcado, com o nome, a descrição
+  curta e a logo da parte "No site da empresa" do cadastro. Os 36 órgãos que já estavam no site vêm preenchidos
+  (js/site-clientes.js). Se a leitura falhar, o site mostra a versão escrita na página.
 - **Clientes**: lista de órgãos e a ficha de cada um, com contatos (quantos precisar, com
   telefone e WhatsApp), **faturamento** (e-mail para enviar a NF, responsável, telefone,
   onde enviar e o que precisa constar na nota), link da pasta no Drive, CNPJ e endereço,
