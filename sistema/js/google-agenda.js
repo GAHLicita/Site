@@ -101,7 +101,7 @@
   const SEM_ALARME = { useDefault: false, overrides: [] };
   const alarme = (item) => (item.disputa && item.hora ? { useDefault: false, overrides: [{ method: 'popup', minutes: 15 }] } : SEM_ALARME);
   // Sobe quando muda o formato dos eventos: os já enviados ao Google são reenviados uma vez.
-  const VERSAO_EVENTO = 2;
+  const VERSAO_EVENTO = 3; // 3: disputas levam as Anotações da licitação
 
   /* ---------- conversão compromisso ↔ evento ---------- */
   function evento(item) {
@@ -139,7 +139,7 @@
     }
     if (colecao === 'licitacoes' && doc.dataDisputa && ['analise', 'proposta', 'disputa'].includes(doc.status)) {
       return { colecao, id: doc.id, titulo: 'Disputa — ' + (doc.orgao || 'licitação'), data: doc.dataDisputa, hora: doc.horaDisputa,
-        local: [doc.portal, doc.linkEdital].filter(Boolean).join(' · '), descricao: [doc.numeroEdital ? 'Edital ' + doc.numeroEdital : '', doc.objeto].filter(Boolean).join('\n'),
+        local: [doc.portal, doc.linkEdital].filter(Boolean).join(' · '), descricao: [doc.numeroEdital ? 'Edital ' + doc.numeroEdital : '', doc.objeto, doc.observacoes ? 'Anotações:\n' + doc.observacoes : ''].filter(Boolean).join('\n\n'),
         orgao: doc.orgao, disputa: true };
     }
     return null;
