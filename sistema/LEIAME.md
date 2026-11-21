@@ -168,8 +168,8 @@ link para criar uma senha nova.
 - **Valores mês a mês** (o que foi vendido e o lucro de cada mês): a venda e o imposto da NF entram no **mês da NF**:
   NF emitida (com número, marcada como enviada ou já recebida) no mês da emissão; NF ainda não emitida no mês previsto
   do faturamento, ou no mês atual se a previsão já passou. Assim os meses passados só têm NFs emitidas, como a DAS.
-  Cada parcela de compra (e o imposto da compra) entra no mês do seu vencimento; a que vence depois da última NF do
-  contrato é trazida para o mês dessa NF. Quando o dinheiro sai de fato fica na previsão de caixa.
+  Cada parcela de compra (e o imposto da compra) entra no mês em que será paga (vencimento). Só na venda integral
+  (uma NF) a parcela que vence depois da NF é trazida para o mês da NF, para a compra parcelada não virar lucro. Quando o dinheiro sai de fato fica na previsão de caixa.
 - **Imposto em Contratos**: coluna Imposto (imposto da NF de cada contrato) com quanto falta pagar. O imposto de uma NF
   conta como pago quando a guia DAS que paga esse mês está marcada como paga em Contabilidade. A DAS vence sempre no
   mês seguinte ao das NFs (a de outubro vence em novembro): a competência é o mês anterior ao vencimento da guia,

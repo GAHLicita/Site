@@ -271,3 +271,10 @@ test('impostos pagos até (corte): NFs emitidas até o mês contam como pagas, m
   assert.strictEqual(calc.mesDaNF(c.venda.parcelas[0], hoje, '2026-09'), '2025-08'); // fica no mês da emissão
   assert.strictEqual(calc.mesDaNF(c.venda.parcelas[0], hoje), '2026-11');           // sem corte: não emitida -> mês atual
 });
+
+test('venda mensal: parcela de compra depois da última NF fica no mês em que será paga', () => {
+  const mensal = { id: 'j', venda: { aliquotaNF: 0, parcelas: ['2027-04-05', '2027-05-05', '2027-06-05'].map((d, i) => ({ valor: 708.33, nf: String(i + 1), emissao: d })) },
+    compra: { parcelas: ['2027-04-10', '2027-05-10', '2027-06-10', '2027-07-10'].map((d) => ({ valor: 556.05, vencimento: d })) } };
+  const m = calc.faturamentoMensal([mensal], [], 2027, '2027-06-20');
+  assert.deepStrictEqual([m[3].compra, m[4].compra, m[5].compra, m[6].compra], [556.05, 556.05, 556.05, 556.05]);
+});

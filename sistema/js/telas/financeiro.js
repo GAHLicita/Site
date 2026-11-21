@@ -171,7 +171,7 @@
       '</div></div></div></section>' +
       '</section>' +
 
-      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><div><h2>Valores mês a mês</h2><span class="sub">Venda e imposto pelo mês da NF emitida (a ainda não emitida, no mês previsto); compra pelo mês de cada parcela, e a que vence depois da última NF é abatida no mês dessa NF; despesas, custos fixos e contador abatidos no mês</span></div>' +
+      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><div><h2>Valores mês a mês</h2><span class="sub">Venda e imposto pelo mês da NF emitida (a ainda não emitida, no mês previsto); compra pelo mês em que cada parcela é paga (na venda integral, a compra parcelada é abatida no mês da NF); despesas, custos fixos e contador abatidos no mês</span></div>' +
       '<div class="acoes"><div class="visao-financeira" role="group" aria-label="Quais contratos entram na tabela">' +
       '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total</button>' +
       '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues</button></div>' +

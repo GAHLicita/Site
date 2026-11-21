@@ -162,10 +162,10 @@
   /* Faturamento mês a mês, como a aba "Faturamento" da planilha (o que foi vendido e o lucro de cada mês).
      Venda e imposto da NF entram no mês da NF (veja C.mesDaNF): emitida, no mês da emissão; ainda não emitida,
      no mês previsto (o atual, se a previsão já passou).
-     Compra e imposto da compra entram no mês do vencimento de cada parcela de compra; a parcela que vence depois
-     da última NF do contrato é trazida para o mês dessa última NF. Assim, venda integral com compra parcelada
-     abate o custo inteiro no mês da venda (as parcelas ainda não pagas não viram lucro), e venda mensal com
-     compra mensal mostra em cada mês o que foi pago naquele mês. (Quando o dinheiro sai está na previsão de caixa.) */
+     Compra e imposto da compra entram no mês do vencimento (pagamento) de cada parcela de compra. Só na venda
+     integral (uma NF) a parcela que vence depois da NF é trazida para o mês da NF, para a compra parcelada (ex.:
+     cartão) não virar lucro; na venda mensal ou parcelada cada parcela fica no mês em que será paga.
+     (Quando o dinheiro sai está na previsão de caixa.) */
   /* NF de uma parcela de venda já emitida: tem número, foi marcada como enviada, a parcela já foi recebida ou a
      data de emissão é de um mês até o corte (impostosPagosAte, AAAA-MM: tudo faturado até ali já foi emitido e pago). */
   C.nfEmitida = (p, corte) => !!(p && (p.nfEnviada || String(p.nf || '').trim() || p.pago || (corte && p.emissao && C.mesDe(p.emissao) <= corte)));
@@ -226,8 +226,8 @@
         k.venda += num(p.valor);
         k.impostos += num(p.valor) * aliqNF;
       }
-      // mês da última NF: parcela de compra que vence depois dele é abatida nele
-      const ultimaNF = parcelasVenda.map((p) => C.mesDaNF(p, hoje, corte)).filter(Boolean).sort().pop() || '';
+      // venda integral (uma NF): parcela de compra que vence depois do mês da NF é abatida nele
+      const ultimaNF = parcelasVenda.length === 1 ? C.mesDaNF(parcelasVenda[0], hoje, corte) : '';
       for (const p of (c.compra && c.compra.parcelas) || []) {
         const i = idx(ultimaNF && C.mesDe(p.vencimento || '') > C.mesDe(ultimaNF) ? ultimaNF : p.vencimento);
         if (i < 0) continue;
