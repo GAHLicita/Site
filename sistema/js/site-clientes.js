@@ -100,5 +100,14 @@
     });
   }
 
-  GAH.site = { doCliente, listaPublica, srcLogo, reduzirLogo };
+  /* Logo pequena do órgão para as listas do sistema (a mesma do site); sem logo, as iniciais. */
+  function icone(c) {
+    const s = doCliente(c);
+    const esc = GAH.u.esc;
+    if (s.logo) return '<span class="cli-logo"><img src="' + esc(srcLogo(s.logo)) + '" alt="" loading="lazy"></span>';
+    const ini = String(s.nome || c.nome || '').replace(/[^A-Za-zÀ-ú ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+    return '<span class="cli-logo cli-logo-iniciais" title="Sem logo: envie em Editar dados › No site da empresa">' + esc(ini) + '</span>';
+  }
+
+  GAH.site = { doCliente, listaPublica, srcLogo, reduzirLogo, icone };
 })();

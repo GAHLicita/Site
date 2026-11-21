@@ -910,3 +910,9 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .logo-site-img img { width: 28px; height: 28px; object-fit: contain; }
 .logo-site input[type="file"] { max-width: 220px; font-size: 0.8rem; }
 #cli-site-tirar[hidden] { display: none; }
+
+/* Clientes: logo pequena do órgão (a mesma do site) */
+.tabela-clientes .col-logo { width: 1%; padding-left: 2px; padding-right: 2px; }
+.cli-logo { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--linha); background: #fff; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex: 0 0 auto; vertical-align: middle; }
+.cli-logo img { width: 22px; height: 22px; object-fit: contain; }
+.cli-logo-iniciais { font-size: 0.66rem; font-weight: 700; color: var(--navy); }
