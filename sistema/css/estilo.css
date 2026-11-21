@@ -790,14 +790,14 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .tabela-contratos td.valor { white-space: nowrap; }
 .tabela-contratos th { letter-spacing: 0.03em; }
 .tabela-contratos .sub { font-size: 0.76rem; }
-.tabela-contratos .selo { font-size: 0.7rem; padding: 2px 8px; white-space: nowrap; }
+.tabela-contratos .selo { font-size: 0.7rem; padding: 2px 8px; white-space: normal; line-height: 1.25; display: inline-block; max-width: 92px; text-align: left; }
 @media (max-width: 1150px) {
   .tabela-contratos th:nth-child(3), .tabela-contratos tbody tr:not(.linha-grupo) td:nth-child(3), .tabela-contratos tfoot td:nth-child(3) { display: none; }
   .tabela-contratos th, .tabela-contratos td { padding-inline: 5px; }
   .tabela-contratos th { letter-spacing: 0.02em; }
 }
 /* telas menores (ou com zoom): tudo cabe na mesma tela, sem rolar para o lado */
-@media (max-width: 1320px) {
+@media (max-width: 1440px) {
   .tabela-contratos { font-size: 0.78rem; }
   .tabela-contratos th, .tabela-contratos td { padding-inline: 4px; }
   .tabela-contratos th:first-child, .tabela-contratos td:first-child { padding-left: 10px; }
