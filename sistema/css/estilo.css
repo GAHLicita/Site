@@ -916,3 +916,12 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .cli-logo { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--linha); background: #fff; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex: 0 0 auto; vertical-align: middle; }
 .cli-logo img { width: 22px; height: 22px; object-fit: contain; }
 .cli-logo-iniciais { font-size: 0.66rem; font-weight: 700; color: var(--navy); }
+/* Ficha do órgão: logo antes do nome, proporcional ao título */
+.titulo-com-logo { display: flex; align-items: center; gap: 0.4em; }
+.cli-logo.cli-logo-titulo { width: 1.5em; height: 1.5em; border-width: 1px; }
+.cli-logo.cli-logo-titulo img { width: 1.1em; height: 1.1em; }
+.cli-logo-iniciais.cli-logo-titulo { font-size: 0.55em; width: 2.7em; height: 2.7em; }
+/* Contratos: logo antes do nome do órgão */
+.orgao-com-logo { display: flex; align-items: center; gap: 8px; }
+.orgao-com-logo .cli-logo { width: 26px; height: 26px; }
+.orgao-com-logo .cli-logo img { width: 19px; height: 19px; }

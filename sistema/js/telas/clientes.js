@@ -114,7 +114,7 @@
     const contatos = c.contatos || [];
 
     main.innerHTML =
-      '<div class="cabecalho-tela"><div><div class="migalha"><a href="#/clientes">Clientes</a> / ' + esc(c.sigla || c.nome) + '</div><h1>' + esc(c.nome) + '</h1>' +
+      '<div class="cabecalho-tela"><div><div class="migalha"><a href="#/clientes">Clientes</a> / ' + esc(c.sigla || c.nome) + '</div><h1 class="titulo-com-logo">' + GAH.site.icone(c, 'cli-logo-titulo') + '<span>' + esc(c.nome) + '</span></h1>' +
       '<p>' + esc([c.tipo, [c.cidade, c.uf].filter(Boolean).join(' / ')].filter(Boolean).join(' · ')) + '</p></div>' +
       '<div class="acoes"><button class="botao secundario" id="editar-cliente">Editar dados</button><button class="botao" id="novo-contrato">+ Novo contrato</button></div></div>' +
       '<div class="kpis">' +

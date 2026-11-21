@@ -135,7 +135,7 @@
                 '<button type="button" class="botao verde botao-entregue" data-entregue="' + esc(c.id) + '">Licenças entregues</button>'
               : dataBR(c.vigenciaInicio) + '<span class="sub">até ' + dataBR(c.vigenciaFim) + '</span>' +
                 (!x.entregue && c.status !== 'cancelado' ? '<span class="sub renovacao-info">Aguardando entrega</span><button type="button" class="botao verde botao-entregue" data-entregue="' + esc(c.id) + '">Licenças entregues</button>' : '');
-            return titulo + '<tr class="clicavel' + (x.grupo >= 3 ? ' linha-apagada' : '') + '" data-id="' + esc(c.id) + '"><td><span class="nome">' + esc(orgao) + (ufCliente(c.clienteId) ? ' <span class="texto-suave">· ' + esc(ufCliente(c.clienteId)) + '</span>' : '') + '</span><span class="sub">' + esc([c.produto, c.fornecedor].filter(Boolean).join(' · ')) + '</span></td>' +
+            return titulo + '<tr class="clicavel' + (x.grupo >= 3 ? ' linha-apagada' : '') + '" data-id="' + esc(c.id) + '"><td><div class="orgao-com-logo">' + GAH.site.icone(D.obter('clientes', c.clienteId)) + '<div><span class="nome">' + esc(orgao) + (ufCliente(c.clienteId) ? ' <span class="texto-suave">· ' + esc(ufCliente(c.clienteId)) + '</span>' : '') + '</span><span class="sub">' + esc([c.produto, c.fornecedor].filter(Boolean).join(' · ')) + '</span></div></div></td>' +
             '<td>' + vig + '</td>' +
             '<td>' + nomeForma(c.venda && c.venda.forma) + '<span class="sub">' + s.parcelasRecebidas + '/' + s.totalParcelasVenda + ' recebida(s)</span></td>' +
             '<td class="valor">' + moeda(s.venda) + '</td><td class="valor">' + moeda(s.recebido) + '</td>' +
