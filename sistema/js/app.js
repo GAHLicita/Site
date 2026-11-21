@@ -60,12 +60,12 @@
   }
 
   /* Janela modal. Retorna { el, fechar }. */
-  function janela({ titulo, corpo, rodape, estreita, aoFechar }) {
+  function janela({ titulo, corpo, rodape, estreita, aoFechar, iconeTitulo }) {
     const fundo = document.createElement('div');
     fundo.className = 'fundo-janela';
     fundo.innerHTML =
       '<div class="janela' + (estreita ? ' estreita' : '') + '" role="dialog" aria-modal="true" aria-label="' + esc(titulo) + '">' +
-      '<div class="janela-cab"><h2>' + esc(titulo) + '</h2><button type="button" class="fechar" aria-label="Fechar">×</button></div>' +
+      '<div class="janela-cab"><h2' + (iconeTitulo ? ' class="titulo-com-logo">' + iconeTitulo + '<span>' + esc(titulo) + '</span>' : '>' + esc(titulo)) + '</h2><button type="button" class="fechar" aria-label="Fechar">×</button></div>' +
       '<div class="janela-corpo">' + corpo + '</div>' +
       (rodape ? '<div class="janela-rodape">' + rodape + '</div>' : '') +
       '</div>';

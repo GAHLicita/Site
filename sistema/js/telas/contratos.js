@@ -10,7 +10,7 @@
   function abrirContrato(id) {
     const c = D.obter('contratos', id);
     if (!c) return;
-    const j = janela({ titulo: nomeCliente(c.clienteId), corpo: '<div id="detalhe-contrato" style="margin:-18px -20px">' + GAH.blocoContrato(c, { mostrarOrgao: true }) + '</div>' });
+    const j = janela({ titulo: nomeCliente(c.clienteId), iconeTitulo: GAH.site.icone(D.obter('clientes', c.clienteId), 'cli-logo-titulo'), corpo: '<div id="detalhe-contrato" style="margin:-18px -20px">' + GAH.blocoContrato(c, { mostrarOrgao: true }) + '</div>' });
     const caixa = j.el.querySelector('#detalhe-contrato');
     GAH.ligarContratos(caixa);
     const desliga = D.aoMudar(() => {
