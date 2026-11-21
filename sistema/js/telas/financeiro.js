@@ -112,6 +112,10 @@
     const contratosVisao = GAH.contratosDaVisao(contratos, visao, hoje);
     const v = visao === 'entregues' ? calc.resumoGeral(contratosVisao, despesas, clientes, hoje) : g;
     const foraDaVisao = contratos.length - contratosVisao.length;
+    // imposto da NF ainda a pagar (mesma regra da coluna Imposto de Contratos)
+    const dasPagos = GAH.mesesDasPagos();
+    const impostoAPagar = contratosVisao.filter((c) => c.status !== 'cancelado')
+      .reduce((t, c) => t + calc.impostoNF(c, dasPagos, hoje, D.configuracao().impostosPagosAte).aPagar, 0);
 
     const anos = new Set([Number(hoje.slice(0, 4))]);
     contratos.forEach((c) => ['venda', 'compra'].forEach((l) => ((c[l] && c[l].parcelas) || []).forEach((p) => {
@@ -155,7 +159,7 @@
       kpi('Recebido', moeda(v.recebido), v.totalContratos ? pct(v.recebido / v.totalContratos) + ' do total' : '') +
       kpi('A receber', moeda(v.aReceber), v.valorAtrasado ? '<span class="negativo">' + moeda(v.valorAtrasado) + ' em atraso</span>' : 'nada em atraso') +
       kpi('A pagar (compras parceladas)', moeda(v.aPagar), 'de ' + moeda(v.totalCompras) + ' em compras') +
-      kpi('Impostos', moeda(v.impostos), 'NF e compras') +
+      kpi('Impostos', moeda(v.impostos), 'NF e compras' + (impostoAPagar > 0.004 ? '<span class="kpi-sub-valor">' + moeda(impostoAPagar) + ' a pagar</span>' : '<span class="kpi-sub-valor">nada a pagar</span>')) +
       kpi('Despesas e custos', moeda(v.despesas), 'contador, custos fixos e outras, até este mês') +
       kpi('Lucro líquido', '<span class="' + (v.lucroLiquido >= 0 ? '' : 'negativo') + '">' + moeda(v.lucroLiquido) + '</span>', v.totalContratos ? pct(v.lucroLiquido / v.totalContratos) + ' do valor total em contratos' : '') +
       '</div></div>' +

@@ -949,3 +949,6 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .orgao-com-logo { display: flex; align-items: center; gap: 8px; }
 .orgao-com-logo .cli-logo { width: 26px; height: 26px; }
 .orgao-com-logo .cli-logo img { width: 19px; height: 19px; }
+
+/* Início: valor a pagar embaixo do total, no quadro Impostos */
+.kpi-nota .kpi-sub-valor { display: block; font-weight: 600; color: var(--alerta); margin-top: 1px; }

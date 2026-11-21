@@ -1037,6 +1037,16 @@
     });
   };
 
+  /* Meses (AAAA-MM de competência) com a DAS paga em Contabilidade: a DAS vence no mês seguinte ao das NFs,
+     então vale a competência pelo vencimento, em qualquer cartão em que a guia estiver. */
+  GAH.mesesDasPagos = function () {
+    const meses = new Set();
+    D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id)).forEach((m) => (m.documentos || []).forEach((d) => {
+      if (/^DAS/i.test(d.tipo || '') && d.pago) meses.add(calc.competenciaDaDas(d, m.id));
+    }));
+    return meses;
+  };
+
   /* Despesas lançadas, sem as guias de DAS: o DAS já está contado nos Impostos (imposto da NF), então
      somá-lo também nas despesas contaria o mesmo gasto duas vezes. */
   GAH.despesasLancadas = function () {
