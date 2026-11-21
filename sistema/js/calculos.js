@@ -179,8 +179,13 @@
     return previsto && previsto < mesAtual ? mesAtual : previsto;
   };
 
+  /* Competência (AAAA-MM) de uma guia DAS: a DAS vence sempre no mês seguinte ao das NFs que ela paga (a de
+     outubro vence em novembro). Com vencimento, competência = mês anterior ao vencimento; sem vencimento, vale o
+     mês do cartão da Contabilidade em que a guia está. */
+  C.competenciaDaDas = (guia, mesDoCartao) => (guia && guia.vencimento ? C.mesDe(C.addMeses(guia.vencimento, -1)) : mesDoCartao || '');
+
   /* Imposto da NF de um contrato (venda × % da NF), separando o já pago: a NF emitida cujo mês já tem a DAS
-     paga (mesesDasPagos: Set de AAAA-MM). NF ainda não emitida, ou mês sem DAS paga, fica a pagar. */
+     paga (mesesDasPagos: Set de AAAA-MM de competência). NF ainda não emitida, ou mês sem DAS paga, fica a pagar. */
   C.impostoNF = function (c, mesesDasPagos, hoje) {
     const aliq = num(c.venda && c.venda.aliquotaNF) / 100;
     let total = 0, pago = 0;

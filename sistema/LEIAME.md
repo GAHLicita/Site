@@ -171,7 +171,9 @@ link para criar uma senha nova.
   Cada parcela de compra (e o imposto da compra) entra no mês do seu vencimento; a que vence depois da última NF do
   contrato é trazida para o mês dessa NF. Quando o dinheiro sai de fato fica na previsão de caixa.
 - **Imposto em Contratos**: coluna Imposto (imposto da NF de cada contrato) com quanto falta pagar. O imposto de uma NF
-  conta como pago quando a guia DAS do mês dessa NF está marcada como paga em Contabilidade. Filtro de situação
+  conta como pago quando a guia DAS que paga esse mês está marcada como paga em Contabilidade. A DAS vence sempre no
+  mês seguinte ao das NFs (a de outubro vence em novembro): a competência é o mês anterior ao vencimento da guia,
+  em qualquer cartão da Contabilidade em que ela esteja (sem vencimento, vale o mês do cartão). Filtro de situação
   "Com imposto a pagar".
 - Contratos **cancelados** não entram em nenhum total.
 

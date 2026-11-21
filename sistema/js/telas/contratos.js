@@ -74,7 +74,11 @@
     const opcoesCartao = Object.entries(cartoes).map(([k, c]) => [k, GAH.textoCartao(c)]).sort((a, b) => a[1].localeCompare(b[1]));
     if (filtro.meio !== 'cartao' || (filtro.cartao && !cartoes[filtro.cartao])) filtro.cartao = '';
     // imposto da NF de cada contrato: pago quando a DAS do mês da NF está paga em Contabilidade
-    const mesesDasPagos = new Set(D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id) && (m.documentos || []).some((d) => /^DAS/i.test(d.tipo || '') && d.pago)).map((m) => m.id));
+    // (a DAS vence no mês seguinte ao das NFs: vale a competência pelo vencimento, em qualquer cartão em que estiver)
+    const mesesDasPagos = new Set();
+    D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id)).forEach((m) => (m.documentos || []).forEach((d) => {
+      if (/^DAS/i.test(d.tipo || '') && d.pago) mesesDasPagos.add(calc.competenciaDaDas(d, m.id));
+    }));
     todos.forEach((x) => (x.imposto = calc.impostoNF(x.c, mesesDasPagos, hoje)));
     const visao = GAH.visaoFinanceira();
     todos.forEach((x) => (x.entregue = calc.licencasEntregues(x.c, hoje, ren)));

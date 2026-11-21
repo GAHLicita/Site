@@ -27,7 +27,7 @@
     D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id)).forEach((m) => (m.documentos || []).forEach((d) => {
       if (!GUIA_IMPOSTO.test(d.tipo || '') || !calc.num(d.valor)) return;
       guiasDeImposto.add('guia-' + d.id);
-      impostos.push({ data: d.vencimento || calc.addMeses(m.id + '-20', 1), mes: m.id, valor: d.valor, pago: d.pago, dataPagamento: d.dataPagamento,
+      impostos.push({ data: d.vencimento || calc.addMeses(m.id + '-20', 1), mes: /^DAS/i.test(d.tipo || '') ? calc.competenciaDaDas(d, m.id) : m.id, valor: d.valor, pago: d.pago, dataPagamento: d.dataPagamento,
         categoria: d.tipo, descricao: [d.tipo, d.descricao].filter(Boolean).join(' — ') });
     }));
     const gastos = D.lista('despesas').filter((d) => !guiasDeImposto.has(d.id) && calc.mesDe(d.data) <= ateGastos)

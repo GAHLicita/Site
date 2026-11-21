@@ -251,3 +251,9 @@ test('mês da NF: emitida pela emissão; não emitida pela previsão (ou mês at
   assert.deepStrictEqual(calc.impostoNF(c, new Set(['2026-09']), hoje), { total: 300, pago: 100, aPagar: 200 });
   assert.deepStrictEqual(calc.impostoNF(c, new Set(), hoje), { total: 300, pago: 0, aPagar: 300 });
 });
+
+test('competência da DAS: mês anterior ao vencimento (a de outubro vence em novembro)', () => {
+  assert.strictEqual(calc.competenciaDaDas({ vencimento: '2026-11-20' }, '2026-11'), '2026-10');
+  assert.strictEqual(calc.competenciaDaDas({ vencimento: '2027-01-20' }, '2026-12'), '2026-12');
+  assert.strictEqual(calc.competenciaDaDas({}, '2026-09'), '2026-09'); // sem vencimento: mês do cartão
+});
