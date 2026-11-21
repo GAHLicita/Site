@@ -952,3 +952,8 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* Início: valor a pagar embaixo do total, no quadro Impostos */
 .kpi-nota .kpi-sub-valor { display: block; font-weight: 600; color: var(--alerta); margin-top: 1px; }
+
+/* Contas bancárias: logo do banco reconhecido */
+.banco-identificado { display: flex; align-items: center; gap: 8px; min-height: 30px; margin-top: 22px; }
+.banco-identificado .cli-logo { width: 26px; height: 26px; }
+.banco-identificado .cli-logo img { width: 20px; height: 20px; }

@@ -5,6 +5,44 @@
   const TIPOS_CONTA = ['Conta corrente', 'Conta poupança', 'Conta de pagamento'];
   const TIPOS_PIX = ['CNPJ', 'E-mail', 'Telefone', 'Chave aleatória', 'CPF'];
 
+  /* Bancos que o sistema reconhece pelo código ou pelo nome: [código, nome, nomes alternativos, tem logo em img/bancos].
+     Nomes curtos (até 3 letras) só valem como palavra inteira. */
+  const BANCOS = [
+    ['001', 'Banco do Brasil', ['banco do brasil', 'bb'], 1], ['033', 'Santander', ['santander'], 1],
+    ['104', 'Caixa Econômica Federal', ['caixa', 'cef'], 1], ['237', 'Bradesco', ['bradesco'], 1],
+    ['341', 'Itaú', ['itau'], 1], ['260', 'Nubank', ['nubank', 'nu pagamentos'], 1],
+    ['077', 'Banco Inter', ['banco inter', 'inter'], 1], ['336', 'C6 Bank', ['c6'], 1],
+    ['212', 'Banco Original', ['original'], 1], ['756', 'Sicoob', ['sicoob', 'bancoob'], 1],
+    ['748', 'Sicredi', ['sicredi'], 1], ['422', 'Safra', ['safra'], 1],
+    ['208', 'BTG Pactual', ['btg'], 1], ['290', 'PagBank', ['pagbank', 'pagseguro'], 1],
+    ['323', 'Mercado Pago', ['mercado pago'], 1], ['380', 'PicPay', ['picpay'], 1],
+    ['403', 'Cora', ['cora'], 1], ['197', 'Stone', ['stone'], 1],
+    ['655', 'Banco BV', ['bv', 'votorantim'], 1], ['004', 'Banco do Nordeste', ['banco do nordeste', 'bnb'], 1],
+    ['085', 'Ailos', ['ailos'], 1], ['136', 'Unicred', ['unicred'], 1],
+    ['218', 'BS2', ['bs2'], 1], ['623', 'Banco Pan', ['pan'], 1],
+    ['041', 'Banrisul', ['banrisul'], 0], ['070', 'BRB', ['brb', 'banco de brasilia'], 0],
+    ['021', 'Banestes', ['banestes'], 0], ['047', 'Banese', ['banese'], 0],
+    ['037', 'Banpará', ['banpara'], 0], ['389', 'Mercantil do Brasil', ['mercantil'], 0]
+  ];
+  const semAcento = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  function identificar(nome, codigo) {
+    const cod = String(codigo || '').replace(/\D/g, '');
+    if (cod) {
+      const porCodigo = BANCOS.find((b) => b[0] === cod.padStart(3, '0').slice(-3));
+      if (porCodigo) return porCodigo;
+    }
+    const n = ' ' + semAcento(nome).replace(/[^a-z0-9]+/g, ' ') + ' ';
+    return BANCOS.find((b) => b[2].some((a) => (a.length <= 3 ? n.includes(' ' + a + ' ') : n.includes(a)))) || null;
+  }
+  /* Logo do banco (ou as iniciais) para pôr antes do nome. */
+  function iconeBanco(c, classe) {
+    const b = identificar(c.banco, c.codigoBanco);
+    const extra = classe ? ' ' + classe : '';
+    if (b && b[3]) return '<span class="cli-logo' + extra + '"><img src="img/bancos/' + b[0] + '.png" alt=""></span>';
+    const ini = String(c.banco || '').replace(/[^A-Za-zÀ-ú0-9 ]/g, '').split(' ').filter((p) => p && !/^(banco|do|da|de)$/i.test(p)).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+    return '<span class="cli-logo cli-logo-iniciais' + extra + '">' + esc(ini || '?') + '</span>';
+  }
+
   const linhaPix = (p) =>
     '<div class="form-grade pix-linha" style="grid-template-columns:minmax(0,160px) minmax(0,1fr) auto;align-items:end">' +
     '<div class="campo"><label>Tipo da chave</label><select data-p="tipo">' + opcoes(TIPOS_PIX, (p || {}).tipo) + '</select></div>' +
@@ -18,6 +56,7 @@
       '<form id="form-conta" class="form-grade">' +
       '<div class="campo"><label for="cb-banco">Banco *</label><input id="cb-banco" name="banco" required value="' + esc(c.banco) + '" placeholder="Ex.: Banco do Brasil"></div>' +
       '<div class="campo"><label for="cb-cod">Código do banco</label><input id="cb-cod" name="codigoBanco" value="' + esc(c.codigoBanco) + '" placeholder="Ex.: 001"></div>' +
+      '<div class="campo"><span class="ajuda banco-identificado" id="cb-ident"></span></div>' +
       '<div class="campo"><label for="cb-tipo">Tipo de conta</label><select id="cb-tipo" name="tipo">' + opcoes(TIPOS_CONTA, c.tipo) + '</select></div>' +
       '<div class="campo"><label for="cb-ag">Agência</label><input id="cb-ag" name="agencia" value="' + esc(c.agencia) + '"></div>' +
       '<div class="campo"><label for="cb-conta">Conta (com dígito)</label><input id="cb-conta" name="conta" value="' + esc(c.conta) + '"></div>' +
@@ -35,6 +74,18 @@
       '<div class="dir"><button type="button" class="botao secundario" data-cancelar>Cancelar</button><button type="submit" form="form-conta" class="botao">Salvar</button></div>';
     const j = janela({ titulo: c.id ? 'Editar conta bancária' : 'Nova conta bancária', corpo, rodape });
     const lista = j.el.querySelector('#lista-pix');
+    // reconhece o banco pelo nome ou pelo código e mostra a logo; código vazio é preenchido sozinho
+    const ident = () => {
+      const nome = j.el.querySelector('#cb-banco').value;
+      const cod = j.el.querySelector('#cb-cod');
+      const b = identificar(nome, cod.value);
+      j.el.querySelector('#cb-ident').innerHTML = b ? iconeBanco({ banco: b[1], codigoBanco: b[0] }) + ' Banco identificado: <b>' + esc(b[1]) + '</b> (' + b[0] + ')' : (nome ? 'Banco não identificado: aparece com as iniciais.' : '');
+      return b;
+    };
+    j.el.querySelector('#cb-banco').addEventListener('input', ident);
+    j.el.querySelector('#cb-cod').addEventListener('input', ident);
+    j.el.querySelector('#cb-banco').addEventListener('change', () => { const b = ident(); const cod = j.el.querySelector('#cb-cod'); if (b && !cod.value.trim()) { cod.value = b[0]; ident(); } });
+    ident();
     j.el.querySelector('[data-cancelar]').addEventListener('click', j.fechar);
     j.el.querySelector('#add-pix').addEventListener('click', () => lista.insertAdjacentHTML('beforeend', linhaPix({})));
     lista.addEventListener('click', (e) => { if (e.target.matches('[data-remover-pix]')) e.target.closest('.pix-linha').remove(); });
@@ -84,7 +135,7 @@
       (contas.length
         ? '<div class="grade grade-2">' + contas.map((c) => {
             const w = linkWhats(c.telefoneGerente);
-            return '<section class="painel"><div class="painel-cab"><div><h2>' + esc(c.banco) + (c.codigoBanco ? ' <span class="texto-suave" style="font-family:var(--fonte-texto);font-size:.9rem">· ' + esc(c.codigoBanco) + '</span>' : '') + '</h2><span class="sub">' + esc(c.uso || c.tipo || '') + '</span></div>' +
+            return '<section class="painel"><div class="painel-cab"><div><h2 class="titulo-com-logo">' + iconeBanco(c, 'cli-logo-titulo') + '<span>' + esc(c.banco) + (c.codigoBanco ? ' <span class="texto-suave" style="font-family:var(--fonte-texto);font-size:.9rem">· ' + esc(c.codigoBanco) + '</span>' : '') + '</span></h2><span class="sub">' + esc(c.uso || c.tipo || '') + '</span></div>' +
               (c.principal ? '<span class="selo ok">principal</span>' : '') + '</div>' +
               '<div class="painel-corpo grade" style="gap:12px"><dl class="ficha">' +
               '<dt>Tipo</dt><dd>' + esc(c.tipo || '—') + '</dd>' +
