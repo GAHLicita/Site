@@ -257,3 +257,17 @@ test('competência da DAS: mês anterior ao vencimento (a de outubro vence em no
   assert.strictEqual(calc.competenciaDaDas({ vencimento: '2027-01-20' }, '2026-12'), '2026-12');
   assert.strictEqual(calc.competenciaDaDas({}, '2026-09'), '2026-09'); // sem vencimento: mês do cartão
 });
+
+test('impostos pagos até (corte): NFs emitidas até o mês contam como pagas, mesmo sem DAS cadastrada', () => {
+  const hoje = '2026-11-20';
+  const c = { venda: { aliquotaNF: 10, parcelas: [
+    { valor: 1000, emissao: '2025-08-05' },                 // faturada em 2025, sem nº nem marcação
+    { valor: 1000, nf: '50', emissao: '2026-09-10' },       // setembro: até o corte
+    { valor: 1000, nf: '51', emissao: '2026-10-10' },       // outubro: depois do corte, DAS não paga
+    { valor: 1000, faturamento: '2026-12-10', emissao: '2026-12-10' } // ainda não emitida
+  ] } };
+  assert.deepStrictEqual(calc.impostoNF(c, new Set(), hoje, '2026-09'), { total: 400, pago: 200, aPagar: 200 });
+  assert.deepStrictEqual(calc.impostoNF(c, new Set(['2026-10']), hoje, '2026-09'), { total: 400, pago: 300, aPagar: 100 });
+  assert.strictEqual(calc.mesDaNF(c.venda.parcelas[0], hoje, '2026-09'), '2025-08'); // fica no mês da emissão
+  assert.strictEqual(calc.mesDaNF(c.venda.parcelas[0], hoje), '2026-11');           // sem corte: não emitida -> mês atual
+});

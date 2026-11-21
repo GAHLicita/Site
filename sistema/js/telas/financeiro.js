@@ -121,7 +121,7 @@
     const listaAnos = [...anos].sort();
     if (!anoEscolhido || !anos.has(anoEscolhido)) anoEscolhido = Number(hoje.slice(0, 4));
     // a tabela e o gráfico mês a mês seguem a mesma escolha dos quadros (Total ou Só licenças entregues)
-    const meses = calc.faturamentoMensal(contratosVisao, GAH.despesasCompletas(anoEscolhido + '-12'), anoEscolhido, hoje);
+    const meses = calc.faturamentoMensal(contratosVisao, GAH.despesasCompletas(anoEscolhido + '-12'), anoEscolhido, hoje, D.configuracao().impostosPagosAte);
     const tot = meses.reduce((t, m) => ({ venda: t.venda + m.venda, compra: t.compra + m.compra, impostos: t.impostos + m.impostos, despesas: t.despesas + m.despesas, lucro: t.lucro + m.lucro }), { venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0 });
     // contratos cujas licenças ainda não foram entregues: na opção Total aparecem destacados no detalhe dos meses
     const renov = calc.renovacoes(contratos, hoje);

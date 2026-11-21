@@ -41,6 +41,7 @@
       '<div class="campo"><label for="cfg-nf">Imposto da NF (%)</label><input id="cfg-nf" name="aliquotaNF" type="number" step="0.01" value="' + esc(cfg.aliquotaNF) + '"></div>' +
       '<div class="campo"><label for="cfg-compra">Imposto na compra (%)</label><input id="cfg-compra" name="aliquotaCompra" type="number" step="0.01" value="' + esc(cfg.aliquotaCompra) + '"></div>' +
       '<div class="campo"><label for="cfg-dias">Avisar fim de vigência com quantos dias</label><input id="cfg-dias" name="diasAvisoVigencia" type="number" min="1" value="' + esc(cfg.diasAvisoVigencia) + '"></div>' +
+      '<div class="campo"><label for="cfg-das">Impostos (DAS) pagos até</label><input id="cfg-das" name="impostosPagosAte" type="month" value="' + esc(cfg.impostosPagosAte) + '"><span class="ajuda">NFs emitidas até este mês contam com o imposto pago em Contratos. Depois dele, vale a DAS marcada como paga em Contabilidade. Deixe vazio para usar só a Contabilidade.</span></div>' +
       '<div class="largo"><button class="botao" type="submit">Salvar valores padrão</button></div></form></div></section>' +
 
       '<section class="painel"><div class="painel-cab"><h2>Aparência</h2></div><div class="painel-corpo"><div class="campo" style="max-width:280px"><label for="cfg-tema">Tema</label>' +

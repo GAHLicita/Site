@@ -174,7 +174,9 @@ link para criar uma senha nova.
   conta como pago quando a guia DAS que paga esse mês está marcada como paga em Contabilidade. A DAS vence sempre no
   mês seguinte ao das NFs (a de outubro vence em novembro): a competência é o mês anterior ao vencimento da guia,
   em qualquer cartão da Contabilidade em que ela esteja (sem vencimento, vale o mês do cartão). Filtro de situação
-  "Com imposto a pagar".
+  "Com imposto a pagar". Em Ajustes, **Impostos (DAS) pagos até** (padrão 09/2026): toda NF emitida até esse mês
+  conta com o imposto pago, sem precisar cadastrar as DAS antigas; NF com data de emissão até esse mês também conta
+  como emitida (no mês a mês fica no mês da emissão).
 - Contratos **cancelados** não entram em nenhum total.
 
 ## Testes

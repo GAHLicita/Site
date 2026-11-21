@@ -79,7 +79,7 @@
     D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id)).forEach((m) => (m.documentos || []).forEach((d) => {
       if (/^DAS/i.test(d.tipo || '') && d.pago) mesesDasPagos.add(calc.competenciaDaDas(d, m.id));
     }));
-    todos.forEach((x) => (x.imposto = calc.impostoNF(x.c, mesesDasPagos, hoje)));
+    todos.forEach((x) => (x.imposto = calc.impostoNF(x.c, mesesDasPagos, hoje, D.configuracao().impostosPagosAte)));
     const visao = GAH.visaoFinanceira();
     todos.forEach((x) => (x.entregue = calc.licencasEntregues(x.c, hoje, ren)));
     const naoEntregues = todos.filter((x) => !x.entregue && x.c.status !== 'cancelado').length;

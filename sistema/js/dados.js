@@ -296,7 +296,8 @@
 
     configuracao() {
       return Object.assign(
-        { aliquotaNF: 10.5, aliquotaCompra: 0, diasAvisoVigencia: 60 },
+        // impostosPagosAte (AAAA-MM): NFs emitidas até esse mês contam com o imposto (DAS) pago
+        { aliquotaNF: 10.5, aliquotaCompra: 0, diasAvisoVigencia: 60, impostosPagosAte: '2026-09' },
         cache.config.find((x) => x.id === 'geral') || {}
       );
     }
