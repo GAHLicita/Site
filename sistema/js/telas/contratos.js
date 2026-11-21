@@ -73,16 +73,19 @@
     todos.forEach((x) => x.compraCartao.forEach((p) => { if (p.chave) cartoes[p.chave] = p.cartao; }));
     const opcoesCartao = Object.entries(cartoes).map(([k, c]) => [k, GAH.textoCartao(c)]).sort((a, b) => a[1].localeCompare(b[1]));
     if (filtro.meio !== 'cartao' || (filtro.cartao && !cartoes[filtro.cartao])) filtro.cartao = '';
+    // imposto da NF de cada contrato: pago quando a DAS do mês da NF está paga em Contabilidade
+    const mesesDasPagos = new Set(D.lista('contabilidade').filter((m) => /^\d{4}-\d{2}$/.test(m.id) && (m.documentos || []).some((d) => /^DAS/i.test(d.tipo || '') && d.pago)).map((m) => m.id));
+    todos.forEach((x) => (x.imposto = calc.impostoNF(x.c, mesesDasPagos, hoje)));
     const visao = GAH.visaoFinanceira();
     todos.forEach((x) => (x.entregue = calc.licencasEntregues(x.c, hoje, ren)));
     const naoEntregues = todos.filter((x) => !x.entregue && x.c.status !== 'cancelado').length;
     const linhas = todos
-      .filter(({ c, s, orgao, entregue }) => {
+      .filter(({ c, s, orgao, entregue, imposto }) => {
         if (visao === 'entregues' && !entregue) return false;
         const t = filtro.busca.toLowerCase();
         if (t && ![orgao, c.produto, c.fornecedor, c.numeroContrato, c.numeroEmpenho].join(' ').toLowerCase().includes(t)) return false;
         // licenças não entregues: contrato novo ou renovação ainda sem a entrega (cancelados ficam de fora)
-        if (filtro.vigencia === 'naoEntregue' ? entregue || c.status === 'cancelado' : filtro.vigencia === 'receber' ? s.aReceber <= 0 : filtro.vigencia === 'pagar' ? s.aPagar <= 0 : filtro.vigencia === 'atraso' ? s.parcelasAtrasadas === 0 : filtro.vigencia && s.vigencia !== filtro.vigencia) return false;
+        if (filtro.vigencia === 'naoEntregue' ? entregue || c.status === 'cancelado' : filtro.vigencia === 'imposto' ? !(imposto.aPagar > 0) || c.status === 'cancelado' : filtro.vigencia === 'receber' ? s.aReceber <= 0 : filtro.vigencia === 'pagar' ? s.aPagar <= 0 : filtro.vigencia === 'atraso' ? s.parcelasAtrasadas === 0 : filtro.vigencia && s.vigencia !== filtro.vigencia) return false;
         if (filtro.forma && (c.venda && c.venda.forma) !== filtro.forma) return false;
         if (filtro.ano && (c.vigenciaInicio || c.dataEntrega || '').slice(0, 4) !== filtro.ano) return false;
         return true;
@@ -106,6 +109,7 @@
       const n = calc.diasEntre(hoje, x.vigFim);
       return '<span class="selo ' + (n < 0 ? 'critico' : 'alerta') + '">' + (n < 0 ? 'Entrega atrasada' : n === 0 ? 'Entregar hoje' : 'Entregar em ' + n + ' dias') + '</span>';
     };
+    const somaImposto = linhas.reduce((t, x) => ({ total: t.total + x.imposto.total, aPagar: t.aPagar + x.imposto.aPagar }), { total: 0, aPagar: 0 });
     const soma = linhas.reduce((t, { s }) => ({ venda: t.venda + s.venda, recebido: t.recebido + s.recebido, aReceber: t.aReceber + s.aReceber, aPagar: t.aPagar + s.aPagar, lucro: t.lucro + s.lucro }), { venda: 0, recebido: 0, aReceber: 0, aPagar: 0, lucro: 0 });
 
     main.innerHTML =
@@ -117,7 +121,7 @@
       '<button class="botao" id="novo-contrato">+ Novo contrato</button></div></div>' +
       '<section class="painel"><div class="painel-cab"><div class="filtros" style="flex:1">' +
       '<input class="filtro busca" id="ct-busca" type="search" placeholder="Buscar órgão, licença, fabricante ou nº" value="' + esc(filtro.busca) + '" aria-label="Buscar">' +
-      '<select class="filtro" id="ct-vig" aria-label="Situação">' + opcoes([['vigente', 'Vigentes'], ['vencendo', 'Vencendo em breve'], ['encerrada', 'Encerrados'], ['receber', 'Com valor a receber'], ['atraso', 'Com parcela atrasada'], ['pagar', 'Com compra a pagar'], ['naoEntregue', 'Licenças não entregues'], ['cancelado', 'Cancelados']], filtro.vigencia, 'Todas as situações') + '</select>' +
+      '<select class="filtro" id="ct-vig" aria-label="Situação">' + opcoes([['vigente', 'Vigentes'], ['vencendo', 'Vencendo em breve'], ['encerrada', 'Encerrados'], ['receber', 'Com valor a receber'], ['atraso', 'Com parcela atrasada'], ['pagar', 'Com compra a pagar'], ['naoEntregue', 'Licenças não entregues'], ['imposto', 'Com imposto a pagar'], ['cancelado', 'Cancelados']], filtro.vigencia, 'Todas as situações') + '</select>' +
       '<select class="filtro" id="ct-forma" aria-label="Forma de recebimento">' + opcoes([['integral', 'Integral'], ['mensal', 'Mensal'], ['parcelado', 'Parcelado']], filtro.forma, 'Toda forma de recebimento') + '</select>' +
       '<select class="filtro" id="ct-compra" aria-label="Forma da compra">' + opcoes([['avista', 'Compra à vista'], ['parcelado', 'Compra parcelada']], filtro.compra, 'Toda forma de compra') + '</select>' +
       '<select class="filtro" id="ct-ano" aria-label="Ano de início">' + opcoes(anos, filtro.ano, 'Todos os anos') + '</select>' +
@@ -126,10 +130,10 @@
       '<button type="button" class="botao secundario" id="ct-limpar"' + (visao !== 'total' || Object.keys(FILTRO_INICIAL).some((k) => filtro[k] !== FILTRO_INICIAL[k]) ? '' : ' disabled') + '>Limpar filtros</button>' +
       '</div></div>' +
       (linhas.length
-        ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
+        ? '<div class="tabela-rolagem cabecalho-fixo"><table class="tabela tabela-contratos"><thead><tr><th>Órgão / licença</th><th>Vigência</th><th>Recebimento</th><th class="valor">Venda</th><th class="valor">Recebido</th><th class="valor">A receber</th><th class="valor" title="Imposto da NF (DAS): pago quando a DAS do mês da NF está paga em Contabilidade">Imposto</th><th class="valor">A pagar</th><th class="valor">Lucro</th><th>Situação</th></tr></thead><tbody>' +
           linhas.map((x, i) => {
             const { c, s, orgao } = x;
-            const titulo = x.grupo && (i === 0 || linhas[i - 1].grupo !== x.grupo) ? '<tr class="linha-grupo"><td colspan="9">' + TITULO_GRUPO[x.grupo] + '</td></tr>' : '';
+            const titulo = x.grupo && (i === 0 || linhas[i - 1].grupo !== x.grupo) ? '<tr class="linha-grupo"><td colspan="10">' + TITULO_GRUPO[x.grupo] + '</td></tr>' : '';
             const vig = x.anterior
               ? dataBR(x.vigIni) + '<span class="sub">até <b>' + dataBR(x.vigFim) + '</b> (atual)</span><span class="sub renovacao-info">Renovado: ' + dataBR(c.vigenciaInicio) + ' a ' + dataBR(c.vigenciaFim) + '</span>' +
                 '<button type="button" class="botao verde botao-entregue" data-entregue="' + esc(c.id) + '">Licenças entregues</button>'
@@ -140,11 +144,12 @@
             '<td>' + nomeForma(c.venda && c.venda.forma) + '<span class="sub">' + s.parcelasRecebidas + '/' + s.totalParcelasVenda + ' recebida(s)</span></td>' +
             '<td class="valor">' + moeda(s.venda) + '</td><td class="valor">' + moeda(s.recebido) + '</td>' +
             '<td class="valor">' + moeda(s.aReceber) + (s.parcelasAtrasadas ? '<span class="sub negativo">' + s.parcelasAtrasadas + ' atrasada(s)</span>' : '') + '</td>' +
+            '<td class="valor">' + moeda(x.imposto.total) + (x.imposto.aPagar > 0 ? '<span class="sub' + (x.imposto.pago ? '' : ' negativo') + '">a pagar ' + moeda(x.imposto.aPagar) + '</span>' : x.imposto.total ? '<span class="sub positivo">pago</span>' : '') + '</td>' +
             '<td class="valor">' + moeda(s.aPagar) + (s.parcelasPagar ? '<span class="sub">' + s.parcelasPagar + ' parcela(s)</span>' : '') + '</td>' +
             '<td class="valor ' + (s.lucro < 0 ? 'negativo' : '') + '">' + moeda(s.lucro) + '</td>' +
             '<td>' + selo(x) + '</td></tr>';
           }).join('') +
-          '</tbody><tfoot><tr><td colspan="2">' + linhas.length + ' contrato(s)</td><td></td><td class="valor">' + moeda(soma.venda) + '</td><td class="valor">' + moeda(soma.recebido) + '</td><td class="valor">' + moeda(soma.aReceber) + '</td><td class="valor">' + moeda(soma.aPagar) + '</td><td class="valor">' + moeda(soma.lucro) + '</td><td></td></tr></tfoot></table></div>'
+          '</tbody><tfoot><tr><td colspan="2">' + linhas.length + ' contrato(s)</td><td></td><td class="valor">' + moeda(soma.venda) + '</td><td class="valor">' + moeda(soma.recebido) + '</td><td class="valor">' + moeda(soma.aReceber) + '</td><td class="valor">' + moeda(somaImposto.total) + (somaImposto.aPagar ? '<span class="sub">a pagar ' + moeda(somaImposto.aPagar) + '</span>' : '') + '</td><td class="valor">' + moeda(soma.aPagar) + '</td><td class="valor">' + moeda(soma.lucro) + '</td><td></td></tr></tfoot></table></div>'
         : '<div class="vazio"><strong>' + (todos.length ? 'Nenhum contrato com esses filtros' : 'Nenhum contrato cadastrado') + '</strong>' + (todos.length ? 'Mude a busca ou os filtros.' : 'Cadastre primeiro o órgão em Clientes e depois o contrato.') + '</div>') +
       '</section>' +
       painelCartao(linhas, cartoes, hoje);

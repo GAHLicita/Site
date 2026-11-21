@@ -160,12 +160,40 @@
   };
 
   /* Faturamento mês a mês, como a aba "Faturamento" da planilha (o que foi vendido e o lucro de cada mês).
-     Venda e imposto da NF entram no mês de emissão da nota (ou do vencimento, se não houver emissão).
+     Venda e imposto da NF entram no mês da NF (veja C.mesDaNF): emitida, no mês da emissão; ainda não emitida,
+     no mês previsto (o atual, se a previsão já passou).
      Compra e imposto da compra entram no mês do vencimento de cada parcela de compra; a parcela que vence depois
      da última NF do contrato é trazida para o mês dessa última NF. Assim, venda integral com compra parcelada
      abate o custo inteiro no mês da venda (as parcelas ainda não pagas não viram lucro), e venda mensal com
      compra mensal mostra em cada mês o que foi pago naquele mês. (Quando o dinheiro sai está na previsão de caixa.) */
-  C.faturamentoMensal = function (contratos, despesas, ano) {
+  /* NF de uma parcela de venda já emitida: tem número, foi marcada como enviada ou a parcela já foi recebida. */
+  C.nfEmitida = (p) => !!(p && (p.nfEnviada || String(p.nf || '').trim() || p.pago));
+  /* Mês da NF de uma parcela de venda (AAAA-MM): emitida = mês da emissão; ainda não emitida = mês previsto do
+     faturamento (ou do vencimento) e, se esse mês já passou, o mês atual. Assim os meses passados só têm NFs
+     emitidas, como na DAS. */
+  C.mesDaNF = function (p, hoje) {
+    if (!p) return '';
+    if (C.nfEmitida(p)) return C.mesDe(p.emissao || p.faturamento || p.vencimento || '');
+    const previsto = C.mesDe(p.faturamento || p.emissao || p.vencimento || '');
+    const mesAtual = C.mesDe(hoje || C.hoje());
+    return previsto && previsto < mesAtual ? mesAtual : previsto;
+  };
+
+  /* Imposto da NF de um contrato (venda × % da NF), separando o já pago: a NF emitida cujo mês já tem a DAS
+     paga (mesesDasPagos: Set de AAAA-MM). NF ainda não emitida, ou mês sem DAS paga, fica a pagar. */
+  C.impostoNF = function (c, mesesDasPagos, hoje) {
+    const aliq = num(c.venda && c.venda.aliquotaNF) / 100;
+    let total = 0, pago = 0;
+    for (const p of (c.venda && c.venda.parcelas) || []) {
+      const v = num(p.valor) * aliq;
+      total += v;
+      if (C.nfEmitida(p) && mesesDasPagos && mesesDasPagos.has(C.mesDaNF(p, hoje))) pago += v;
+    }
+    return { total: centavos(total), pago: centavos(pago), aPagar: centavos(total - pago) };
+  };
+
+  C.faturamentoMensal = function (contratos, despesas, ano, hoje) {
+    hoje = hoje || C.hoje();
     const meses = [];
     for (let m = 1; m <= 12; m++) {
       meses.push({ mes: ano + '-' + pad(m), venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0, porContrato: {}, gastos: [] });
@@ -181,7 +209,8 @@
       const aliqCompra = num(c.compra && c.compra.aliquotaCompra) / 100;
       const parcelasVenda = (c.venda && c.venda.parcelas) || [];
       for (const p of parcelasVenda) {
-        const i = idx(p.emissao || p.vencimento);
+        // a venda (e o imposto da NF) entra no mês da NF: emitida = emissão; não emitida = previsão (ou o mês atual)
+        const i = idx(C.mesDaNF(p, hoje));
         if (i < 0) continue;
         meses[i].venda += num(p.valor);
         meses[i].impostos += num(p.valor) * aliqNF;
@@ -190,7 +219,7 @@
         k.impostos += num(p.valor) * aliqNF;
       }
       // mês da última NF: parcela de compra que vence depois dele é abatida nele
-      const ultimaNF = parcelasVenda.map((p) => p.emissao || p.vencimento).filter(Boolean).sort().pop() || '';
+      const ultimaNF = parcelasVenda.map((p) => C.mesDaNF(p, hoje)).filter(Boolean).sort().pop() || '';
       for (const p of (c.compra && c.compra.parcelas) || []) {
         const i = idx(ultimaNF && C.mesDe(p.vencimento || '') > C.mesDe(ultimaNF) ? ultimaNF : p.vencimento);
         if (i < 0) continue;

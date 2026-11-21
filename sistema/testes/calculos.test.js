@@ -223,16 +223,31 @@ test('faturamentoMensal abate a compra parcelada inteira no mês da venda (não 
   // venda integral em novembro; compra de 1.200 em 12x no cartão (só a 1ª paga)
   const compra = { aliquotaCompra: 0, parcelas: Array.from({ length: 12 }, (_, i) => ({ valor: 100, vencimento: calc.addMeses('2026-11-10', i), pago: i === 0 })) };
   const c = { id: 'i', venda: { aliquotaNF: 10, parcelas: [{ valor: 3000, emissao: '2026-11-05', vencimento: '2026-12-05' }] }, compra };
-  const m = calc.faturamentoMensal([c], [], 2026);
+  const m = calc.faturamentoMensal([c], [], 2026, '2026-11-20');
   assert.deepStrictEqual([m[10].venda, m[10].compra, m[10].impostos, m[10].lucro], [3000, 1200, 300, 1500]);
   assert.strictEqual(m[11].compra, 0); // dezembro: nada de compra (sai só na previsão de caixa)
   // venda mensal com compra mensal (como Jaguariúna): cada mês mostra o que foi pago nele
-  const mensal = { id: 'm', venda: { aliquotaNF: 10.5, parcelas: [4208.33, 708.33, 708.33].map((v, i) => ({ valor: v, emissao: calc.addMeses('2026-07-21', i) })) },
+  const mensal = { id: 'm', venda: { aliquotaNF: 10.5, parcelas: [4208.33, 708.33, 708.33].map((v, i) => ({ valor: v, nf: String(11 + i), emissao: calc.addMeses('2026-07-21', i) })) },
     compra: { aliquotaCompra: 0, parcelas: [2780.25, 550, 550].map((v, i) => ({ valor: v, vencimento: calc.addMeses('2026-07-21', i) })) } };
-  const n = calc.faturamentoMensal([mensal], [], 2026);
+  const n = calc.faturamentoMensal([mensal], [], 2026, '2026-11-20');
   assert.deepStrictEqual([n[6].compra, n[7].compra, n[8].compra], [2780.25, 550, 550]);
   assert.deepStrictEqual([n[6].impostos, n[7].impostos], [441.87, 74.37]);
   // compra que vence antes da 1ª NF fica no seu mês
   const antes = { id: 'a', venda: { parcelas: [{ valor: 1000, emissao: '2026-10-01' }] }, compra: { parcelas: [{ valor: 600, vencimento: '2026-09-15' }] } };
-  assert.strictEqual(calc.faturamentoMensal([antes], [], 2026)[8].compra, 600);
+  assert.strictEqual(calc.faturamentoMensal([antes], [], 2026, '2026-09-20')[8].compra, 600);
+});
+
+test('mês da NF: emitida pela emissão; não emitida pela previsão (ou mês atual); imposto pago pela DAS do mês', () => {
+  const hoje = '2026-11-20';
+  const c = { venda: { aliquotaNF: 10, parcelas: [
+    { valor: 1000, nf: '30', emissao: '2026-09-05', vencimento: '2026-10-05' },          // emitida em setembro
+    { valor: 1000, emissao: '2026-10-01', vencimento: '2026-11-01' },                    // prevista p/ outubro, não emitida -> novembro
+    { valor: 1000, faturamento: '2026-12-01', emissao: '2026-12-01', vencimento: '2027-01-01' } // prevista p/ dezembro
+  ] }, compra: { parcelas: [] } };
+  assert.deepStrictEqual(c.venda.parcelas.map((p) => calc.mesDaNF(p, hoje)), ['2026-09', '2026-11', '2026-12']);
+  const m = calc.faturamentoMensal([c], [], 2026, hoje);
+  assert.deepStrictEqual([m[8].impostos, m[9].impostos, m[10].impostos, m[11].impostos], [100, 0, 100, 100]);
+  // DAS de setembro paga: só o imposto da NF de setembro fica pago
+  assert.deepStrictEqual(calc.impostoNF(c, new Set(['2026-09']), hoje), { total: 300, pago: 100, aPagar: 200 });
+  assert.deepStrictEqual(calc.impostoNF(c, new Set(), hoje), { total: 300, pago: 0, aPagar: 300 });
 });

@@ -121,7 +121,7 @@
     const listaAnos = [...anos].sort();
     if (!anoEscolhido || !anos.has(anoEscolhido)) anoEscolhido = Number(hoje.slice(0, 4));
     // a tabela e o gráfico mês a mês seguem a mesma escolha dos quadros (Total ou Só licenças entregues)
-    const meses = calc.faturamentoMensal(contratosVisao, GAH.despesasCompletas(anoEscolhido + '-12'), anoEscolhido);
+    const meses = calc.faturamentoMensal(contratosVisao, GAH.despesasCompletas(anoEscolhido + '-12'), anoEscolhido, hoje);
     const tot = meses.reduce((t, m) => ({ venda: t.venda + m.venda, compra: t.compra + m.compra, impostos: t.impostos + m.impostos, despesas: t.despesas + m.despesas, lucro: t.lucro + m.lucro }), { venda: 0, compra: 0, impostos: 0, despesas: 0, lucro: 0 });
     // contratos cujas licenças ainda não foram entregues: na opção Total aparecem destacados no detalhe dos meses
     const renov = calc.renovacoes(contratos, hoje);
@@ -171,7 +171,7 @@
       '</div></div></div></section>' +
       '</section>' +
 
-      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><div><h2>Valores mês a mês</h2><span class="sub">Venda pelo mês da nota fiscal; compra pelo mês de cada parcela, e a que vence depois da última NF é abatida no mês dessa NF; despesas, custos fixos e contador abatidos no mês</span></div>' +
+      '<section class="secao-inicio"><section class="painel"><div class="painel-cab"><div><h2>Valores mês a mês</h2><span class="sub">Venda e imposto pelo mês da NF emitida (a ainda não emitida, no mês previsto); compra pelo mês de cada parcela, e a que vence depois da última NF é abatida no mês dessa NF; despesas, custos fixos e contador abatidos no mês</span></div>' +
       '<div class="acoes"><div class="visao-financeira" role="group" aria-label="Quais contratos entram na tabela">' +
       '<button type="button" data-visao="total" aria-pressed="' + (visao === 'total') + '">Total</button>' +
       '<button type="button" data-visao="entregues" aria-pressed="' + (visao === 'entregues') + '">Só licenças entregues</button></div>' +

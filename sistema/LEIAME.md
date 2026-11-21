@@ -165,11 +165,14 @@ link para criar uma senha nova.
   mensalidades do contador (até o mês atual).
 - Custos fixos e mensalidades entram no mês a que se referem, mesmo que tenham sido pagos depois,
   e aparecem sozinhos na tela Despesas, na Agenda (vencimentos) e na previsão de caixa.
-- **Valores mês a mês** (o que foi vendido e o lucro de cada mês): a venda entra no mês da emissão da NF (ou do
-  vencimento, se não houver emissão). Cada parcela de compra (e o imposto da compra) entra no mês do seu vencimento;
-  a que vence depois da última NF do contrato é trazida para o mês dessa última NF. Assim, venda integral com compra
-  parcelada abate o custo inteiro no mês da venda (parcelas ainda não pagas não viram lucro), e venda mensal com
-  compra mensal mostra em cada mês o que foi pago nele. Quando o dinheiro sai de fato fica na previsão de caixa.
+- **Valores mês a mês** (o que foi vendido e o lucro de cada mês): a venda e o imposto da NF entram no **mês da NF**:
+  NF emitida (com número, marcada como enviada ou já recebida) no mês da emissão; NF ainda não emitida no mês previsto
+  do faturamento, ou no mês atual se a previsão já passou. Assim os meses passados só têm NFs emitidas, como a DAS.
+  Cada parcela de compra (e o imposto da compra) entra no mês do seu vencimento; a que vence depois da última NF do
+  contrato é trazida para o mês dessa NF. Quando o dinheiro sai de fato fica na previsão de caixa.
+- **Imposto em Contratos**: coluna Imposto (imposto da NF de cada contrato) com quanto falta pagar. O imposto de uma NF
+  conta como pago quando a guia DAS do mês dessa NF está marcada como paga em Contabilidade. Filtro de situação
+  "Com imposto a pagar".
 - Contratos **cancelados** não entram em nenhum total.
 
 ## Testes
